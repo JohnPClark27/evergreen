@@ -1,6 +1,6 @@
 # Hymnal Reader v2: Plan
 
-Status: **draft for approval** (Phase 0). Items marked **❓** need your decision.
+Status: **approved 2026-10-01**. All ✅ recommendations accepted (marked ✅ below).
 
 The old repo (`../hymnal-reader-old`) was an Express + SQLite reading app. The music
 followed your scroll position, and you could open a sing-along strip or sheet music.
@@ -16,7 +16,7 @@ an admin app, then Supabase, then a static iPad app.
 | `scripts/build_hymn_db.py` | ABC to metadata: title, tune, `%OHSCRIP` refs to USFM, `%OHTOPICS` with stanza lists, `w:` lyrics | `pipeline/abc_meta.py` | Port the parsers as-is: `USFM` map, `parse_span`, `parse_scripture`, `parse_topics`, `clean_lyrics`. Drop the SQLite code. Add `meter` (`%OHMETRICAL`), `first_line` (stanza 1 from `w:`), and `stanza_count`. |
 | `audio-setup/render_mp3s.sh` | `mk-abc-for-midi` → `abc2midi` → FluidSynth (FluidR3) → SoX trims trailing silence → LAME | `pipeline/render_mp3.sh` | **Only the LAME step changes:** `-V2` stereo becomes `-m m -b ${MP3_BITRATE_KBPS:-96}` (mono CBR). The MIDI stays identical, so the timings stay valid. Keep the `temp.abc` → `Build-Midi/` → raw fallback order. |
 | `audio-setup/setup.sh` | apt packages, clone Open Hymnal, fix `bin/ohroot` | `setup.sh` (repo root) | Same steps, plus Python venv and deps. No `audio/` symlink, no SQLite. |
-| `scripts/build_lyric_timings.mjs` | Rebuilds the MIDI, pairs melody onsets with `w:` syllables, verifies stanza passes, checks MIDI vs MP3 length, builds 5-stanza pages, handles approximate text-only stanzas | `pipeline/timings/build_timings.mjs` | See ❓1. Input changes from SQLite rows to a JSON list (`--abc <path> --mp3 <path> --out <file>`), so the Python importer can call it per hymn. All alignment logic is kept unchanged. |
+| `scripts/build_lyric_timings.mjs` | Rebuilds the MIDI, pairs melody onsets with `w:` syllables, verifies stanza passes, checks MIDI vs MP3 length, builds 5-stanza pages, handles approximate text-only stanzas | `pipeline/timings/build_timings.mjs` | See ✅1. Input changes from SQLite rows to a JSON list (`--abc <path> --mp3 <path> --out <file>`), so the Python importer can call it per hymn. All alignment logic is kept unchanged. |
 | `public/js/crossfader.js` | Two `<audio>` decks to GainNodes to master gain, crossfade, pause/resume that really stops the clock | `web/js/audio.js` | Keep the graph and the pause rules. Add `crossOrigin = 'anonymous'` (Storage is cross-origin, see Risks), a session URL cache (blob URLs) so audio isn't re-downloaded, a `duck(level)` ramp on a separate gain, and the iOS unlock. |
 | `public/js/lyrics.js` | Binary search for the stanza or word at time *t*, `SING_LEAD`, karaoke highlight | `web/js/lyrics.js` | Keep the timing math. Rewrite the view from a one-line scrolling strip to **large stanza lines** (28px+) for the session card. Load the JSON from Storage. |
 | `public/js/score.js` | abcjs rendering, melody-note to syllable mapping, cursor, multi-page hymns | `web/js/sheet.js` | Keep `melodyNotes`, `currentSyllable`, `unionBox`, the ABC cleanup, and paging. Load abcjs from a pinned CDN on first use instead of `/vendor`. |
@@ -31,7 +31,7 @@ off-by-default option in Read the Bible), the settings popover, the full searcha
 index (`hymnal.js`, simplified to the 3×3 "Sing a Hymn" grid), and v1's styling (the new design
 tokens replace it).
 
-### ❓1. The timing builder: keep it in Node, or rewrite in Python?
+### ✅1. The timing builder: keep it in Node, or rewrite in Python?
 
 The timing builder parses the ABC with **abcjs**, and the browser draws the sheet-music
 cursor with **abcjs** too. `noteTimes[stanza][j]` only lines up with note *j* on screen
@@ -56,7 +56,7 @@ trigger where shown.
 | column | type | notes |
 |---|---|---|
 | id | `bigint` identity PK | |
-| number | `int` unique not null | Hymn number shown in the app. ❓2 |
+| number | `int` unique not null | Hymn number shown in the app. ✅2 |
 | source_file | `text` unique not null | e.g. `Amazing_Grace/Amazing_Grace-New_Britain.abc`. **Added:** the importer's upsert key. |
 | title | `text` not null | from `T:` |
 | tune | `text` | from the file name |
@@ -118,14 +118,14 @@ Three **public** buckets (`hymn-abc`, `hymn-audio`, `hymn-timings`). Uploads set
 non-published hymns. The content is public domain, so I think that's fine. The *metadata*
 stays behind RLS.
 
-### ❓ Schema questions
-- **❓2 Hymn numbers.** Open Hymnal has no numbers. I propose numbering 1…301 by sorted file
+### ✅ Schema questions
+- **✅2 Hymn numbers.** Open Hymnal has no numbers. I propose numbering 1…301 by sorted file
   path, the same order as v1's ids, so known issues like "#106 malformed" keep their numbers.
   OK?
-- **❓3 One row per tune.** 301 ABC files cover 289 hymn folders, because a few texts have two
+- **✅3 One row per tune.** 301 ABC files cover 289 hymn folders, because a few texts have two
   tunes. One `hymns` row per **file** (title + tune) is what v1 did. OK?
-- **❓4 Additions.** OK to add `source_file` and `file_hashes` to `hymns`?
-- **❓5 Bible translation.** ASV (YouVersion bible id 12), as in v1 and Phase 9's sources list?
+- **✅4 Additions.** OK to add `source_file` and `file_hashes` to `hymns`?
+- **✅5 Bible translation.** ASV (YouVersion bible id 12), as in v1 and Phase 9's sources list?
 
 ---
 
@@ -190,4 +190,4 @@ stays behind RLS.
 - [x] `docs/DEPLOY.md` (hosted setup steps, done by you)
 - [x] Placeholder `web/index.html`
 - [x] `web/config.example.js` and `web/config.js` (URL + publishable key)
-- [ ] This plan approved, including ❓1–❓5
+- [x] This plan approved, including ✅1–✅5 (2026-10-01)

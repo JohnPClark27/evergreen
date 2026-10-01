@@ -14,8 +14,8 @@ We never run the local Supabase stack (no `supabase start`, no Docker).
   - service role key: **secret**, goes only in `admin/.env`, never in git
 - [x] **Supabase CLI.** Install it, then:
   ```sh
-  supabase login
-  supabase link --project-ref trdmlfbbmxogrxihcklw
+  npx supabase login        # CLI is run via npx (not on PATH)
+  npx supabase link --project-ref trdmlfbbmxogrxihcklw
   ```
   The link is stored in `supabase/.temp/` (gitignored).
 - [x] **GitHub repo.** `https://github.com/JohnPClark27/hymnal-reader-v2`. Push `dev`.
@@ -29,10 +29,10 @@ We never run the local Supabase stack (no `supabase start`, no Docker).
 
 | Command | When |
 |---|---|
-| `supabase link --project-ref <ref>` | once per machine |
-| `supabase db push` | apply `supabase/migrations/` to the hosted DB |
-| `supabase functions deploy youversion` | Phase 5 |
-| `supabase secrets set YOUVERSION_API_KEY=…` | Phase 5 (you paste the value) |
+| `npx supabase link --project-ref <ref>` | once per machine |
+| `npx supabase db push` | apply `supabase/migrations/` to the hosted DB |
+| `npx supabase functions deploy youversion` | Phase 5 |
+| `npx supabase secrets set YOUVERSION_API_KEY=…` | Phase 5 (you paste the value) |
 
 **Never:** `supabase start`, `supabase db reset` (local), or anything that needs Docker.
 If the CLI can't do something, use the dashboard's **SQL Editor** instead.
