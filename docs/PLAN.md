@@ -170,19 +170,23 @@ stays behind RLS.
 - Timing JSON and ABC files are plain `fetch()`es, fine with `*`.
 - **Egress (5 GB/month):** mono 96 kbps ≈ 0.7 MB/min, ≈ 1.5 MB per hymn. We cache within the
   session (blob URL map) and set a 1-year `cache-control` on Storage objects.
-- **Storage budget:**
+- **Storage budget (measured in Phase 2):**
 
-  | | Estimate |
+  | | Size |
   |---|---|
   | v1's 292 MP3s at `-V2` stereo | 908 MB |
-  | Same 292 at 96 kbps mono | ≈ 450 MB |
-  | ~40 familiar hymns only | ≈ 60 MB |
+  | Mono 96 kbps is only about 30% smaller (v1's VBR already averaged about 136 kbps) | e.g. Amazing Grace 3.6 MB → 2.5 MB |
+  | **Actual after the import:** 46 familiar MP3s + 301 ABC + 301 timing files | **101 MB** |
+  | All 301 MP3s (`--audio all`), estimated | ≈ 640 MB, over the 600 MB target |
 
-  Comfortably under the 600 MB target. The importer still enforces the 900 MB hard cap.
+  Familiar-only stays far under target. `--audio all` would pass 600 MB, so keep it for
+  hymns you actually use. The importer still refuses anything past the 900 MB cap.
 
 ### R4. Other
 - **Free-tier pause** (7 days): documented in DEPLOY.md; optional keep-alive workflow ships disabled.
-- **Timing failures:** v1 had 2 unsynced hymns (#106, #263). Those show words without
+- **Single-stanza audio:** Open Hymnal's expander can't build all stanzas for #100 Holy, Holy,
+  Holy and #186 O Come, All Ye Faithful (same as v1), so their MP3s play stanza 1 only.
+- **Timing failures:** v1 had 2 unsynced hymns (#106, #263), and Phase 2 reproduces exactly those. Those show words without
   highlighting and appear in the import report and the admin validation panel.
 - **CDN pinning:** supabase-js and abcjs load from a CDN with pinned versions (plus SRI hashes
   where the CDN provides them).

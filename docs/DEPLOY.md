@@ -50,12 +50,43 @@ It then reads them with the **publishable key from `web/config.js`** and expects
 published rows. It also tries to write and expects every attempt to be refused. Finally it
 deletes the fixtures, even if a check fails.
 
-## 4. Public app config
+## 4. Data pipeline and import (Phase 2)
+
+One-time machine setup (Ubuntu/WSL). Only the apt step uses sudo:
+
+```sh
+./setup.sh                      # tools, Open Hymnal clone, .venv, timing builder deps
+source .venv/bin/activate
+```
+
+Import (idempotent, safe to re-run; unchanged files are skipped by hash):
+
+```sh
+python pipeline/import_prayers.py --dry-run && python pipeline/import_prayers.py
+python pipeline/import_hymns.py --dry-run   && python pipeline/import_hymns.py
+```
+
+| Option | Meaning |
+|---|---|
+| `--audio familiar` (default) / `all` / `none` | which hymns get MP3s uploaded |
+| `--bitrate 96` or `MP3_BITRATE_KBPS` | mono MP3 bitrate |
+| `--only 19 289` | just these hymn numbers |
+
+- Prints the Storage bucket totals before and after each run, and refuses any audio upload
+  past **900 MB**.
+- Writes `pipeline/out/import-report.txt` listing unverified timings, single-stanza audio and
+  render failures.
+- Storage object keys contain a content hash (`019-f1dd05d3.mp3`), and files are served with
+  `cache-control: max-age=31536000`. A changed file gets a new key, and the old object is deleted.
+- New hymns arrive as `approved`, so publish them in the admin app. Prayers arrive as `published`.
+  Re-imports never change status, `is_familiar`, notes, or hymn numbers.
+
+## 5. Public app config
 
 `web/config.js` holds only the Supabase URL and the anon key (both safe to publish).
 Copy `web/config.example.js` and fill them in. The service role key never goes here.
 
-## 5. Restoring a paused Free project
+## 6. Restoring a paused Free project
 
 Free projects pause after **7 days without activity**. Data is kept.
 

@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -107,6 +108,18 @@ def render(h, bitrate, oh_dir):
 # Timings (one Node run for the whole batch)
 # ---------------------------------------------------------------------------
 
+def find_node():
+    """node on PATH, else the newest nvm install (nvm only sets PATH in interactive shells)."""
+    found = shutil.which("node")
+    if found:
+        return found
+    nvm = sorted(Path(os.environ.get("NVM_DIR", Path.home() / ".nvm")).glob("versions/node/v*/bin/node"),
+                 key=lambda p: [int(x) for x in p.parts[-3][1:].split(".")])
+    if nvm:
+        return str(nvm[-1])
+    sys.exit("Node.js not found (needed for lyric timings). Install Node 20+, e.g. with nvm.")
+
+
 def build_timings(hymns, oh_dir):
     manifest = OUT / "timings-manifest.json"
     manifest.write_text(json.dumps([{
@@ -114,7 +127,7 @@ def build_timings(hymns, oh_dir):
         "abc": str(h["path"]), "mp3": str(h["mp3"]) if h["mp3"] else None,
         "out": str(OUT / "timings" / f"{h['number']:03d}.json"),
     } for h in hymns]))
-    r = subprocess.run(["node", str(HERE / "timings" / "build_timings.mjs"), str(manifest)],
+    r = subprocess.run([find_node(), str(HERE / "timings" / "build_timings.mjs"), str(manifest)],
                        env={**os.environ, "OPENHYMNAL_DIR": str(oh_dir)},
                        capture_output=True, text=True)
     if r.returncode != 0:

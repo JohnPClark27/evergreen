@@ -38,6 +38,10 @@ fi
 
 # ---------------------------------------------------------------------------
 step "2/6 Node.js"
+# nvm only puts node on PATH in interactive shells; load it here if it's installed.
+if ! command -v node >/dev/null && [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]]; then
+  set +u; source "${NVM_DIR:-$HOME/.nvm}/nvm.sh"; set -u
+fi
 if ! command -v node >/dev/null; then
   echo "Node.js not found. Install Node 20+ (e.g. https://github.com/nvm-sh/nvm), then re-run."
   exit 1
