@@ -24,9 +24,11 @@ import ui  # noqa: E402
 from pages.audit import AuditPage  # noqa: E402
 from pages.dashboard import DashboardPage  # noqa: E402
 from pages.hymns import HymnsPage  # noqa: E402
-from pages.placeholder import PipelinePage, PlansPage, StudiesPage  # noqa: E402
+from pages.placeholder import PipelinePage  # noqa: E402
+from pages.plans import PlansPage  # noqa: E402
 from pages.prayers import PrayersPage  # noqa: E402
 from pages.settings import SettingsPage  # noqa: E402
+from pages.studies import StudiesPage  # noqa: E402
 from worker import Worker  # noqa: E402
 
 PAGES = [

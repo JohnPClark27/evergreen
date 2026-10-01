@@ -96,6 +96,33 @@ python admin/app.py
 - Follows the system light/dark setting, with one stylesheet: `admin/style.qss`.
 - WSL: runs on WSLg. Audio preview plays through WSLg's PulseAudio.
 
+### Studies, plans, and the seed plan (Phase 4)
+
+- **Studies:** pick a hymn (familiar filter), a passage (book/chapter/verses, with one-click
+  suggestions from the hymn's scripture refs), a prayer, and an optional aide note of up to
+  280 characters. The preview shows the session as the resident sees it: hymn verses, Scripture
+  and prayer, plus the hymn audio. Scripture text is fetched live and never stored. It needs
+  `YOUVERSION_API_KEY` in `admin/.env`, or the Phase 5 Edge Function.
+- **Plans:**
+  - drag days to reorder (Move up/down also work)
+  - add an existing study, create a new one inline, or duplicate or remove a day
+  - warnings flag the same hymn or prayer on back-to-back days, and unpublished studies
+  - **Publish plan** checks that every day's study, hymn and prayer is published. If not, it
+    lists them and changes nothing.
+- **Seed plan** (once; refuses to run if the plan already exists):
+
+  ```sh
+  python supabase/seed/seed_memory_care_plan.py --dry-run
+  python supabase/seed/seed_memory_care_plan.py
+  ```
+
+  Builds a **draft** "Memory Care — 30 Days" plan from `supabase/seed/memory_care_30.json`:
+  - 30 short passages (references only)
+  - familiar non-seasonal hymns, never repeated, preferring a hymn that cites the day's passage
+  - the 15 prayers in rotation, so no prayer repeats on back-to-back days
+
+  Every write goes through `admin/data.py`, so the whole seed appears in the Audit Log.
+
 ## 6. Public app config
 
 `web/config.js` holds only the Supabase URL and the anon key (both safe to publish).

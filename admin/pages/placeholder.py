@@ -1,4 +1,4 @@
-"""Pages that arrive in later phases (Studies and Plans in Phase 4)."""
+"""Pipeline page: a simple stand-in until a full Pipeline UI (cut-first per the plan)."""
 from PySide6.QtGui import QFontDatabase
 from PySide6.QtWidgets import QPlainTextEdit
 
@@ -6,18 +6,6 @@ import ui
 from data import ENV_PATH
 
 REPORT = ENV_PATH.parent.parent / "pipeline" / "out" / "import-report.txt"
-
-
-class StudiesPage(ui.Page):
-    def __init__(self, win):
-        super().__init__(win, "Studies", "The study editor arrives in Phase 4.")
-        self.body.addStretch()
-
-
-class PlansPage(ui.Page):
-    def __init__(self, win):
-        super().__init__(win, "Plans", "The plan builder arrives in Phase 4.")
-        self.body.addStretch()
 
 
 class PipelinePage(ui.Page):

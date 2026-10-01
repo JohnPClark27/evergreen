@@ -186,8 +186,8 @@ class HymnsPage(ui.Page):
         self.audio_status = ui.label("", "muted")
         audio_row.addWidget(self.audio_status, 1)
         dl.addLayout(audio_row)
-        self.player = QMediaPlayer()
-        self.audio_out = QAudioOutput()
+        self.player = QMediaPlayer(self)  # parented: deleted with this widget
+        self.audio_out = QAudioOutput(self)
         self.audio_out.setVolume(0.8)
         self.player.setAudioOutput(self.audio_out)
         self.player.playbackStateChanged.connect(self._playback_changed)

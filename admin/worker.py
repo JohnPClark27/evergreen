@@ -7,8 +7,14 @@ If the function takes a `progress` keyword, it gets a callback
 progress(percent, message) that is safely forwarded to the UI thread.
 """
 import inspect
+import threading
 
 from PySide6.QtCore import QThread, Signal
+
+# The Supabase client shares one HTTP connection, which isn't safe to use from
+# several threads at once ("Server disconnected"). Workers take turns: the UI stays
+# responsive, and background calls simply run one after another.
+NETWORK_LOCK = threading.Lock()
 
 
 class Worker(QThread):
@@ -25,7 +31,8 @@ class Worker(QThread):
     def run(self):
         # Runs in the background thread. Signals are delivered to the UI thread.
         try:
-            result = self.fn(*self.args, **self.kwargs)
+            with NETWORK_LOCK:
+                result = self.fn(*self.args, **self.kwargs)
         except Exception as e:  # noqa: BLE001 - every error is shown to the user
             self.failed.emit(friendly_error(e))
         else:
