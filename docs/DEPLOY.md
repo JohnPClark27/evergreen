@@ -123,12 +123,51 @@ python admin/app.py
 
   Every write goes through `admin/data.py`, so the whole seed appears in the Audit Log.
 
-## 6. Public app config
+## 6. YouVersion Edge Function (Phase 5)
+
+```sh
+npx supabase secrets set YOUVERSION_API_KEY=…            # you paste this; never commit it
+npx supabase db push                                    # includes the rate-limit table
+npx supabase functions deploy youversion --use-api --no-verify-jwt
+node supabase/functions/youversion/test.ts              # local unit tests (no network)
+```
+
+```
+GET https://<ref>.supabase.co/functions/v1/youversion?book=PSA&chapter=23&start=1&end=3
+200 {reference, book, chapter, verses:[{num,text}], version:{id,abbreviation,title}, attribution, source}
+400 {error}   unknown book, chapter out of range, bad or missing verses
+429 {error}   over the rate limit (Retry-After: 60)
+```
+
+- **`--use-api`** bundles on Supabase's servers, so no Docker is needed.
+- **`--no-verify-jwt`** (also set in `config.toml`): the public app's `sb_publishable_…` key isn't
+  a JWT. The function serves only public Scripture and protects itself in two ways:
+  - **CORS:** browsers are allowed only from `hymnal-reader-v2.pages.dev`, its preview subdomains,
+    and localhost. Any other browser origin gets a 403.
+  - **Rate limit:** 60 requests a minute per client and 600 in total. The counters live in
+    Postgres (`public.youversion_rate_hit`), because hosted functions don't keep memory between
+    requests: each request usually gets a fresh instance (checked). Keys are salted SHA-256
+    hashes, so no IPs are stored. The function uses the auto-injected **anon** key, never the
+    service role key.
+- **Caching:** YouVersion's docs say "Cache responses when possible", and the Terms of Use
+  (last modified August 17, 2026) have no clause against it. So:
+  - Chapter text is cached in memory for `YOUVERSION_CACHE_TTL_SECONDS` (default 86400; 0 = off).
+  - Version and attribution metadata are cached for `YOUVERSION_META_TTL_SECONDS` (default 3600),
+    kept short so the required attribution stays current.
+  - Responses carry `Cache-Control: public, max-age=3600`.
+  - Nothing is written to the database.
+- **Attribution:** the version's `copyright`, else its `promotional_content` (YouVersion's rule).
+  ASV has neither, so the fallback is "American Standard Version (ASV)". Every response then adds
+  "· Scripture provided by YouVersion."
+- **Settings** (optional secrets): `YOUVERSION_BIBLE_ID` (default 12, ASV),
+  `ALLOWED_PAGES_HOSTS`, `RATE_LIMIT_PER_IP`, `RATE_LIMIT_TOTAL`.
+
+## 7. Public app config
 
 `web/config.js` holds only the Supabase URL and the anon key (both safe to publish).
 Copy `web/config.example.js` and fill them in. The service role key never goes here.
 
-## 7. Restoring a paused Free project
+## 8. Restoring a paused Free project
 
 Free projects pause after **7 days without activity**. Data is kept.
 

@@ -240,8 +240,14 @@ class Data:
             with urllib.request.urlopen(req, timeout=20) as r:
                 d = json.loads(r.read())
         except urllib.error.HTTPError as e:
-            raise ValueError("No Scripture preview yet: add YOUVERSION_API_KEY to admin/.env, "
-                             f"or deploy the youversion Edge Function (Phase 5). ({e.code})") from None
+            if e.code == 404:
+                raise ValueError("No Scripture preview yet: deploy the youversion Edge Function "
+                                 "or add YOUVERSION_API_KEY to admin/.env.") from None
+            try:
+                msg = json.loads(e.read())["error"]  # the function's own message (bad ref, rate limit…)
+            except Exception:  # noqa: BLE001
+                msg = f"Scripture service error ({e.code})."
+            raise ValueError(msg) from None
         return {"reference": d["reference"], "verses": [(v["num"], v["text"]) for v in d["verses"]],
                 "attribution": d["attribution"]}
 
@@ -254,10 +260,11 @@ class Data:
         bible = self._yv(f"/bibles/{self.yv_bible}")
         data = self._yv(f"/bibles/{self.yv_bible}/passages/{book}.{chapter}?format=html")
         verses = [(n, t) for n, t in parse_verses(data["content"]) if verse_start <= n <= verse_end]
-        name = bible.get("title") or bible.get("abbreviation") or "Bible"
-        attribution = f"{name}. Scripture via YouVersion."
-        if bible.get("copyright"):
-            attribution += f" {bible['copyright']}"
+        # Same rule as the Edge Function: copyright, else promotional content, else the version's name.
+        name = " ".join(x for x in (bible.get("title"), bible.get("abbreviation") and f"({bible['abbreviation']})") if x)
+        version_text = ((bible.get("copyright") or "").strip() or (bible.get("promotional_content") or "").strip()
+                        or name)
+        attribution = f"{version_text} · Scripture provided by YouVersion."
         return {"reference": ref_label(book, chapter, verse_start, verse_end), "verses": verses,
                 "attribution": attribution}
 

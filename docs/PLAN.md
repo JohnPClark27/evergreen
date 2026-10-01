@@ -136,13 +136,20 @@ stays behind RLS.
 
 ## 3. Risks
 
-### R1. YouVersion terms (caching, attribution, use)
-- v1 cached passages in memory without checking the terms. In Phase 5 I'll read the current
-  YouVersion Platform terms **before** adding any cache. If they're unclear: no cache, and I'll tell you.
-- The API key lives only in Supabase secrets (Edge Function). It's never in `web/` or the admin `.env` unless you add one for the Phase 4 preview.
-- v1 noted **non-commercial use only**. A free tool for residents fits that, but it should be
-  stated in the README.
-- Attribution: the API returns copyright/translation info. We show it under every passage.
+### R1. YouVersion terms (caching, attribution, use): checked in Phase 5
+- **Terms of Use** (platform.youversion.com/terms, last modified August 17, 2026): no clause on
+  caching or storing responses. Relevant rules:
+  - keep the App Key confidential (it's a Supabase secret)
+  - don't remove notices
+  - don't imply endorsement or use YouVersion marks
+  - don't build a competing Bible service
+  - AI may only display Scripture verbatim (we use no AI)
+  - the platform is described as non-commercial
+- **Developer docs:** Quick Reference → Best Practices says "1. **Cache responses** when
+  possible", and the Error Codes page says "cache responses where you can". **Decision:** cache
+  in memory with configurable TTLs, never in the database.
+- **Attribution:** show the version's `copyright`, else its `promotional_content`. ASV has
+  neither, so we show the version name plus "Scripture provided by YouVersion".
 - No verse text is stored: no DB columns, no seed files, no test fixtures.
 
 ### R2. iOS audio and speech unlock

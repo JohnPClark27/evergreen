@@ -413,3 +413,9 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# Scripture proxy. JWT verification is off because the public app uses the new
+# publishable key (sb_publishable_…), which isn't a JWT. The function itself only
+# serves public Scripture, restricts browser origins (CORS), and rate-limits.
+[functions.youversion]
+verify_jwt = false
