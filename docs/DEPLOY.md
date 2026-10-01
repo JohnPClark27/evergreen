@@ -81,12 +81,27 @@ python pipeline/import_hymns.py --dry-run   && python pipeline/import_hymns.py
 - New hymns arrive as `approved`, so publish them in the admin app. Prayers arrive as `published`.
   Re-imports never change status, `is_familiar`, notes, or hymn numbers.
 
-## 5. Public app config
+## 5. Admin app (Phase 3)
+
+```sh
+source .venv/bin/activate        # PySide6 comes from requirements.txt (./setup.sh)
+python admin/app.py
+```
+
+- Reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `admin/.env`. If they're missing,
+  it shows a setup screen instead.
+- Every write goes through `admin/data.py`, which also writes an `audit_log` row with
+  before/after JSON. Unchanged saves write nothing.
+- Network calls run in background threads (`admin/worker.py`), with progress in the status bar.
+- Follows the system light/dark setting, with one stylesheet: `admin/style.qss`.
+- WSL: runs on WSLg. Audio preview plays through WSLg's PulseAudio.
+
+## 6. Public app config
 
 `web/config.js` holds only the Supabase URL and the anon key (both safe to publish).
 Copy `web/config.example.js` and fill them in. The service role key never goes here.
 
-## 6. Restoring a paused Free project
+## 7. Restoring a paused Free project
 
 Free projects pause after **7 days without activity**. Data is kept.
 
