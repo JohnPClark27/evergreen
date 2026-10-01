@@ -1,6 +1,6 @@
 # Hymnal Reader v2: Plan
 
-Status: **approved 2026-10-01**. All ✅ recommendations accepted (marked ✅ below).
+Status: **approved 2026-10-01**. All recommendations accepted (marked ✅ below).
 
 The old repo (`../hymnal-reader-old`) was an Express + SQLite reading app. The music
 followed your scroll position, and you could open a sing-along strip or sheet music.
