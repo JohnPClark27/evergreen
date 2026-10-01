@@ -37,12 +37,25 @@ We never run the local Supabase stack (no `supabase start`, no Docker).
 **Never:** `supabase start`, `supabase db reset` (local), or anything that needs Docker.
 If the CLI can't do something, use the dashboard's **SQL Editor** instead.
 
-## 3. Public app config
+## 3. Database schema and RLS (Phase 1)
+
+```sh
+npx supabase db push --dry-run     # see what would be applied
+npx supabase db push               # apply supabase/migrations/ to the hosted DB
+bash supabase/tests/rls_anon_test.sh
+```
+
+The test inserts throwaway draft and published rows through `npx supabase db query --linked`.
+It then reads them with the **publishable key from `web/config.js`** and expects only the
+published rows. It also tries to write and expects every attempt to be refused. Finally it
+deletes the fixtures, even if a check fails.
+
+## 4. Public app config
 
 `web/config.js` holds only the Supabase URL and the anon key (both safe to publish).
 Copy `web/config.example.js` and fill them in. The service role key never goes here.
 
-## 4. Restoring a paused Free project
+## 5. Restoring a paused Free project
 
 Free projects pause after **7 days without activity**. Data is kept.
 
@@ -54,6 +67,8 @@ Projects paused for a long time (90+ days) may no longer be restorable from the
 dashboard. Then you'd create a new project and re-run the runbook (migrations,
 importers, function deploy). That's why everything is scripted.
 
-**Optional keep-alive:** `.github/workflows/keepalive.yml` (added in Phase 1, once there's
-a table to query) runs one tiny anon-key read every 3 days. It ships **disabled**.
-Phase 8 explains how to turn it on.
+**Optional keep-alive:** `.github/workflows/keepalive.yml` runs one tiny anon-key read
+every 3 days. It ships **disabled**: the job only runs when the repo variable
+`KEEPALIVE_ENABLED` is `true`. To enable it, add the repo secrets `SUPABASE_URL` and
+`SUPABASE_ANON_KEY` (the publishable key, never the service role key), then set the
+variable. Steps are in the workflow file's header. Phase 8 expands this.

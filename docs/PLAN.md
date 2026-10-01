@@ -100,13 +100,18 @@ verses required for studies), `prayer_id` FK, `aide_note text check (length(aide
 admin app), `action text` (`insert`/`update`/`delete`/`status`), `table_name`, `row_id text`,
 `before jsonb`, `after jsonb`. **No anon access at all.**
 
+**As built (Phase 1):** `studies.hymn_id` and `prayer_id` are nullable so a draft can be
+half-built, but a check constraint requires both once `status = 'published'`.
+`hymn_scripture_refs.book` and `studies.book` must look like a USFM code.
+
 ### RLS
 - RLS on for every table. **No insert/update/delete policies for `anon`**, so writes are denied.
+  Write grants are also revoked from `anon`/`authenticated` as a second lock, and `authenticated` gets the same read-only rules as `anon`.
   The admin app uses the service role, which bypasses RLS.
 - `anon` select policies:
   - `hymns`, `prayers`, `studies`, `plans`: `status = 'published'`
   - `hymn_scripture_refs`, `hymn_topics`: the parent hymn is published
-  - `topics`: readable when linked to a published hymn (or simply all topic names; they're harmless)
+  - `topics`: readable when linked to a published hymn
   - `plan_days`: the parent plan is published **and** its study is published
 - `audit_log`: no anon policy.
 
