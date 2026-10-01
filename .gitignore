@@ -1,0 +1,31 @@
+# Secrets: never commit real keys (.env.example is fine)
+.env
+.env.*
+!.env.example
+*.env
+!*.env.example
+
+# Vendored third-party repos (open-prayer-book, openhymnal clones)
+vendor/
+
+# Audio and other large binaries (they live in Supabase Storage)
+*.mp3
+*.wav
+*.mid
+*.sf2
+pipeline/out/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node (timing builder)
+node_modules/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
