@@ -1,0 +1,55 @@
+# Starter list of widely known hymns: seeds hymns.is_familiar on FIRST import only.
+# After that, the admin app is the source of truth (re-imports never change it).
+# Familiar hymns get audio uploaded by default (import_hymns.py --audio familiar).
+#
+# One title per line, matching the ABC T: line (case-insensitive).
+# "Title | Tune" picks one tune when the title has several settings.
+
+Abide With Me
+All Creatures of Our God and King
+All Hail The Power Of Jesus' Name
+Amazing Grace
+A Mighty Fortress Is Our God | Ein Feste Burg Isorhythmic
+Be Still My Soul
+Be Thou My Vision
+Blessed Assurance
+Blest Be The Tie That Binds | Dennis
+Come Thou Fount Of Every Blessing
+Crown Him With Many Crowns
+For The Beauty Of The Earth
+He Leadeth Me
+Holy, Holy, Holy
+How Firm A Foundation
+I Need Thee Every Hour
+Immortal, Invisible, God Only Wise
+It Is Well With My Soul
+Jesus Christ Is Risen Today
+Jesus Loves Me
+Joyful, Joyful, We Adore Thee
+Nearer, My God, To Thee
+Now Thank We All Our God
+O For A Thousand Tongues
+Our God, Our Help In Ages Past
+Pass Me Not, O Gentle Savior
+Praise God From Whom All Blessings Flow
+Praise My Soul The King Of Heaven
+Praise To The Lord, The Almighty
+Rock of Ages
+Savior, Like A Shepherd Lead Us
+Take My Life And Let It Be
+The Church's One Foundation
+The Lord's My Shepherd
+The Old Rugged Cross
+To God Be The Glory
+Under His Wings
+Were You There?
+What A Friend We Have In Jesus
+When I Survey the Wondrous Cross | Hamburg
+
+# Christmas
+Away In A Manger
+Hark! The Herald Angels Sing
+Joy to the World
+O Come, All Ye Faithful
+O Little Town of Bethlehem
+Silent Night
