@@ -189,5 +189,5 @@ stays behind RLS.
 - [x] Repo layout, `.gitignore`, `.env.example`, README stub
 - [x] `docs/DEPLOY.md` (hosted setup steps, done by you)
 - [x] Placeholder `web/index.html`
-- [x] `web/config.example.js`. `web/config.js` waits on your anon key.
+- [x] `web/config.example.js` and `web/config.js` (URL + publishable key)
 - [ ] This plan approved, including ❓1–❓5
