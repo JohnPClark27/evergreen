@@ -87,17 +87,27 @@ export const getChapterHymns = (book, chapter) => memo(cache.queries, `ch:${book
 
 // ---------- Plans, studies, prayers ----------
 
-/** Published plans with their days in order (each day = a published study with hymn + prayer). */
-export const getPlans = () => memo(cache.queries, 'plans', async () => {
-  const plans = await rows(db.from('plans')
-    .select(`id,title,description,days:plan_days(day_number,study:studies(${STUDY_FIELDS}))`)
-    .order('title'));
-  for (const p of plans) {
-    // RLS hides a day whose study isn't published; keep only complete, visible days.
-    p.days = p.days.filter((d) => d.study?.hymn && d.study?.prayer).sort((a, b) => a.day_number - b.day_number);
-  }
-  return plans;
+/** Published study plans for the tablet's list: [{id, title, description, types: [module_type…]}]. */
+export const getStudyPlans = () => memo(cache.queries, 'studyPlans', async () => {
+  const plans = await rows(db.from('study_plans')
+    .select('id,title,description,updated_at,items:study_plan_items(position,module_type)').order('title'));
+  return plans.map((p) => ({
+    ...p, types: p.items.sort((a, b) => a.position - b.position).map((i) => i.module_type),
+  }));
 });
+
+/** One published study plan with its modules in order: {id, title, description, items: [{module_type, config}]}. */
+export const getStudyPlan = (id) => memo(cache.queries, `studyPlan:${id}`, async () => {
+  const found = await rows(db.from('study_plans')
+    .select('id,title,description,items:study_plan_items(position,module_type,config)').eq('id', id));
+  if (!found.length) return null;
+  const plan = found[0];
+  plan.items.sort((a, b) => a.position - b.position);
+  return plan;
+});
+
+export const getHymnById = async (id) => (await getHymns()).find((x) => x.id === Number(id)) ?? null;
+export const getPrayerById = async (id) => (await getPrayers()).find((x) => x.id === Number(id)) ?? null;
 
 export const getPrayers = () =>
   memo(cache.queries, 'prayers', () => rows(db.from('prayers').select(PRAYER_FIELDS).order('title')));

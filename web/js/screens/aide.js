@@ -1,6 +1,5 @@
-// Aide tools: choose a day, reading speed, music volume, voice; reset hymn notes.
+// Aide tools: reading speed, music volume, voice; reset notes.
 // Everything is saved on this tablet only (localStorage). No names are saved.
-import * as api from '../api.js';
 import { RATES } from '../speech.js';
 import { confirmDialog, h, icon } from '../ui.js';
 
@@ -9,34 +8,6 @@ const RATE_LABEL = { slower: 'Slower', slow: 'Slow', normal: 'Normal' };
 export async function render(root, _params, ctx) {
   const { store, speaker, audio } = ctx;
   const settings = store.settings();
-  const plans = await api.getPlans();
-  const progress = store.progress();
-  let plan = plans.find((p) => p.id === progress.planId) ?? plans[0];
-  let chosenDay = plan && progress.planId === plan.id ? progress.currentDay : 1;
-
-  // ---- Day picker ----
-  const dayGrid = h('div', { class: 'day-grid', role: 'radiogroup', 'aria-label': 'Day' });
-  const startBtn = h('button', { class: 'pill primary big', type: 'button' });
-  function drawDays() {
-    if (!plan) { dayGrid.replaceChildren(h('p', { class: 'muted' }, 'No published plan yet.')); startBtn.disabled = true; return; }
-    dayGrid.replaceChildren(...plan.days.map((d) => h('button', {
-      class: `day-btn${d.day_number === chosenDay ? ' selected' : ''}`, type: 'button', role: 'radio',
-      'aria-checked': String(d.day_number === chosenDay), 'aria-label': `Day ${d.day_number}: ${d.study.hymn.title}`,
-      title: d.study.title,
-      onclick: () => { chosenDay = d.day_number; drawDays(); },
-    }, String(d.day_number))));
-    startBtn.textContent = `Start Day ${chosenDay}`;
-  }
-  startBtn.addEventListener('click', async () => {
-    store.startDay(plan.id, chosenDay);
-    await ctx.unlock();
-    ctx.go('#/session');
-  });
-  const planPicker = plans.length > 1 && h('select', {
-    class: 'select', 'aria-label': 'Plan',
-    onchange: (e) => { plan = plans.find((p) => String(p.id) === e.target.value); chosenDay = 1; drawDays(); },
-  }, plans.map((p) => h('option', { value: p.id, selected: p.id === plan?.id }, p.title)));
-
   // ---- Reading speed ----
   const speed = h('div', { class: 'choice-row', role: 'radiogroup', 'aria-label': 'Reading speed' });
   function drawSpeed() {
@@ -73,12 +44,12 @@ export async function render(root, _params, ctx) {
   const resetBtn = h('button', {
     class: 'pill', type: 'button',
     onclick: async () => {
-      if (await confirmDialog('Reset all hymn notes on this tablet? “Enjoyed” and “Skip” marks will be cleared.', { yes: 'Reset notes' })) {
+      if (await confirmDialog('Reset all notes on this tablet? “Enjoyed” and “Skip” marks on hymns and studies will be cleared.', { yes: 'Reset notes' })) {
         store.resetNotes();
-        notesStatus.textContent = 'Hymn notes were reset.';
+        notesStatus.textContent = 'Notes were reset.';
       }
     },
-  }, 'Reset hymn notes…');
+  }, 'Reset notes…');
 
   root.append(h('div', { class: 'screen aide' },
     h('header', { class: 'topbar' },
@@ -86,9 +57,6 @@ export async function render(root, _params, ctx) {
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Aide tools'),
       h('p', { class: 'day' }, '')),
     h('div', { class: 'card aide-card' },
-      h('section', {},
-        h('h2', {}, 'Choose a day'),
-        planPicker, dayGrid, startBtn),
       h('section', {},
         h('h2', {}, 'Reading speed'), speed),
       h('section', {},
@@ -98,9 +66,8 @@ export async function render(root, _params, ctx) {
         h('div', { class: 'choice-row' }, voiceSelect, testVoice),
         voices.length ? null : h('p', { class: 'muted' }, 'This browser has no voices installed for reading aloud.')),
       h('section', {},
-        h('h2', {}, 'Hymn notes'), resetBtn, notesStatus,
+        h('h2', {}, 'Notes'), resetBtn, notesStatus,
         h('p', { class: 'muted' }, 'Notes stay on this tablet. No names are saved.')))));
-  drawDays();
   drawSpeed();
   return () => speaker.stop();
 }
