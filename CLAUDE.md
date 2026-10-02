@@ -61,19 +61,27 @@ screens). Phase 6's real-device speech check is still pending (see §9).
 | Publishable key | in `web/config.js` (`window.HYMNAL_CONFIG.supabaseUrl / supabaseAnonKey`) |
 | GitHub | `JohnPClark27/hymnal-reader-v2`, branch `dev` |
 | Cloudflare Pages | output `web/`, no build. Preview: `https://dev.hymnal-reader-v2.pages.dev/` (production `hymnal-reader-v2.pages.dev`). `/` is still a placeholder. Phase 6 test page: `/dev/core-test`. Pages serves clean URLs: `x.html` 308-redirects to `x`. |
-| DB content | 301 hymns (`approved`, except **#19 Amazing Grace and #256 The Lord's My Shepherd, which are `published`** for the Phase 6 test, with the user's OK; 46 `is_familiar`), 1313 scripture refs, 158 topics, 15 prayers (`published`), 30 studies (`draft`), 1 plan "Memory Care — 30 Days" (`draft`, 30 days) |
-| Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 101 MB total. Audio only for the 46 familiar hymns. |
+| DB content | 301 hymns: **40 `published`** (well-known, fully public domain per a strict ABC-file rule: `supabase/seed/publish_pd_hymns.py`), the rest `approved`. 50 `is_familiar` (the original 46 plus #67, #83, #169, #170, set in the DB; `familiar.txt` only seeds first imports). 1313 scripture refs, 158 topics, 15 prayers (`published`). Plans: **"Sample — 12 Days" (`published`**, 12 published studies) and "Memory Care — 30 Days" (`draft`; 4 of its studies are shared with the sample plan and are published). |
+| Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 107 MB total. Audio only for the 50 familiar hymns, so every published hymn has audio. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
 | Migrations applied | `…0001_schema`, `…0002_rls`, `…0003_storage_buckets`, `…0004_rate_limits` |
 
-**The public app sees only prayers plus hymns #19 and #256 until the user publishes more hymns,
-studies and the plan in the admin app.** For testing Phase 6/7 you'll need published content. Ask the user to publish
+**The public app sees: 40 hymns, 15 prayers, and the published "Sample — 12 Days" plan.** That's
+enough for Phase 7's session flow. For testing Phase 6/7 you'll need published content. Ask the user to publish
 (or, if they agree, publish via `admin/data.py` and record what you changed so it can be reverted).
 
 ## 4. Don't re-run / don't change
 
-- `supabase/seed/seed_memory_care_plan.py`: one-time. It refuses if the plan exists. Don't delete
-  the plan to re-seed.
+- `supabase/seed/seed_plan.py`: refuses to run if a plan with the same title exists. Don't delete
+  plans to re-seed. Already run for "Memory Care — 30 Days" (draft) and
+  `--title "Sample — 12 Days" --days 12 --publish`.
+- **Public-domain rule** for publishing hymns (user requirement: fully PD per the ABC file):
+  `supabase/seed/publish_pd_hymns.py`.
+  - A hymn qualifies if its file has a `C: copyright: public domain` line and no credit line citing a
+    source or setting from 1928 or later, and the claim doesn't rest on "never renewed".
+  - An explicit arranger dedication to the public domain also qualifies.
+  - This excluded 10 familiar hymns, e.g. ones transcribed from *Lutheran Worship* (1982).
+  - Publish new hymns only if they pass this rule.
 - **Hymn numbers** (1–301 = sorted source path, the same as v1 ids) are stable keys used in Storage
   object names. The importer never renumbers. Don't either.
 - `pipeline/render_mp3.sh` steps up to the WAV must stay identical: the lyric timings rebuild the
@@ -238,6 +246,8 @@ then the modules.
 
 ## 10. Next: Phase 7 (screens)
 
+The session uses the published **"Sample — 12 Days"** plan.
+
 See `docs/PLAN_PROMPT.md` Phase 7 and §4 (design tokens and session layout):
 - Home (simple mode)
 - Session (Hymn → Scripture → Prayer)
@@ -247,5 +257,5 @@ See `docs/PLAN_PROMPT.md` Phase 7 and §4 (design tokens and session layout):
 - Read the Bible
 - `localStorage` progress `{ planId, currentDay, lastCompletedDate }`
 
-The session needs a **published plan**: ask the user to publish the Memory Care plan (and its
-studies and hymns), or a small test plan.
+Use the published "Sample — 12 Days" plan for the session flow. "Sing a Hymn" draws on the 40
+published hymns: show familiar ones (all 40 are familiar).

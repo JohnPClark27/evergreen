@@ -109,19 +109,24 @@ python admin/app.py
   - warnings flag the same hymn or prayer on back-to-back days, and unpublished studies
   - **Publish plan** checks that every day's study, hymn and prayer is published. If not, it
     lists them and changes nothing.
-- **Seed plan** (once; refuses to run if the plan already exists):
+- **Publishing hymns (public-domain rule):** `python supabase/seed/publish_pd_hymns.py --dry-run`
+  then without `--dry-run`. It publishes exactly 40 well-known hymns whose ABC files show they are
+  fully public domain, and lists the excluded ones with the reason. See the script header for the rule.
+- **Seed plans** (refuse to run if a plan with that title exists):
 
   ```sh
-  python supabase/seed/seed_memory_care_plan.py --dry-run
-  python supabase/seed/seed_memory_care_plan.py
+  python supabase/seed/seed_plan.py --dry-run                     # "Memory Care — 30 Days", draft
+  python supabase/seed/seed_plan.py --title "Sample — 12 Days" --days 12 --publish
   ```
 
-  Builds a **draft** "Memory Care — 30 Days" plan from `supabase/seed/memory_care_30.json`:
-  - 30 short passages (references only)
-  - familiar non-seasonal hymns, never repeated, preferring a hymn that cites the day's passage
-  - the 15 prayers in rotation, so no prayer repeats on back-to-back days
+  Both build from `supabase/seed/memory_care_30.json`:
+  - short passages (references only)
+  - familiar non-seasonal hymns, never repeated; hymns that cite a day's passage are paired with it first
+  - prayers in rotation, so no prayer repeats on back-to-back days
 
-  Every write goes through `admin/data.py`, so the whole seed appears in the Audit Log.
+  `--publish` uses only published hymns, publishes the studies, then publishes the plan through the
+  same validation as the admin app. An identical existing study is reused, not duplicated. All
+  writes go through `admin/data.py` (Audit Log).
 
 ## 6. YouVersion Edge Function (Phase 5)
 
