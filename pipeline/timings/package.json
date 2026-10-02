@@ -1,0 +1,10 @@
+{
+  "name": "hymnal-timings",
+  "private": true,
+  "description": "Lyric timing builder (dev-only; never shipped to web/ or admin/). Uses abcjs so note indexes match the browser's sheet music.",
+  "type": "module",
+  "dependencies": {
+    "@tonejs/midi": "2.0.28",
+    "abcjs": "6.7.1"
+  }
+}

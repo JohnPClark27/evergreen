@@ -1,0 +1,14 @@
+{
+  "name": "hymnal-browser-tests",
+  "private": true,
+  "description": "DEV-ONLY browser checks for the public app (never shipped to web/ or admin/). Justification: repeatable end-to-end and accessibility checks for every UI change.",
+  "type": "module",
+  "scripts": {
+    "e2e": "node e2e.mjs",
+    "a11y": "node a11y.mjs"
+  },
+  "dependencies": {
+    "axe-core": "4.13.0",
+    "playwright-core": "1.63.0"
+  }
+}

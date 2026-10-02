@@ -1,0 +1,35 @@
+# keepalive.yml - OPTIONAL. Stops the Supabase Free project from pausing after
+# 7 idle days by making one tiny read every 3 days with the PUBLIC (anon) key.
+#
+# DISABLED BY DEFAULT: the job only runs when the repository variable
+# KEEPALIVE_ENABLED is set to "true". To turn it on (see docs/DEPLOY.md):
+#   1. Settings -> Secrets and variables -> Actions -> Secrets:
+#        SUPABASE_URL       https://<ref>.supabase.co
+#        SUPABASE_ANON_KEY  the anon/publishable key (never the service role key)
+#   2. Same page -> Variables: KEEPALIVE_ENABLED = true
+# Note: GitHub also suspends scheduled workflows in repos with no commits for 60 days.
+
+name: keepalive
+
+on:
+  schedule:
+    - cron: "17 9 */3 * *"   # 09:17 UTC on every 3rd day of the month
+  workflow_dispatch:         # "Run workflow" button, for testing
+
+permissions: {}
+
+jobs:
+  ping:
+    if: vars.KEEPALIVE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: One small read through the REST API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          curl --fail --silent --show-error --max-time 30 \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            "$SUPABASE_URL/rest/v1/hymns?select=id&limit=1" > /dev/null
+          echo "Supabase answered."
