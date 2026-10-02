@@ -162,12 +162,23 @@ GET https://<ref>.supabase.co/functions/v1/youversion?book=PSA&chapter=23&start=
 - **Settings** (optional secrets): `YOUVERSION_BIBLE_ID` (default 12, ASV),
   `ALLOWED_PAGES_HOSTS`, `RATE_LIMIT_PER_IP`, `RATE_LIMIT_TOTAL`.
 
-## 7. Public app config
+## 7. Public app core (Phase 6)
+
+- Modules: `web/js/{api,audio,speech,lyrics,sheet}.js`, styles `web/css/core.css`.
+- CDN libraries are pinned with SRI: supabase-js 2.117.2 and abcjs 6.7.1. abcjs must stay at the
+  pipeline's version.
+- Test page: `https://dev.hymnal-reader-v2.pages.dev/dev/core-test`.
+  1. Tap **Tap to start**.
+  2. Press **Run the Phase 6 check**: the hymn plays with highlighted words, and after 15 s Psalm
+     23:1-3 is read aloud while the music ducks to 25%.
+  3. It needs a published hymn that has audio.
+
+## 8. Public app config
 
 `web/config.js` holds only the Supabase URL and the anon key (both safe to publish).
 Copy `web/config.example.js` and fill them in. The service role key never goes here.
 
-## 8. Restoring a paused Free project
+## 9. Restoring a paused Free project
 
 Free projects pause after **7 days without activity**. Data is kept.
 

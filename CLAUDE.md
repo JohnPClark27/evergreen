@@ -5,8 +5,8 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
 `docs/PLAN_PROMPT.md` (phases 0–9). The approved design is `docs/PLAN.md`, and the runbook is
 `docs/DEPLOY.md`.
 
-**Status (2026-10-01): Phases 0–5 are done and pushed to `dev`. Next is Phase 6** (public app:
-data, audio and speech core).
+**Status (2026-10-02): Phases 0–6 are done and pushed to `dev`. Next is Phase 7** (public app
+screens). Phase 6's real-device speech check is still pending (see §9).
 
 ---
 
@@ -60,14 +60,14 @@ data, audio and speech core).
 | Supabase project | ref `trdmlfbbmxogrxihcklw`, URL `https://trdmlfbbmxogrxihcklw.supabase.co` (Free tier) |
 | Publishable key | in `web/config.js` (`window.HYMNAL_CONFIG.supabaseUrl / supabaseAnonKey`) |
 | GitHub | `JohnPClark27/hymnal-reader-v2`, branch `dev` |
-| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.hymnal-reader-v2.pages.dev/` (production `hymnal-reader-v2.pages.dev`). Currently a placeholder page. |
-| DB content | 301 hymns (all `approved`, **0 published**; 46 `is_familiar`), 1313 scripture refs, 158 topics, 15 prayers (`published`), 30 studies (`draft`), 1 plan "Memory Care — 30 Days" (`draft`, 30 days) |
+| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.hymnal-reader-v2.pages.dev/` (production `hymnal-reader-v2.pages.dev`). `/` is still a placeholder. Phase 6 test page: `/dev/core-test`. Pages serves clean URLs: `x.html` 308-redirects to `x`. |
+| DB content | 301 hymns (`approved`, except **#19 Amazing Grace and #256 The Lord's My Shepherd, which are `published`** for the Phase 6 test, with the user's OK; 46 `is_familiar`), 1313 scripture refs, 158 topics, 15 prayers (`published`), 30 studies (`draft`), 1 plan "Memory Care — 30 Days" (`draft`, 30 days) |
 | Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 101 MB total. Audio only for the 46 familiar hymns. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
 | Migrations applied | `…0001_schema`, `…0002_rls`, `…0003_storage_buckets`, `…0004_rate_limits` |
 
-**The public app sees nothing but prayers until the user publishes hymns, studies and the plan in
-the admin app.** For testing Phase 6/7 you'll need published content. Ask the user to publish
+**The public app sees only prayers plus hymns #19 and #256 until the user publishes more hymns,
+studies and the plan in the admin app.** For testing Phase 6/7 you'll need published content. Ask the user to publish
 (or, if they agree, publish via `admin/data.py` and record what you changed so it can be reverted).
 
 ## 4. Don't re-run / don't change
@@ -142,12 +142,12 @@ client, 600/min total (Postgres-backed). Attribution text for ASV: "American Sta
 | Admin app | `admin/app.py` (entry), `data.py` (**the only module that talks to Supabase; every write is audited**), `worker.py` (QThread + global `NETWORK_LOCK`), `theme.py` + `style.qss`, `books.py`, `pages/*.py` | Run: `source .venv/bin/activate && python admin/app.py` |
 | Pipeline | `pipeline/abc_meta.py`, `render_mp3.sh`, `timings/build_timings.mjs`, `import_hymns.py`, `import_prayers.py`, `supa.py`, `familiar.txt` | Output cache: `pipeline/out/` (gitignored) |
 | Supabase | `supabase/migrations/`, `functions/youversion/{index,lib,test}.ts`, `seed/`, `tests/rls_anon_test.sh`, `config.toml` | `node supabase/functions/youversion/test.ts` |
-| Public app | `web/index.html` (placeholder), `web/config.js` | **Phases 6–8 build here:** `web/js/api.js`, `audio.js`, `speech.js`, `lyrics.js`, `sheet.js`, then the screens |
+| Public app | `web/index.html` (placeholder), `web/config.js`, `web/css/core.css` (design tokens + component styles), `web/js/{api,audio,speech,lyrics,sheet}.js` (Phase 6 core; see §9a), `web/dev/core-test.html` | Phase 7 builds the screens on these modules |
 | Docs | `docs/PLAN_PROMPT.md` (spec), `PLAN.md`, `DEPLOY.md`, `licenses/` | |
 
-Parallel-work guidance: Phase 6 modules are separable by file (`audio.js` / `speech.js` /
-`lyrics.js` + `sheet.js` / `api.js`). If you split them, agree on the interfaces first. `speech.js`
-ducks music through `audio.js`'s master gain, so `audio.js` must expose `duck(level)` / `unduck()`.
+Parallel-work guidance (Phase 7): screens are separable by file (Home, Session, Finished, Sing a
+Hymn, Aide tools, Read the Bible). Share `web/css/core.css` tokens and the Phase 6 modules. Don't
+change module interfaces (§9a) without updating every caller.
 
 ## 7. Testing conventions
 
@@ -160,6 +160,13 @@ ducks music through `audio.js`'s master gain, so `audio.js` must expose `duck(le
   dies mid-way, use the audit_log rows to see exactly what to revert.
 - Ad-hoc SQL: `npx supabase db query --linked "…"` (Management API; bypasses RLS).
 - Every public-app phase is checked on the **Pages preview URL**, not just locally.
+- **Browser tests without sudo:** Playwright's cached `chrome-headless-shell` (`~/.cache/ms-playwright/chromium_headless_shell-1243`)
+  needs `libnss3`/`libnspr4`. Get them with `apt-get download libnspr4 libnss3`, then `dpkg -x` into the
+  scratchpad, then launch with `env.LD_LIBRARY_PATH` pointing there. Install `playwright-core` in the
+  scratchpad, not in the repo. Headless has **0 speech voices**: speech "runs" silently, so real
+  speech needs a real device. Local serving: `python3 -m http.server 8080 --bind 127.0.0.1` in `web/`
+  (localhost is CORS-allowed). Stop it with `pkill -f '[h]ttp.server 8080'`; the bracket stops the
+  pattern from matching, and killing, your own shell.
 
 ## 8. Lessons learned (gotchas)
 
@@ -183,7 +190,30 @@ ducks music through `audio.js`'s master gain, so `audio.js` must expose `duck(le
 - **Mono 96 kbps** saves only about 30% against v1. All 301 MP3s would be about 640 MB, over the
   600 MB target, so keep audio to familiar hymns.
 
-## 9. Next: Phase 6 checklist (from the spec)
+## 9a. Phase 6 module interfaces (use these in Phase 7)
+
+All ES modules. Load `config.js`, then supabase-js UMD (pinned + SRI, see `api.SUPABASE_JS`),
+then the modules.
+- `api.js`: `getHymns()`, `getFamiliarHymns()`, `getHymn(number)`, `hymnsForChapter(book, ch, verse)`,
+  `getPlans()` (published plans, each with `days[{day_number, study{…, hymn, prayer}}]`),
+  `getPrayers()`, `getTiming(hymn)`, `audioUrl(hymn)`, `storageUrl(bucket, key)`,
+  `getPassage(book, ch, start, end)` → `{reference, verses[{num,text}], attribution}`. Everything
+  is memoized for the session.
+- `audio.js`: `new AudioPlayer({volume})`; **`await unlock()` in a tap first**; then
+  `play(url, {loop, fade, from})`, `pause()`, `resume()`, `stop(fade)`, `seek(s)`, `setVolume(v)`,
+  `duck(level)`, `unduck()`, getters `position`, `duration`, `paused`, `duckLevel`; events `play`,
+  `pause`, `stop`, `ended`. MP3s are fetched once per session (blob URLs).
+- `speech.js`: `RATES`, `localVoices()`, `splitLines(text)`,
+  `new Speaker({ducker: audioPlayer, rate:'slow'})`; `unlock()` in the same tap;
+  `speakVerses(verses)`, `speakText(text)` (each resolves when finished); `pause()`, `resume()`,
+  `repeat()`, `stop()`, `setRate(name)`, `setVoice(v)`; events `segment {index,text}`,
+  `state`, `end`.
+- `lyrics.js`: `new LyricsView(el, {getTime: () => audio.position, onVerse({n,total,intro})})`,
+  `setData(timing)`, `start()`, `stop()`. CSS: `.lyric-word.now/.sung`.
+- `sheet.js`: `createSheet(el, {getTime, onStatus})` → `{show(timing), start(), stop()}`. abcjs 6.7.1
+  is lazy-loaded (it must match the pipeline's version).
+
+## 9. Phase 6 checklist (done; kept for reference)
 
 - `web/js/api.js`: supabase-js UMD from a CDN at a **pinned version**, publishable key, reading
   published content. Scripture comes from the Edge Function.
@@ -199,4 +229,23 @@ ducks music through `audio.js`'s master gain, so `audio.js` must expose `duck(le
     and speak one verse or line per utterance.
 - `web/js/lyrics.js`, `web/js/sheet.js`: port v1's karaoke and abcjs cursor (pinned abcjs from a CDN).
 - **Done when:** a test page **on the Pages preview URL** plays a hymn with highlighted words,
-  then speaks Psalm 23:1-3 with ducking. This needs a published hymn with audio (see §3).
+  then speaks Psalm 23:1-3 with ducking.
+  - **Verified headless on `https://dev.hymnal-reader-v2.pages.dev/dev/core-test`:** words
+    highlight in time, the sheet cursor follows, and the music ducks 100% → 25% → 100% while the
+    Psalm is "read". Each MP3 downloads once per session. No errors.
+  - **Still pending:** hearing the voice on a real device (iPad Safari or desktop Chrome). Headless
+    has no voices.
+
+## 10. Next: Phase 7 (screens)
+
+See `docs/PLAN_PROMPT.md` Phase 7 and §4 (design tokens and session layout):
+- Home (simple mode)
+- Session (Hymn → Scripture → Prayer)
+- Session finished
+- Sing a Hymn (3×3 grid)
+- Aide tools
+- Read the Bible
+- `localStorage` progress `{ planId, currentDay, lastCompletedDate }`
+
+The session needs a **published plan**: ask the user to publish the Memory Care plan (and its
+studies and hymns), or a small test plan.
