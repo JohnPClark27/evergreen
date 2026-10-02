@@ -59,7 +59,8 @@ export function parseRef(params: URLSearchParams): Ref | string {
 }
 
 export function label(ref: Ref): string {
-  const name = BOOKS[ref.book][0];
+  // A single psalm is "Psalm 23", not "Psalms 23" (the book itself is still "Psalms").
+  const name = ref.book === "PSA" ? "Psalm" : BOOKS[ref.book][0];
   if (ref.start === null) return `${name} ${ref.chapter}`;
   return `${name} ${ref.chapter}:${ref.start}${ref.end !== ref.start ? `-${ref.end}` : ""}`;
 }

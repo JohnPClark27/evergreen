@@ -171,7 +171,13 @@ export class AudioPlayer extends EventTarget {
     this.dispatchEvent(new Event('play'));
   }
 
-  /** Jump the audible track (e.g. "Sing again" = restart(0)). */
+  /** Keep the audible track repeating (e.g. soft music under the reading) or not. */
+  setLoop(loop) {
+    const el = this.decks[this.active]?.el;
+    if (el) el.loop = loop;
+  }
+
+  /** Jump the audible track (e.g. "Sing again" = seek(0)). */
   seek(seconds) {
     const el = this.decks[this.active]?.el;
     if (el && this.currentUrl !== null) el.currentTime = Math.max(0, seconds);

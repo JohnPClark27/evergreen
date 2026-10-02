@@ -31,8 +31,9 @@ CHAPTERS = {code: n for code, _, n in BOOKS}
 
 
 def ref_label(book, chapter, verse_start=None, verse_end=None):
-    """('PSA', 23, 1, 3) -> 'Psalms 23:1-3'; whole chapter -> 'Psalms 23'."""
-    s = f"{NAME.get(book, book)} {chapter}"
+    """('PSA', 23, 1, 3) -> 'Psalm 23:1-3'; whole chapter -> 'Psalm 23'."""
+    # A single psalm is "Psalm 23", not "Psalms 23" (the book itself is still "Psalms").
+    s = f"{'Psalm' if book == 'PSA' else NAME.get(book, book)} {chapter}"
     if verse_start:
         s += f":{verse_start}"
         if verse_end and verse_end != verse_start:

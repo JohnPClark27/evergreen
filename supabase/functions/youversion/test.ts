@@ -17,7 +17,7 @@ check("chapter not a number", () => assert.match(q("book=PSA&chapter=abc") as st
 check("end before start", () => assert.match(q("book=PSA&chapter=23&start=4&end=2") as string, /before/));
 check("end without start", () => assert.match(q("book=PSA&chapter=23&end=2") as string, /needs a 'start'/));
 check("too many verses", () => assert.match(q("book=PSA&chapter=119&start=1&end=176") as string, /at most/));
-check("label", () => assert.equal(label({ book: "PSA", chapter: 23, start: 1, end: 3 }), "Psalms 23:1-3"));
+check("label", () => assert.equal(label({ book: "PSA", chapter: 23, start: 1, end: 3 }), "Psalm 23:1-3"));
 
 check("parseVerses", () => {
   const html = '<div class="p"><span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>Jehovah is my shepherd; I shall not want.</div>'

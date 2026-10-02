@@ -71,6 +71,20 @@ export async function hymnsForChapter(book, chapter, verse = null) {
     .sort((a, b) => (a.matchLevel === b.matchLevel ? a.title.localeCompare(b.title) : a.matchLevel === 'verse' ? -1 : 1));
 }
 
+/** A published hymn's scripture refs: [{book, chapter, verse_start, verse_end}]. */
+export const getHymnRefs = (hymnId) => memo(cache.queries, `refs:${hymnId}`, () =>
+  rows(db.from('hymn_scripture_refs').select('book,chapter,verse_start,verse_end').eq('hymn_id', hymnId).order('id')));
+
+/** Published hymns WITH AUDIO that cite a chapter, as [{hymn, verse_start, verse_end}]
+ * (verse_start null = the whole chapter). For Read the Bible's background music. */
+export const getChapterHymns = (book, chapter) => memo(cache.queries, `ch:${book}.${chapter}`, async () => {
+  const refs = await rows(db.from('hymn_scripture_refs')
+    .select('hymn_id,verse_start,verse_end').eq('book', book).eq('chapter', chapter));
+  const hymns = new Map((await getHymns()).filter((h) => h.audio_path).map((h) => [h.id, h]));
+  return refs.filter((r) => hymns.has(r.hymn_id))
+    .map((r) => ({ hymn: hymns.get(r.hymn_id), verse_start: r.verse_start, verse_end: r.verse_end }));
+});
+
 // ---------- Plans, studies, prayers ----------
 
 /** Published plans with their days in order (each day = a published study with hymn + prayer). */
