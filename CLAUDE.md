@@ -42,7 +42,11 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   - Pages: plans, editor, review, hymns (publishing re-runs the PD rule from the ABC file:
     `js/pd.js`, which agrees with the Python rule on all 301 files), prayers, people, audit,
     account.
-  - Auth uses **PKCE** (the link returns `?code=`, which doesn't clash with `#/` routes).
+  - Auth uses the **implicit** flow: the link returns `#access_token=…`, and `app.js` lets supabase-js
+    read it, then rewrites the address to `#/plans` before routing.
+  - **PKCE was tried first and broke real sign-ins:** its links only work in the browser that
+    requested them (the user's account was confirmed but never signed in).
+  - `#error=…otp_expired` shows a friendly message.
 - **Removed:** `admin/` (PySide6), `supabase/seed/seed_plan.py` and `memory_care_30.json`.
   - Pipeline scripts read `.env` in the repo root, falling back to `admin/.env`.
   - `publish_pd_hymns.py` uses `pipeline/supa.py`.
@@ -51,12 +55,17 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   - redirect allow-list: Pages production, `*.hymnal-reader-v2.pages.dev`, localhost:8080
   - The built-in email sender is limited to **2/hour**; custom SMTP is recommended
     (`docs/DEPLOY.md` A6b).
-  - **No users yet.** The first admin is made with one SQL line after they sign in (DEPLOY A6b).
+  - Email templates are **locked on the Free tier** without custom SMTP, so emails contain a
+    link only.
+  - `python pipeline/studio_signin.py <email> [--admin] [--url …]` makes a one-time link + code
+    with no email sent (never rate-limited). Use it for the first admin and for anyone locked out.
+  - Supabase keeps **one** pending sign-in token per user: generating a new one cancels the old.
 - **Tests:**
   - `python supabase/tests/studio_rls_test.py` (32)
   - `tests/browser/studio.mjs` + `studio_users.py` (27, including axe on Studio pages)
   - `studies.mjs` + `fixture_all_modules.py` (17)
   - `e2e.mjs` (14) and `a11y.mjs` (13 tablet states), updated for studies
+  - `signin.mjs` + `studio_users.py link` (6: link in a fresh browser, code, expired link)
 - **Another session** works on branch `mobile-layout` (worktree `.claude/worktrees/`, now
   gitignored; never commit it). It was told which files `studio` changed. Expect merge overlap in
   `web/css/app.css` and `web/js/screens/*`.

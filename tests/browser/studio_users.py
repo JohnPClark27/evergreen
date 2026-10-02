@@ -42,8 +42,7 @@ def make():
 
 def clean(path):
     data = json.loads(Path(path).read_text())
-    for role in ("author", "admin"):
-        uid = data[role]["id"]
+    for uid in {data["author"]["id"], data["admin"]["id"]}:
         service.table("study_plans").delete().eq("owner_id", uid).execute()
         service.auth.admin.delete_user(uid)
     service.table("study_plans").delete().like("title", "ZZ %").execute()
@@ -52,5 +51,22 @@ def clean(path):
     print("cleaned up test users, plans and audit rows")
 
 
+def link(base):
+    """Two throwaway users: one gets a one-time LINK (landing on base/studio/), the other a one-time
+    CODE, for signin.mjs. Generated server-side (no email is sent). Separate users because each new
+    sign-in token replaces the user's previous one."""
+    start = service.table("audit_log").select("id").order("id", desc=True).limit(1).execute().data[0]["id"]
+    made = []
+    for tag in ("link", "code"):
+        email = f"zz-studio-signin-{tag}-{secrets.token_hex(3)}@example.com"
+        user = service.auth.admin.create_user({"email": email, "email_confirm": True}).user
+        props = service.auth.admin.generate_link({"type": "magiclink", "email": email,
+                                                  "options": {"redirect_to": base + "studio/"}}).properties
+        made.append((user, email, props))
+    (lu, _, lp), (cu, cemail, cp) = made
+    print(json.dumps({"link": lp.action_link, "email": cemail, "code": cp.email_otp,
+                      "author": {"id": lu.id}, "admin": {"id": cu.id}, "audit_start": start}))
+
+
 if __name__ == "__main__":
-    make() if sys.argv[1] == "make" else clean(sys.argv[2])
+    {"make": lambda: make(), "link": lambda: link(sys.argv[2]), "clean": lambda: clean(sys.argv[2])}[sys.argv[1]]()

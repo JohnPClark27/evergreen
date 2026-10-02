@@ -40,24 +40,47 @@ window.addEventListener('beforeunload', (e) => { if (app.dirty?.()) { e.preventD
 // Sign in (magic link): no passwords to remember or store.
 // ---------------------------------------------------------------------------
 
-function signInScreen() {
+function signInScreen(message = null) {
   const email = h('input', { class: 'input', type: 'email', id: 'email', autocomplete: 'email', required: true });
-  const status = h('p', { role: 'status', class: 'muted' });
-  const button = h('button', { class: 'btn primary', type: 'submit' }, 'Email me a sign-in link');
+  const code = h('input', { class: 'input narrow', id: 'code', inputmode: 'numeric', autocomplete: 'one-time-code',
+    maxlength: '10', placeholder: '12345678' });
+  const status = h('p', { role: 'status', class: message ? 'banner warn' : 'muted' }, message ?? '');
+  const sendBtn = h('button', { class: 'btn primary', type: 'submit' }, 'Email me a sign-in link');
+  const codeBox = h('div', { class: 'field', hidden: true },
+    h('label', { class: 'field-label', for: 'code' }, 'Sign-in code'),
+    h('div', { class: 'btn-row' }, code, h('button', { class: 'btn primary', type: 'button', onclick: useCode }, 'Sign in')),
+    h('p', { class: 'field-hint' }, 'Only if you were given a code. Otherwise just click the link in the email: it works in any browser.'));
+  const haveCode = h('button', { class: 'btn small', type: 'button', onclick: () => { codeBox.hidden = false; code.focus(); } }, 'I have a sign-in code');
+
+  async function useCode() {
+    if (!email.value.trim() || !code.value.trim()) { status.textContent = 'Enter your email and the code.'; return; }
+    status.className = 'muted';
+    status.textContent = 'Signing in…';
+    try {
+      await db.verifyCode(email.value.trim(), code.value);
+      // onAuthChange (below) routes into the Studio.
+    } catch (err) { status.className = 'banner error'; status.textContent = err.message; }
+  }
+  code.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); useCode(); } });
+
   const form = h('form', { class: 'panel' },
     h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'email' }, 'Your email'), email),
-    button, status);
+    h('div', { class: 'btn-row' }, sendBtn, haveCode),
+    codeBox, status);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    button.disabled = true;
+    sendBtn.disabled = true;
+    status.className = 'muted';
     status.textContent = 'Sending…';
     try {
       await db.sendSignInLink(email.value.trim());
-      status.textContent = `Check ${email.value.trim()} for a sign-in link. It works once, for one hour.`;
+      status.className = 'banner ok';
+      status.textContent = `Check ${email.value.trim()} for a sign-in link and click it (on this or any device). It works once, for one hour.`;
     } catch (err) {
+      status.className = 'banner error';
       status.textContent = err.message;
-      button.disabled = false;
     }
+    sendBtn.disabled = false;
   });
   root.replaceChildren(h('main', { class: 'signin' },
     h('h1', {}, 'Hymnal Reader Studio'),
@@ -106,7 +129,16 @@ async function route() {
   try { cleanup?.(); } catch (err) { console.error(err); }
   cleanup = null;
 
-  if (!(await db.session())) { signInScreen(); return; }
+  // Back from an email link: supabase-js reads #access_token=… itself; we just tidy the address.
+  // An error (#error=…) is shown on the sign-in screen instead of being treated as a page.
+  const linkErr = db.linkError();
+  const fromLink = /access_token=|error=/.test(location.hash);
+  const signedIn = await db.session();
+  if (fromLink) {
+    history.replaceState(null, '', `${location.pathname}#/plans`);
+    lastHash = location.hash;
+  }
+  if (!signedIn) { signInScreen(linkErr); return; }
   app.profile = await db.myProfile().catch(() => null);
 
   const [path, query = ''] = location.hash.replace(/^#/, '').split('?');
@@ -134,12 +166,9 @@ async function route() {
 }
 
 window.addEventListener('hashchange', route);
-// Coming back from the magic link: supabase-js swaps the ?code= for a session, then we route.
+// Signed in (code or link) or out: re-route.
 db.onAuthChange((event) => {
-  if (event === 'SIGNED_IN' && !app.profile) {
-    if (location.search.includes('code=')) history.replaceState(null, '', location.pathname + (location.hash || '#/plans'));
-    setTimeout(route, 0); // let supabase-js finish its own work first
-  }
+  if (event === 'SIGNED_IN' && !app.profile) setTimeout(route, 0); // let supabase-js finish first
   if (event === 'SIGNED_OUT') { app.profile = null; route(); }
 });
 route();

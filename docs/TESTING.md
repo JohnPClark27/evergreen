@@ -19,8 +19,9 @@ Test on the **Pages preview** (`https://dev.hymnal-reader-v2.pages.dev/`) before
 | Edge Function live | `curl "…/functions/v1/youversion?book=PSA&chapter=23&start=1&end=3"` | 200, Psalm 23:1-3 + attribution. Bad refs give 400. 61st request in a minute gives 429 |
 | End-to-end walk at iPad size (1180×820), first-time user, big buttons only | `tests/browser/e2e.mjs` | see the `studio` branch results below |
 | Studio security as real users (author A, author B, admin) | `python supabase/tests/studio_rls_test.py` | 32/32 pass |
-| Tablet: study list + a plan using **every module type** | `tests/browser/studies.mjs` (+ `fixture_all_modules.py`) | 15/15 pass |
-| Studio end to end: author builds, reorders, previews, submits; admin approves; tablet lists it; PD rule refuses #8 | `tests/browser/studio.mjs` (+ `studio_users.py`) | 21/21 pass |
+| Tablet: study list + a plan using **every module type** (+ axe on quiz and game) | `tests/browser/studies.mjs` (+ `fixture_all_modules.py`) | 17/17 pass |
+| Studio end to end: author builds, reorders, previews, submits; admin approves; tablet lists it; PD rule refuses #8; axe on every Studio page | `tests/browser/studio.mjs` (+ `studio_users.py make`) | 27/27 pass |
+| Studio sign-in: link opened in a *different* browser, one-time code, expired link | `tests/browser/signin.mjs` (+ `studio_users.py link`, no email sent) | 6/6 pass |
 | Accessibility (axe-core 4.13: WCAG 2.0/2.1/2.2 A+AA and best practice) | axe on 12 screen states: Home, Session (hymn with word lit, sheet music, scripture with verse lit, prayer), Finished, Sing grid, Sing player, Aide tools, confirm dialog, Read the Bible, Tap to continue | 0 issues |
 | Keyboard | Tab through Home; Enter on a tile starts the session | Tab order: 3 tiles, then Aide tools. Every stop shows a 4 px outline |
 | Portrait (820×1180) | e2e | no sideways scrolling |
@@ -124,7 +125,7 @@ the device, iOS version, and what happened.
 - [ ] Publish it again and refresh. It's back. Both changes show in the Audit Log.
 
 ### K. Studio (any laptop or iPad browser)
-- [ ] `/studio/` → enter your email → the magic-link email arrives (built-in sender: about 2 per hour) → the link signs you in.
+- [ ] `/studio/` → enter your email → the sign-in email arrives (built-in sender: about 2 per hour) → open its link **on a different device or browser** → you're signed in.
 - [ ] New study plan with: hymn, hymn, Scripture, your own note, a quiz, a hymn. Reorder by dragging and with ▲ ▼. Save.
 - [ ] **Preview** plays it exactly like a tablet. Close returns to the editor.
 - [ ] Submit for review. As an admin: Review → open it → Approve. It appears on the tablet's **Choose a Study**.

@@ -7,8 +7,10 @@
 const { supabaseUrl, supabaseAnonKey } = window.HYMNAL_CONFIG ?? {};
 export const sb = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
   // Authors stay signed in on this computer (separate storage key from anything else).
-  // PKCE: the email link comes back as ?code=… (not #…), so it can't clash with our #/ routes.
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce', storageKey: 'hr-studio-auth' },
+  // Implicit flow: the email link carries the session itself (#access_token=…), so it works in
+  // ANY browser that opens it (phone mail app, another browser). app.js handles that #… before
+  // routing. (PKCE links only work in the browser that asked for them, which broke sign-in.)
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit', storageKey: 'hr-studio-auth' },
 });
 
 async function q(promise) {
@@ -37,10 +39,33 @@ export async function sendSignInLink(email) {
   const back = `${location.origin}${location.pathname}`;
   const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: back } });
   if (error) {
-    if (/rate limit/i.test(error.message)) throw new Error('Too many sign-in emails were sent recently. Please wait a while and try again.');
+    if (/rate limit/i.test(error.message)) {
+      throw new Error('Too many sign-in emails were sent recently (the free email sender allows about 2 an hour). '
+        + 'Please try again in about an hour, or use a link you already received.');
+    }
     throw new Error(error.message);
   }
 }
+/** Sign in with a one-time code (e.g. from pipeline/studio_signin.py, or emailed once custom SMTP
+ * templates include {{ .Token }}). Works on any device and isn't affected by link scanners. */
+export async function verifyCode(email, code) {
+  const { error } = await sb.auth.verifyOtp({ email, token: code.replace(/\s+/g, ''), type: 'email' });
+  if (error) {
+    if (/expired|invalid/i.test(error.message)) throw new Error('That code didn’t work: it may have expired (1 hour) or already been used. Send a new one.');
+    throw new Error(error.message);
+  }
+}
+
+/** An error the email link came back with (#error=…), as a friendly sentence, or null. */
+export function linkError() {
+  const p = new URLSearchParams(location.hash.replace(/^#/, ''));
+  if (!p.get('error') && !p.get('error_code')) return null;
+  if (/otp_expired|expired|invalid/i.test(`${p.get('error_code')} ${p.get('error_description')}`)) {
+    return 'That sign-in link has expired or was already used (some email apps open links by themselves). Send a new one below.';
+  }
+  return p.get('error_description') || 'That sign-in link didn’t work. Send a new one below.';
+}
+
 export const signOut = () => sb.auth.signOut();
 
 export async function myProfile() {

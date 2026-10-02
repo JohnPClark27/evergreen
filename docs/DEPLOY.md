@@ -71,6 +71,9 @@ Commit it: both values are safe to publish. **Never** put the service role key t
 
 ### A6b. Studio sign-in (Supabase Auth)
 Authors sign in to `/studio/` with an emailed **magic link**. There are no passwords.
+The link uses Supabase's *implicit* flow: the session travels in the link itself, so it works in
+**any** browser that opens it (a phone's mail app, another browser). The earlier PKCE links only
+worked in the browser that asked for them, which broke sign-in.
 1. Supabase dashboard → Authentication → URL Configuration:
    - **Site URL** `https://hymnal-reader-v2.pages.dev/studio/`
    - **Redirect URLs** `https://hymnal-reader-v2.pages.dev/**`, `https://*.hymnal-reader-v2.pages.dev/**`,
@@ -81,12 +84,17 @@ Authors sign in to `/studio/` with an emailed **magic link**. There are no passw
    That's fine for trying it out, but too few for real use.
    - Set up a free custom SMTP (e.g. Resend, Brevo) under Authentication → Emails → SMTP Settings.
    - Then raise the email rate limit under Authentication → Rate Limits.
-3. **First admin:** sign in once at `/studio/`, then promote yourself:
+   - Email **templates** can't be changed on the Free tier with the built-in sender, so emails
+     contain a link only. With custom SMTP you can add `{{ .Token }}` to show a code as well.
+3. **First admin, or a locked-out person:** create a one-time sign-in **without sending email**
+   (never rate-limited):
    ```sh
-   npx supabase db query --linked "update public.profiles set role = 'admin'
-     where id = (select id from auth.users where email = 'you@example.com')"
+   python pipeline/studio_signin.py you@example.com --admin            # Studio on production
+   python pipeline/studio_signin.py you@example.com --admin --url https://studio.hymnal-reader-v2.pages.dev/studio/
    ```
-   After that, admins promote others in Studio → **People**.
+   - It prints a link (open it in any browser) and a code (Studio → "I have a sign-in code").
+     Both work once, for an hour. Treat them like a password.
+   - After that, admins promote others in Studio → **People**.
 
 ### A7. Cloudflare Pages
 1. Workers & Pages → Create → Pages → Connect to Git → `hymnal-reader-v2`.
