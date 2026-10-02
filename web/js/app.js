@@ -11,6 +11,7 @@ import { h } from './ui.js';
 import * as home from './screens/home.js';
 import * as studies from './screens/studies.js';
 import * as study from './screens/study.js';
+import * as preview from './screens/preview.js';
 import * as done from './screens/done.js';
 import * as sing from './screens/sing.js';
 import * as aide from './screens/aide.js';
@@ -50,6 +51,7 @@ const ROUTES = [
   [/^\/?$/, home, false],
   [/^\/studies$/, studies, false],
   [/^\/study\/(\d+)$/, study, true],
+  [/^\/preview$/, preview, true],   // the Studio's preview frame
   [/^\/session$/, { render: (_r, _p, c) => c.go('#/studies') }, false], // old links: the day-based session is now the study list
   [/^\/done$/, done, false],
   [/^\/sing$/, sing, false],
