@@ -3,9 +3,19 @@
    Touch targets ≥ 64px; session text ≥ 28px. */
 
 html, body { height: 100%; }
-body { font-size: 22px; line-height: 1.4; -webkit-tap-highlight-color: transparent; }
+body { font-size: 22px; line-height: 1.4; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 #app { height: 100dvh; }
 .screen { height: 100%; display: flex; flex-direction: column; padding: 16px 24px; gap: 14px; }
+/* Keep content clear of a phone's notch and home bar (index.html sets viewport-fit=cover). */
+.screen {
+  padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right));
+}
+/* Centred screens: if the content is taller than the screen, scroll instead of cutting off
+   the top ("safe" centring with auto margins). */
+.home, .done, .message, .tap-to-start { justify-content: flex-start; overflow-y: auto; }
+.home > :first-child, .done > :first-child, .message > :first-child, .tap-to-start > :first-child { margin-top: auto; }
+.home > :last-child, .done > :last-child, .message > :last-child, .tap-to-start > :last-child { margin-bottom: auto; }
 .muted { color: var(--muted); }
 .small { font-size: 17px; }
 .big-text { font-size: var(--text-session); font-family: var(--font-read); }
@@ -49,7 +59,7 @@ button { cursor: pointer; }
 }
 
 /* ---------- Home ---------- */
-.home { justify-content: center; align-items: center; gap: 36px; }
+.home { align-items: center; gap: 36px; }
 .welcome { font-size: 64px; }
 .tiles { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 24px; width: 100%; max-width: 1100px; }
 .tiles.three { grid-template-columns: repeat(3, 1fr); }
@@ -62,7 +72,7 @@ button { cursor: pointer; }
 .tile-title { font-family: var(--font-read); font-size: 38px; font-weight: 600; line-height: 1.15; }
 .tile-sub { font-size: 21px; opacity: 0.85; }
 .aide-link { color: var(--muted); font-size: 19px; padding: 14px 20px; min-height: 48px; }
-.tap-to-start { justify-content: center; align-items: center; }
+.tap-to-start { align-items: center; }
 .tap-to-start .tile { min-width: 420px; align-items: center; justify-content: center; text-align: center; }
 
 /* ---------- Top bar / card / bottom bar (session layout) ---------- */
@@ -103,7 +113,6 @@ button { cursor: pointer; }
 .attribution { margin-top: 20px; }
 
 /* ---------- Finished ---------- */
-.done { justify-content: center; }
 .done-card { flex: none; text-align: center; padding: 36px; }
 .done-card h1 { font-size: 46px; margin-bottom: 12px; }
 .aide-notes { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
@@ -140,7 +149,7 @@ button { cursor: pointer; }
 .read-bar .round { margin: 0 0 0 auto; width: 88px; height: 88px; }
 
 /* ---------- Messages & dialogs ---------- */
-.message { justify-content: center; align-items: center; text-align: center; }
+.message { align-items: center; text-align: center; }
 .dialog { border: none; border-radius: 24px; padding: 32px; max-width: 560px; background: var(--surface); color: var(--ink); }
 .dialog::backdrop { background: rgb(34 30 25 / 0.45); }
 .dialog p { font-size: 24px; margin: 0 0 24px; }
@@ -157,6 +166,93 @@ button { cursor: pointer; }
   .bottombar { flex-wrap: wrap; gap: 12px; }
   .bottombar .round { width: 92px; height: 92px; }
 }
+/* ---------- Phones (portrait ≤ 600px wide, or landscape ≤ 500px tall) ----------
+   Goal: give the reading card most of the screen. Bars shrink to one row; secondary
+   buttons (Home, Back, Sing again…) show only their icon. Their label stays in the
+   page for screen readers (same trick as .sr-only). Primary buttons keep their text. */
+@media (max-width: 600px), (max-height: 500px) {
+  body { font-size: 20px; }
+  .screen {
+    gap: 10px;
+    padding-top: max(10px, env(safe-area-inset-top)); padding-bottom: max(10px, env(safe-area-inset-bottom));
+    padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right));
+  }
+
+  /* icon-only secondary buttons */
+  .topbar > .pill:not(.primary), .bottombar > .pill:not(.primary) { width: var(--touch); padding: 0; flex: none; }
+  .topbar > .pill:not(.primary) .label, .bottombar > .pill:not(.primary) .label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  .pill { padding: 0 20px; font-size: 20px; }
+  .pill.big { min-height: 68px; font-size: 22px; }
+  .round { width: 76px; height: 76px; }
+  .round .icon { width: 38px; height: 38px; }
+
+  /* top bar: one row; the step tracker gets its own compact row */
+  .topbar { min-height: var(--touch); gap: 10px; flex-wrap: wrap; }
+  .screen-title { font-size: 24px; text-align: left; }
+  .topbar .day { font-size: 18px; }
+  .steps { gap: 4px; flex-wrap: nowrap; }
+  .steps li { font-size: 17px; gap: 4px; }
+  .step-pill { padding: 4px 10px; gap: 4px; }
+  .steps li.done .icon { width: 20px; height: 20px; }
+
+  .card { padding: 16px 18px; border-radius: 18px; }
+  .hymn-panel .title, .reading-panel .title { font-size: 30px; }
+  .lyrics .lyric-line { font-size: var(--text-session); }
+  .verse-label { font-size: 19px; margin: 2px 0 8px; }
+  .read-line { padding: 4px 6px; }
+  .sheet-paper { padding: 6px; }
+
+  /* bottom bar: always one row */
+  .bottombar { min-height: 0; flex-wrap: nowrap; gap: 6px; }
+  .bottombar .round { width: 72px; height: 72px; }
+  /* a long primary label ("Another hymn") may wrap to two lines rather than overflow */
+  .bottombar > .pill.primary { padding: 0 14px; gap: 6px; font-size: 19px; line-height: 1.1; min-width: 0; }
+
+  /* Home and Finished */
+  .welcome { font-size: 48px; }
+  .home { gap: 20px; }
+  .tile { min-height: 110px; padding: 18px 22px; border-radius: 22px; gap: 6px; }
+  .tile-title { font-size: 28px; }
+  .tile-sub { font-size: 18px; }
+  .tap-to-start .tile { min-width: 0; width: 100%; }
+  .done-card { padding: 22px 18px; }
+  .done-card h1 { font-size: 32px; }
+  .note-buttons { flex-wrap: wrap; gap: 10px; }
+  .done .tile { min-height: 90px; }
+
+  /* Sing a Hymn: one scrolling column of shorter tiles */
+  .hymn-grid { grid-template-columns: minmax(0, 1fr); grid-auto-rows: max-content; gap: 10px; overflow: auto; }
+  .hymn-tile { min-height: 0; padding: 12px 16px; border-radius: 16px; gap: 2px; }
+  .hymn-tile-title { font-size: 23px; }
+  .hymn-tile-line { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tag { margin-top: 4px; font-size: 15px; }
+
+  /* Read the Bible: book + chapter share the row */
+  .picker { flex: 1; min-width: 0; gap: 8px; }
+  .picker .select { flex: 1; min-width: 0; padding: 0 10px; font-size: 19px; }
+  .topbar:has(.picker) .day { display: none; }
+  .music-options { font-size: 16px; flex: 1; min-width: 0; }
+  .read-bar .round { width: 72px; height: 72px; }
+
+  .aide-card h2 { font-size: 24px; }
+  .day-grid { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+
+  .dialog { padding: 22px; max-width: calc(100vw - 32px); }
+  .dialog p { font-size: 21px; }
+  .dialog-buttons { flex-wrap: wrap; }
+}
+
+/* Landscape phones are short: steps go back beside the title, Home tiles go side by side. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .steps { order: 0; width: auto; }
+  .tiles, .tiles.three { grid-template-columns: repeat(3, 1fr); }
+  .tile { min-height: 120px; }
+  .welcome { font-size: 36px; }
+  .hymn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
 }

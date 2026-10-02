@@ -12,6 +12,7 @@ npx playwright-core install chromium-headless-shell   # only if no headless shel
 # against the preview (or production)
 node e2e.mjs  https://dev.hymnal-reader-v2.pages.dev/          # add "reduce" for reduced motion
 node a11y.mjs https://dev.hymnal-reader-v2.pages.dev/
+node a11y.mjs https://dev.hymnal-reader-v2.pages.dev/ 390x844   # phone layout
 
 # against a local copy: (cd ../../web && python3 -m http.server 8080 --bind 127.0.0.1)
 node e2e.mjs

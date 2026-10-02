@@ -1,10 +1,12 @@
 // a11y.mjs - axe-core (WCAG 2.0/2.1/2.2 A+AA + best practice) on 12 screen states, plus a
-// keyboard tab-order check on Home. Usage: node a11y.mjs [baseUrl]
+// keyboard tab-order check on Home. Usage: node a11y.mjs [baseUrl] [WIDTHxHEIGHT]
+// (default 1180x820 = iPad; e.g. 390x844 checks the phone layout)
 import { BASE, launch } from './launch.mjs';
 import { readFileSync } from 'node:fs';
 const AXE = readFileSync(new URL('./node_modules/axe-core/axe.min.js', import.meta.url), 'utf8');
 const browser = await launch();
-const page = await (await browser.newContext({ viewport: { width: 1180, height: 820 } })).newPage();
+const [width, height] = (process.argv[3] ?? '1180x820').split('x').map(Number);
+const page = await (await browser.newContext({ viewport: { width, height } })).newPage();
 const all = new Map();
 async function audit(name) {
   await page.addScriptTag({ content: AXE });

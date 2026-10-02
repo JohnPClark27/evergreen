@@ -206,6 +206,10 @@ change module interfaces (§9a) without updating every caller.
   doesn't exist; #232 has a reversed verse range.
 - **ASV has no copyright text** in YouVersion's metadata, so the attribution falls back to the
   version name.
+- **Phone layout** (branch `mobile-layout`): one `@media (max-width: 600px), (max-height: 500px)`
+  block at the end of `web/css/app.css`. Secondary bar buttons go icon-only by visually hiding
+  their `span.label` (the accessible name stays), so keep the label in a `.label` span on new buttons.
+  Check with `node a11y.mjs <url> 390x844`.
 - **Mono 96 kbps** saves only about 30% against v1. All 301 MP3s would be about 640 MB, over the
   600 MB target, so keep audio to familiar hymns.
 
