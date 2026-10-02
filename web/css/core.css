@@ -1,0 +1,52 @@
+/* core.css - design tokens (docs/PLAN_PROMPT.md section 4) + styles for the shared
+   components in web/js (lyrics.js, sheet.js). Screens (Phase 7) build on this. */
+
+:root {
+  --bg: #F7F3EA;            /* sepia paper */
+  --surface: #FFFDF8;
+  --border: #E4DACA;
+  --border-strong: #CFC3AE;
+  --ink: #221E19;
+  --muted: #5A5248;
+  --accent: #7A2533;        /* burgundy */
+  --accent-soft: #F1E3E2;
+  --highlight: #F6E1A6;     /* current word / verse */
+  --font-read: 'Literata', Georgia, serif;
+  --font-ui: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --touch: 64px;            /* minimum touch target */
+  --text-session: 28px;     /* minimum session text */
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-ui); }
+
+/* ---- Lyrics (lyrics.js) ---- */
+.lyric-stanza { margin: 0 0 1.2em; }
+.lyric-line { font-family: var(--font-read); font-size: var(--text-session); line-height: 1.45; margin: 0.1em 0; }
+.lyric-word { border-radius: 6px; padding: 0 2px; transition: background-color 120ms; }
+.lyric-word.sung { color: var(--muted); }
+.lyric-word.now { background: var(--highlight); color: var(--ink); }
+.lyric-intro .lyric-word { color: var(--muted); }
+.lyric-note { color: var(--muted); font-size: 20px; }
+
+/* ---- Sheet music (sheet.js) ---- */
+.sheet-page { margin: 0 0 24px; }
+.sheet-page-label { color: var(--muted); margin: 0 0 6px; }
+.sheet-paper { background: #fff; color: #000; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.sheet-head h3 { margin: 0; font-family: var(--font-read); }
+.sheet-credits { color: #444; font-size: 13px; }
+.sheet-message { color: var(--muted); }
+.sheet-cursor { fill: var(--accent); opacity: 0.12; transition: transform 180ms ease-out; }
+.sheet-cursor.jump { transition: none; }
+.sheet-marker { fill: var(--highlight); }
+/* Only the note's own shapes and the CURRENT syllable: colouring the whole note group would
+   also colour every other stanza's syllable under that note (the group contains the lyrics). */
+g.sheet-now path { fill: var(--accent); }
+tspan.sheet-now { fill: var(--accent); font-weight: 600; }
+
+/* ---- Read-aloud highlight (screens add .reading to the current verse/line) ---- */
+.reading { background: var(--highlight); border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lyric-word, .sheet-cursor { transition: none; }
+}
