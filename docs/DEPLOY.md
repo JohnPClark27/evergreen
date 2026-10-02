@@ -178,6 +178,14 @@ GET https://<ref>.supabase.co/functions/v1/youversion?book=PSA&chapter=23&start=
      23:1-3 is read aloud while the music ducks to 25%.
   3. It needs a published hymn that has audio.
 
+### Screens (Phase 7)
+
+`https://dev.hymnal-reader-v2.pages.dev/` is the app:
+- Home: Today's Hymn & Verse / Sing a Hymn / Read the Bible, plus Aide tools.
+- Session (Hymn → Scripture → Prayer from the published plan), then Finished.
+- Sing a Hymn (3×3 grid), Aide tools (day picker, speed, volume, voice, reset notes), and Read the Bible.
+- Everything this tablet remembers stays in `localStorage`. No accounts, no names.
+
 ## 8. Public app config
 
 `web/config.js` holds only the Supabase URL and the anon key (both safe to publish).

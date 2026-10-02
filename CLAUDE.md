@@ -5,8 +5,9 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
 `docs/PLAN_PROMPT.md` (phases 0–9). The approved design is `docs/PLAN.md`, and the runbook is
 `docs/DEPLOY.md`.
 
-**Status (2026-10-02): Phases 0–6 are done and pushed to `dev`. Next is Phase 7** (public app
-screens). Phase 6's real-device speech check is still pending (see §9).
+**Status (2026-10-02): Phases 0–7 are done and pushed to `dev`. Next is Phase 8** (accessibility,
+testing, production deploy). Real-device checks are still pending: hearing speech on an iPad or
+in desktop Chrome (headless tests have no voices).
 
 ---
 
@@ -60,7 +61,7 @@ screens). Phase 6's real-device speech check is still pending (see §9).
 | Supabase project | ref `trdmlfbbmxogrxihcklw`, URL `https://trdmlfbbmxogrxihcklw.supabase.co` (Free tier) |
 | Publishable key | in `web/config.js` (`window.HYMNAL_CONFIG.supabaseUrl / supabaseAnonKey`) |
 | GitHub | `JohnPClark27/hymnal-reader-v2`, branch `dev` |
-| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.hymnal-reader-v2.pages.dev/` (production `hymnal-reader-v2.pages.dev`). `/` is still a placeholder. Phase 6 test page: `/dev/core-test`. Pages serves clean URLs: `x.html` 308-redirects to `x`. |
+| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.hymnal-reader-v2.pages.dev/` (production `hymnal-reader-v2.pages.dev`). `/` is the real app (Phase 7). Phase 6 test page: `/dev/core-test`. Pages serves clean URLs: `x.html` 308-redirects to `x`. |
 | DB content | 301 hymns: **40 `published`** (well-known, fully public domain per a strict ABC-file rule: `supabase/seed/publish_pd_hymns.py`), the rest `approved`. 50 `is_familiar` (the original 46 plus #67, #83, #169, #170, set in the DB; `familiar.txt` only seeds first imports). 1313 scripture refs, 158 topics, 15 prayers (`published`). Plans: **"Sample — 12 Days" (`published`**, 12 published studies) and "Memory Care — 30 Days" (`draft`; 4 of its studies are shared with the sample plan and are published). |
 | Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 107 MB total. Audio only for the 50 familiar hymns, so every published hymn has audio. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
@@ -150,7 +151,7 @@ client, 600/min total (Postgres-backed). Attribution text for ASV: "American Sta
 | Admin app | `admin/app.py` (entry), `data.py` (**the only module that talks to Supabase; every write is audited**), `worker.py` (QThread + global `NETWORK_LOCK`), `theme.py` + `style.qss`, `books.py`, `pages/*.py` | Run: `source .venv/bin/activate && python admin/app.py` |
 | Pipeline | `pipeline/abc_meta.py`, `render_mp3.sh`, `timings/build_timings.mjs`, `import_hymns.py`, `import_prayers.py`, `supa.py`, `familiar.txt` | Output cache: `pipeline/out/` (gitignored) |
 | Supabase | `supabase/migrations/`, `functions/youversion/{index,lib,test}.ts`, `seed/`, `tests/rls_anon_test.sh`, `config.toml` | `node supabase/functions/youversion/test.ts` |
-| Public app | `web/index.html` (placeholder), `web/config.js`, `web/css/core.css` (design tokens + component styles), `web/js/{api,audio,speech,lyrics,sheet}.js` (Phase 6 core; see §9a), `web/dev/core-test.html` | Phase 7 builds the screens on these modules |
+| Public app | `web/index.html` → `js/app.js` (hash router + shared `AudioPlayer`/`Speaker`; routes `#/`, `#/session[?day=N]`, `#/done`, `#/sing[?page=N]`, `#/sing/<number>`, `#/aide`, `#/read`). Screens: `js/screens/{home,session,done,sing,aide,read}.js`. Shared: `js/hymn-panel.js` (title + karaoke + sheet toggle), `js/store.js` (localStorage), `js/ui.js` (`h()`, icons, confirm dialog), `js/books.js`. Styles: `css/core.css` (tokens) + `css/app.css` (screens). Core modules: §9a. | Each screen exports `render(root, params, ctx)` and returns a cleanup function |
 | Docs | `docs/PLAN_PROMPT.md` (spec), `PLAN.md`, `DEPLOY.md`, `licenses/` | |
 
 Parallel-work guidance (Phase 7): screens are separable by file (Home, Session, Finished, Sing a
@@ -244,7 +245,31 @@ then the modules.
   - **Still pending:** hearing the voice on a real device (iPad Safari or desktop Chrome). Headless
     has no voices.
 
-## 10. Next: Phase 7 (screens)
+## 10. Phase 7 (done): how the app behaves
+
+- **Unlock:** sound needs a tap. Home tiles call `ctx.unlock()` inside the tap. Routes that need
+  sound (`session`, `sing/<n>`, `read`), when opened by URL or reload, show "Tap to continue".
+- **Session:**
+  - The aide moves the steps with Next/Back; nothing auto-advances.
+  - The hymn keeps playing softly (looped) under Scripture and prayer, and speech ducks it to 25%.
+  - The step is saved in `hr.sessionStep`, so a reload resumes it.
+  - Finish calls `store.completeDay()`, which sets `hr.progress {planId, currentDay, lastCompletedDate}`.
+    After the last day, the plan starts over at Day 1.
+- **localStorage keys:** `hr.progress`, `hr.sessionStep`, `hr.hymnNotes` (`enjoyed`/`skip` per hymn
+  number), `hr.settings` (`rate`, `volume`, `voiceName`), `hr.lastSession`.
+- **References:** a single psalm is labelled "Psalm 23" (web, function, admin). Existing study
+  *titles* in the DB still say "Psalms …"; they're admin-only labels.
+- **E2E check** (scratchpad Playwright, see §7): it walked Day 1, Finish, Enjoyed it, Home, Sing
+  a Hymn, singing, reload-resume, Aide tools, Read the Bible and portrait. 20/20 passed on the
+  Pages preview with no console errors.
+
+## 11. Next: Phase 8
+
+See `docs/PLAN_PROMPT.md` Phase 8: accessibility pass (semantic, keyboard, WCAG AA contrast,
+reduced motion), `docs/TESTING.md` manual checklist (iPad audio and speech unlock, ducking,
+resume, simple mode), production deploy runbook, and the cost note.
+
+(Phase 7 reference below.)
 
 The session uses the published **"Sample — 12 Days"** plan.
 
