@@ -46,7 +46,7 @@ async function player(root, number, ctx) {
   const hymn = await api.getHymn(number);
   if (!hymn) {
     root.append(h('div', { class: 'screen message' },
-      h('p', { class: 'big-text' }, 'That hymn isn’t available.'),
+      h('h1', { class: 'big-text', tabindex: '-1' }, 'That hymn isn’t available.'),
       h('button', { class: 'pill primary', onclick: () => ctx.go('#/sing') }, 'Choose a hymn')));
     return null;
   }
@@ -69,9 +69,9 @@ async function player(root, number, ctx) {
   root.append(h('div', { class: 'screen session' },
     h('header', { class: 'topbar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
-      h('p', { class: 'screen-title' }, 'Sing a Hymn'),
+      h('h1', { class: 'screen-title', tabindex: '-1' }, 'Sing a Hymn'),
       h('p', { class: 'day' }, `Hymn ${hymn.number}`)),
-    h('section', { class: 'card', tabindex: '-1' }, panel.el),
+    h('section', { class: 'card', tabindex: '0', 'aria-label': hymn.title }, panel.el),
     h('footer', { class: 'bottombar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/sing') }, icon('back'), h('span', { class: 'label' }, 'All hymns')),
       h('button', { class: 'pill', type: 'button', onclick: () => { panel.restart(); setPauseIcon(); } }, icon('again'), h('span', { class: 'label' }, 'Sing again')),

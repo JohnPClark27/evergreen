@@ -23,7 +23,7 @@ export async function render(root, params, ctx) {
   const heading = h('h2', { class: 'title' });
   const attribution = h('p', { class: 'muted small attribution' });
   const musicNote = h('p', { class: 'muted small', 'aria-live': 'polite' });
-  const card = h('section', { class: 'card', tabindex: '-1' }, heading, text, attribution);
+  const card = h('section', { class: 'card', tabindex: '0', 'aria-label': 'Bible text' }, heading, text, attribution);
 
   function fillChapters() {
     const n = BOOKS.find((b) => b[0] === book)[2];
@@ -121,6 +121,7 @@ export async function render(root, params, ctx) {
   }
 
   root.append(h('div', { class: 'screen session read' },
+    h('h1', { class: 'sr-only', tabindex: '-1' }, 'Read the Bible'),
     h('header', { class: 'topbar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
       h('div', { class: 'picker' }, bookSelect, chapterSelect),

@@ -77,6 +77,7 @@ async function route() {
   // Opened directly (bookmark, reload): one tap is needed before sound can start.
   if (needsSound && !unlocked) {
     root.replaceChildren(h('div', { class: 'screen tap-to-start' },
+      h('h1', { class: 'sr-only', tabindex: '-1' }, 'Hymnal Reader'),
       h('button', {
         class: 'tile primary', type: 'button',
         onclick: async () => { await ctx.unlock(); if (id === renderId) route(); },
@@ -93,11 +94,11 @@ async function route() {
     console.error(err);
     if (id !== renderId) return;
     root.replaceChildren(h('div', { class: 'screen message' },
-      h('p', { class: 'big-text' }, 'Something went wrong loading this page.'),
+      h('h1', { class: 'big-text', tabindex: '-1' }, 'Something went wrong loading this page.'),
       h('p', { class: 'muted' }, err.message),
       h('button', { class: 'pill primary', onclick: () => ctx.go('#/') }, 'Go Home')));
   }
-  root.querySelector('h1, h2, [data-autofocus]')?.focus?.({ preventScroll: true });
+  root.querySelector('h1')?.focus({ preventScroll: true });
 }
 
 window.addEventListener('hashchange', route);

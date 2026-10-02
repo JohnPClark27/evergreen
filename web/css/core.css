@@ -6,6 +6,7 @@
   --surface: #FFFDF8;
   --border: #E4DACA;
   --border-strong: #CFC3AE;
+  --control-border: #958873; /* button/tile/input outlines: 3.1:1 on paper (WCAG 1.4.11 non-text contrast) */
   --ink: #221E19;
   --muted: #5A5248;
   --accent: #7A2533;        /* burgundy */

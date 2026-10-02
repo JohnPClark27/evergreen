@@ -40,7 +40,7 @@ export async function render(root, params, ctx) {
   const t = await today(store, params);
   if (!t) {
     root.append(h('div', { class: 'screen message' },
-      h('p', { class: 'big-text' }, 'There is no session ready yet.'),
+      h('h1', { class: 'big-text', tabindex: '-1' }, 'There is no session ready yet.'),
       h('p', { class: 'muted' }, 'A plan needs to be published first.'),
       h('button', { class: 'pill primary', onclick: () => ctx.go('#/') }, 'Go Home')));
     return null;
@@ -53,13 +53,15 @@ export async function render(root, params, ctx) {
 
   // ---------- frame ----------
   const tracker = h('ol', { class: 'steps', 'aria-label': 'Session steps' });
-  const card = h('section', { class: 'card', 'aria-live': 'off' });
+  // tabindex 0 + label: keyboard users can reach and scroll the content card.
+  const card = h('section', { class: 'card', tabindex: '0', 'aria-label': 'Hymn' });
   const againBtn = h('button', { class: 'pill', type: 'button' }, icon('again'), h('span', { class: 'label' }, 'Sing again'));
   const pauseBtn = h('button', { class: 'round', type: 'button', 'aria-label': 'Pause' }, icon('pause'));
   const backBtn = h('button', { class: 'pill', type: 'button' }, icon('back'), h('span', { class: 'label' }, 'Back'));
   const nextBtn = h('button', { class: 'pill primary', type: 'button' }, h('span', { class: 'label' }, 'Next'), icon('next'));
 
   root.append(h('div', { class: 'screen session' },
+    h('h1', { class: 'sr-only', tabindex: '-1' }, `Today’s session, day ${day} of ${plan.days.length}`),
     h('header', { class: 'topbar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
       tracker,
@@ -166,6 +168,7 @@ export async function render(root, params, ctx) {
     cleanups = [];
     speaker.stop();
     step = to;
+    card.setAttribute('aria-label', STEPS[step]);
     store.setSessionStep({ planId: plan.id, day, step });
     drawTracker();
     backBtn.disabled = step === 0;
@@ -193,7 +196,6 @@ export async function render(root, params, ctx) {
   audio.addEventListener('ended', onEnded);
   nextBtn.addEventListener('click', () => nextBtn.classList.remove('attention'));
 
-  card.setAttribute('tabindex', '-1');
   setPaused(false);
   // The hymn panel needs to exist for "music under the reading", even when resuming at step 2/3.
   if (step > 0) panel = hymnPanel(ctx, hymn);

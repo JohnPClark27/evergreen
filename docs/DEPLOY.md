@@ -1,210 +1,237 @@
 # Deploy
 
-Everything runs on **hosted** services: a Supabase **Free** project and Cloudflare Pages.
-We never run the local Supabase stack (no `supabase start`, no Docker).
+Hymnal Reader runs entirely on **hosted** services: a Supabase **Free** project (Postgres, Storage,
+one Edge Function) and **Cloudflare Pages** (the static public app). It runs at **$0**. We never
+run the local Supabase stack: no `supabase start`, no Docker. The Supabase CLI is always
+`npx supabase …`.
 
-> This file grows phase by phase. Phase 8 turns it into a full from-zero runbook.
+| Piece | Where | Who uses which key |
+|---|---|---|
+| Public app (`web/`) | Cloudflare Pages: production `hymnal-reader-v2.pages.dev` (branch `main`), preview `dev.hymnal-reader-v2.pages.dev` (branch `dev`) | publishable/anon key in `web/config.js` (safe to publish) |
+| Database + RLS | Supabase Postgres (`supabase/migrations/`) | the anon key reads **published** rows only |
+| Hymn files | Supabase Storage, public buckets `hymn-abc`, `hymn-audio`, `hymn-timings` | anyone reads; only the service role writes |
+| Scripture | Edge Function `youversion` (YouVersion key in Supabase secrets) | no key needed by callers; CORS + rate limit |
+| Admin app + importers | your computer (`admin/`, `pipeline/`) | **service role key** from `admin/.env` (secret, never in git) |
 
-## 1. One-time hosted setup (Phase 0, done by hand)
+---
 
-- [x] **Supabase project (Free tier).** From Project Settings → API, note:
-  - project ref (`trdmlfbbmxogrxihcklw`)
-  - URL (`https://trdmlfbbmxogrxihcklw.supabase.co`)
-  - anon (or publishable) key: safe to publish, goes in `web/config.js`
-  - service role key: **secret**, goes only in `admin/.env`, never in git
-- [x] **Supabase CLI.** Install it, then:
-  ```sh
-  npx supabase login        # CLI is run via npx (not on PATH)
-  npx supabase link --project-ref trdmlfbbmxogrxihcklw
-  ```
-  The link is stored in `supabase/.temp/` (gitignored).
-- [x] **GitHub repo.** `https://github.com/JohnPClark27/hymnal-reader-v2`. Push `dev`.
-- [x] **Cloudflare Pages.** Connect the repo:
-  - Framework preset: none
-  - Build command: *(empty)*
-  - Build output directory: `web`
-  - Preview deployments: on for `dev`
+## Part A: From zero (new project, step by step)
 
-## 2. Allowed CLI commands (hosted only)
+Use this to rebuild everything, e.g. on a new Supabase project. The current project ref is
+`trdmlfbbmxogrxihcklw`.
 
-| Command | When |
-|---|---|
-| `npx supabase link --project-ref <ref>` | once per machine |
-| `npx supabase db push` | apply `supabase/migrations/` to the hosted DB |
-| `npx supabase functions deploy youversion` | Phase 5 |
-| `npx supabase secrets set YOUVERSION_API_KEY=…` | Phase 5 (you paste the value) |
+### A1. Supabase project
+1. Create a project on the **Free** plan.
+2. From Project Settings → API, note:
+   - the project ref and URL (`https://<ref>.supabase.co`)
+   - the anon or **publishable** key: public, goes in `web/config.js`
+   - the **service role** key: secret, goes only in `admin/.env`
 
-**Never:** `supabase start`, `supabase db reset` (local), or anything that needs Docker.
-If the CLI can't do something, use the dashboard's **SQL Editor** instead.
-
-## 3. Database schema and RLS (Phase 1)
-
+### A2. This machine (Ubuntu / WSL)
 ```sh
-npx supabase db push --dry-run     # see what would be applied
-npx supabase db push               # apply supabase/migrations/ to the hosted DB
-bash supabase/tests/rls_anon_test.sh
-```
-
-The test inserts throwaway draft and published rows through `npx supabase db query --linked`.
-It then reads them with the **publishable key from `web/config.js`** and expects only the
-published rows. It also tries to write and expects every attempt to be refused. Finally it
-deletes the fixtures, even if a check fails.
-
-## 4. Data pipeline and import (Phase 2)
-
-One-time machine setup (Ubuntu/WSL). Only the apt step uses sudo:
-
-```sh
-./setup.sh                      # tools, Open Hymnal clone, .venv, timing builder deps
+git clone https://github.com/JohnPClark27/hymnal-reader-v2 && cd hymnal-reader-v2 && git checkout dev
+./setup.sh          # apt tools (the only sudo step), Open Hymnal clone, .venv, timing-builder deps
+cp .env.example admin/.env        # fill in SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY; never commit it
 source .venv/bin/activate
 ```
 
-Import (idempotent, safe to re-run; unchanged files are skipped by hash):
-
+### A3. Link the CLI and create the database
 ```sh
-python pipeline/import_prayers.py --dry-run && python pipeline/import_prayers.py
-python pipeline/import_hymns.py --dry-run   && python pipeline/import_hymns.py
+npx supabase login
+npx supabase link --project-ref <ref>       # stored in supabase/.temp/ (gitignored)
+npx supabase db push --dry-run              # see what will be applied
+npx supabase db push                        # schema, RLS, storage buckets, rate-limit table
+bash supabase/tests/rls_anon_test.sh        # expect 19 passed (uses the key in web/config.js, so do A6 first on a new project)
+```
+If the CLI can't do something, paste the SQL from `supabase/migrations/` into the dashboard's
+**SQL Editor** instead.
+
+### A4. Scripture function
+```sh
+npx supabase secrets set YOUVERSION_API_KEY=…     # paste your YouVersion Platform App Key
+npx supabase functions deploy youversion --use-api --no-verify-jwt
+curl "https://<ref>.supabase.co/functions/v1/youversion?book=PSA&chapter=23&start=1&end=3"   # verses + attribution
 ```
 
+### A5. Content
+```sh
+python pipeline/import_prayers.py                 # the 15 prayers, verbatim; published
+python pipeline/import_hymns.py --dry-run && python pipeline/import_hymns.py
+#   all 301 hymns (approved); MP3s for familiar hymns only; prints Storage totals
+python supabase/seed/publish_pd_hymns.py --dry-run && python supabase/seed/publish_pd_hymns.py
+#   publishes 40 well-known hymns that are fully public domain per their ABC files
+python supabase/seed/seed_plan.py --title "Sample — 12 Days" --days 12 --publish
+python supabase/seed/seed_plan.py                 # optional: "Memory Care — 30 Days" as a draft
+```
+
+### A6. Public app config
+Copy `web/config.example.js` to `web/config.js` and fill in the URL and the anon/publishable key.
+Commit it: both values are safe to publish. **Never** put the service role key there.
+
+### A7. Cloudflare Pages
+1. Workers & Pages → Create → Pages → Connect to Git → `hymnal-reader-v2`.
+2. Settings: framework preset **None**, build command **empty**, build output directory **`web`**.
+3. Production branch **`main`**, with preview deployments on (`dev` → `dev.<project>.pages.dev`).
+4. If the Pages project name changes, set the function secret `ALLOWED_PAGES_HOSTS=<name>.pages.dev`
+   so CORS lets the new site call Scripture.
+
+### A8. Go live (production)
+1. Check the **preview** first, using `docs/TESTING.md` (the automated checks and sections A–I).
+2. **Merge `dev` → `main`** on GitHub (a pull request). Cloudflare deploys production automatically
+   in about 1 minute.
+3. Production smoke test: `docs/TESTING.md` section J.
+
+### A9. Verify admin → public publishing
+In the admin app (`python admin/app.py`), change a hymn's status and save, then **refresh** the
+public app: the change shows up. There's nothing to redeploy. Content lives in the database, and
+the public app reads it on load. (`docs/TESTING.md` I.)
+
+---
+
+## Part B: Day-to-day
+
+| Task | How |
+|---|---|
+| Publish or unpublish hymns, prayers, studies, plans | Admin app. Every change goes to the **Audit Log**. A plan only publishes when every day's study, hymn and prayer is published. |
+| Add a prayer | Admin app → Prayers → New. A **source is required**. Paste the text from the source; never write it. |
+| Build a plan | Admin app → Studies (hymn + passage + prayer, with a live preview) → Plans (drag days, Publish). |
+| Re-import after Open Hymnal changes | `python pipeline/import_hymns.py`: idempotent; unchanged files are skipped by hash; status, familiar flag, notes and numbers are never changed. |
+| Add audio for more hymns | Mark them familiar in the admin app, then `python pipeline/import_hymns.py --only <numbers>`. Publish only hymns that pass the public-domain rule (`publish_pd_hymns.py`). |
+| Ship public-app changes | Push to `dev` → check the preview → merge to `main`. |
+
+---
+
+## Part C: Reference
+
+### Pipeline options (`pipeline/import_hymns.py`)
 | Option | Meaning |
 |---|---|
-| `--audio familiar` (default) / `all` / `none` | which hymns get MP3s uploaded |
+| `--audio familiar` (default) / `all` / `none` | which hymns get MP3s |
 | `--bitrate 96` or `MP3_BITRATE_KBPS` | mono MP3 bitrate |
 | `--only 19 289` | just these hymn numbers |
+| `--dry-run` | show what would change |
 
-- Prints the Storage bucket totals before and after each run, and refuses any audio upload
-  past **900 MB**.
-- Writes `pipeline/out/import-report.txt` listing unverified timings, single-stanza audio and
-  render failures.
-- Storage object keys contain a content hash (`019-f1dd05d3.mp3`), and files are served with
-  `cache-control: max-age=31536000`. A changed file gets a new key, and the old object is deleted.
-- New hymns arrive as `approved`, so publish them in the admin app. Prayers arrive as `published`.
-  Re-imports never change status, `is_familiar`, notes, or hymn numbers.
+- **Storage cap:** it refuses audio uploads past **900 MB**, and it writes
+  `pipeline/out/import-report.txt` (unverified timings, single-stanza audio, render failures).
+- **Object keys:** they contain a content hash (`019-f1dd05d3.mp3`), with
+  `cache-control: max-age=31536000`. A changed file gets a new key, and the old one is deleted.
 
-## 5. Admin app (Phase 3)
-
-```sh
-source .venv/bin/activate        # PySide6 comes from requirements.txt (./setup.sh)
-python admin/app.py
+### Edge Function `youversion`
 ```
-
-- Reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `admin/.env`. If they're missing,
-  it shows a setup screen instead.
-- Every write goes through `admin/data.py`, which also writes an `audit_log` row with
-  before/after JSON. Unchanged saves write nothing.
-- Network calls run in background threads (`admin/worker.py`), with progress in the status bar.
-- Follows the system light/dark setting, with one stylesheet: `admin/style.qss`.
-- WSL: runs on WSLg. Audio preview plays through WSLg's PulseAudio.
-
-### Studies, plans, and the seed plan (Phase 4)
-
-- **Studies:** pick a hymn (familiar filter), a passage (book/chapter/verses, with one-click
-  suggestions from the hymn's scripture refs), a prayer, and an optional aide note of up to
-  280 characters. The preview shows the session as the resident sees it: hymn verses, Scripture
-  and prayer, plus the hymn audio. Scripture text is fetched live and never stored. It needs
-  `YOUVERSION_API_KEY` in `admin/.env`, or the Phase 5 Edge Function.
-- **Plans:**
-  - drag days to reorder (Move up/down also work)
-  - add an existing study, create a new one inline, or duplicate or remove a day
-  - warnings flag the same hymn or prayer on back-to-back days, and unpublished studies
-  - **Publish plan** checks that every day's study, hymn and prayer is published. If not, it
-    lists them and changes nothing.
-- **Publishing hymns (public-domain rule):** `python supabase/seed/publish_pd_hymns.py --dry-run`
-  then without `--dry-run`. It publishes exactly 40 well-known hymns whose ABC files show they are
-  fully public domain, and lists the excluded ones with the reason. See the script header for the rule.
-- **Seed plans** (refuse to run if a plan with that title exists):
-
-  ```sh
-  python supabase/seed/seed_plan.py --dry-run                     # "Memory Care — 30 Days", draft
-  python supabase/seed/seed_plan.py --title "Sample — 12 Days" --days 12 --publish
-  ```
-
-  Both build from `supabase/seed/memory_care_30.json`:
-  - short passages (references only)
-  - familiar non-seasonal hymns, never repeated; hymns that cite a day's passage are paired with it first
-  - prayers in rotation, so no prayer repeats on back-to-back days
-
-  `--publish` uses only published hymns, publishes the studies, then publishes the plan through the
-  same validation as the admin app. An identical existing study is reused, not duplicated. All
-  writes go through `admin/data.py` (Audit Log).
-
-## 6. YouVersion Edge Function (Phase 5)
-
-```sh
-npx supabase secrets set YOUVERSION_API_KEY=…            # you paste this; never commit it
-npx supabase db push                                    # includes the rate-limit table
-npx supabase functions deploy youversion --use-api --no-verify-jwt
-node supabase/functions/youversion/test.ts              # local unit tests (no network)
-```
-
-```
-GET https://<ref>.supabase.co/functions/v1/youversion?book=PSA&chapter=23&start=1&end=3
+GET /functions/v1/youversion?book=PSA&chapter=23[&start=1&end=3]
 200 {reference, book, chapter, verses:[{num,text}], version:{id,abbreviation,title}, attribution, source}
-400 {error}   unknown book, chapter out of range, bad or missing verses
-429 {error}   over the rate limit (Retry-After: 60)
+400 {error}  unknown book / chapter or verses out of range       429 {error} + Retry-After: 60
 ```
-
-- **`--use-api`** bundles on Supabase's servers, so no Docker is needed.
-- **`--no-verify-jwt`** (also set in `config.toml`): the public app's `sb_publishable_…` key isn't
-  a JWT. The function serves only public Scripture and protects itself in two ways:
-  - **CORS:** browsers are allowed only from `hymnal-reader-v2.pages.dev`, its preview subdomains,
-    and localhost. Any other browser origin gets a 403.
-  - **Rate limit:** 60 requests a minute per client and 600 in total. The counters live in
-    Postgres (`public.youversion_rate_hit`), because hosted functions don't keep memory between
-    requests: each request usually gets a fresh instance (checked). Keys are salted SHA-256
-    hashes, so no IPs are stored. The function uses the auto-injected **anon** key, never the
-    service role key.
-- **Caching:** YouVersion's docs say "Cache responses when possible", and the Terms of Use
-  (last modified August 17, 2026) have no clause against it. So:
-  - Chapter text is cached in memory for `YOUVERSION_CACHE_TTL_SECONDS` (default 86400; 0 = off).
-  - Version and attribution metadata are cached for `YOUVERSION_META_TTL_SECONDS` (default 3600),
-    kept short so the required attribution stays current.
+- **No JWT** (`--no-verify-jwt`, also in `config.toml`): the publishable key isn't a JWT. It's
+  protected in two ways:
+  - **CORS:** only `ALLOWED_PAGES_HOSTS` (default `hymnal-reader-v2.pages.dev`, plus its preview
+    subdomains) and localhost. Any other browser origin gets a 403.
+  - **Rate limit:** 60 per minute per client, 600 per minute in total. It's counted in Postgres
+    (`public.youversion_rate_hit`) with salted hashes, so no IP addresses are stored.
+- **Caching:** YouVersion's docs say "cache responses when possible", and their Terms of Use
+  (August 17, 2026) don't forbid it.
+  - Chapter text is cached in memory for `YOUVERSION_CACHE_TTL_SECONDS` (default 1 day; 0 = off).
+  - Attribution is cached for `YOUVERSION_META_TTL_SECONDS` (default 1 h).
   - Responses carry `Cache-Control: public, max-age=3600`.
-  - Nothing is written to the database.
-- **Attribution:** the version's `copyright`, else its `promotional_content` (YouVersion's rule).
-  ASV has neither, so the fallback is "American Standard Version (ASV)". Every response then adds
-  "· Scripture provided by YouVersion."
-- **Settings** (optional secrets): `YOUVERSION_BIBLE_ID` (default 12, ASV),
-  `ALLOWED_PAGES_HOSTS`, `RATE_LIMIT_PER_IP`, `RATE_LIMIT_TOTAL`.
+  - **Scripture is never written to the database.**
+- **Attribution:** the version's copyright, else its promotional text, else its name, then
+  "· Scripture provided by YouVersion." ASV shows "American Standard Version (ASV) · Scripture
+  provided by YouVersion."
+- **Optional secrets:** `YOUVERSION_BIBLE_ID` (default 12 = ASV), `RATE_LIMIT_PER_IP`,
+  `RATE_LIMIT_TOTAL`.
+- **Unit tests:** `node supabase/functions/youversion/test.ts`.
 
-## 7. Public app core (Phase 6)
+### Admin app
+- **Run:** `python admin/app.py`. If `admin/.env` is missing a key, it shows a setup screen.
+- **Writes:** every write goes through `admin/data.py` and is recorded in `audit_log` with
+  before/after JSON.
+- **Responsiveness:** background calls run one at a time (`admin/worker.py`), so the window never
+  freezes.
+- **Scripture preview** in Studies uses the Edge Function, or `YOUVERSION_API_KEY` in `admin/.env`
+  if you add one.
 
-- Modules: `web/js/{api,audio,speech,lyrics,sheet}.js`, styles `web/css/core.css`.
-- CDN libraries are pinned with SRI: supabase-js 2.117.2 and abcjs 6.7.1. abcjs must stay at the
-  pipeline's version.
-- Test page: `https://dev.hymnal-reader-v2.pages.dev/dev/core-test`.
-  1. Tap **Tap to start**.
-  2. Press **Run the Phase 6 check**: the hymn plays with highlighted words, and after 15 s Psalm
-     23:1-3 is read aloud while the music ducks to 25%.
-  3. It needs a published hymn that has audio.
+### Public app
+- **Files:** `web/index.html` → `js/app.js` (hash router). Screens are in `js/screens/`, core
+  modules in `js/{api,audio,speech,lyrics,sheet}.js`.
+- **CDN libraries** are pinned with SRI hashes: supabase-js 2.117.2 and abcjs 6.7.1. abcjs must
+  match the pipeline's version so the sheet-music cursor lines up.
+- **Stored on the tablet:** only `localStorage` (`hr.progress`, `hr.sessionStep`, `hr.hymnNotes`,
+  `hr.settings`, `hr.lastSession`). No accounts, no names, no analytics.
+- **Developer test page:** `/dev/core-test` (Phase 6).
 
-### Screens (Phase 7)
+---
 
-`https://dev.hymnal-reader-v2.pages.dev/` is the app:
-- Home: Today's Hymn & Verse / Sing a Hymn / Read the Bible, plus Aide tools.
-- Session (Hymn → Scripture → Prayer from the published plan), then Finished.
-- Sing a Hymn (3×3 grid), Aide tools (day picker, speed, volume, voice, reset notes), and Read the Bible.
-- Everything this tablet remembers stays in `localStorage`. No accounts, no names.
+## Part D: Running on the Free tier
 
-## 8. Public app config
+### Limits to watch
+| Limit | Free tier | Now |
+|---|---|---|
+| Database | 500 MB | a few MB (text and metadata only) |
+| Storage | 1 GB | **107 MB** (50 MP3s ≈ 100 MB, ABC + timings ≈ 7.5 MB) |
+| Egress | 5 GB / month | depends on use: see the math below |
+| Inactivity | the project **pauses after 7 days** without requests | keep-alive optional |
 
-`web/config.js` holds only the Supabase URL and the anon key (both safe to publish).
-Copy `web/config.example.js` and fill them in. The service role key never goes here.
+The dashboard card in the admin app shows Storage use against 1 GB, plus the pause reminder.
 
-## 9. Restoring a paused Free project
+### Cost note
+Everything is **$0**: Supabase Free plus Cloudflare Pages Free. Pages bandwidth for the app
+itself (HTML, JS, CSS) is free and unmetered. The fonts and CDN libraries come from Google Fonts
+and jsDelivr, not from Supabase. What counts against Supabase's **5 GB/month egress** is mostly
+hymn audio.
 
-Free projects pause after **7 days without activity**. Data is kept.
+**Rough math (worst case, nothing cached by the browser):**
 
-1. Open the Supabase dashboard and select the project. It shows **Paused**.
-2. Click **Restore project** and wait a few minutes until it reports healthy.
-3. Load the public app once and check that a hymn plays.
+| Item | Size |
+|---|---|
+| One hymn MP3 (average of the 50; max 3.7 MB) | **≈ 2.0 MB** |
+| Its timing/words file | ≈ 0.02 MB |
+| Plan, hymn list, Scripture JSON per session | < 0.05 MB |
+| **One session** (one hymn + its words + Scripture) | **≈ 2.1 MB** |
 
-Projects paused for a long time (90+ days) may no longer be restorable from the
-dashboard. Then you'd create a new project and re-run the runbook (migrations,
-importers, function deploy). That's why everything is scripted.
+- 5 GB ≈ 5,120 MB ÷ 2.1 MB ≈ **2,400 hymn plays a month**.
+- One tablet doing **1 session + 2 extra hymns a day** ≈ 3 × 2.0 MB ≈ 6 MB/day ≈ **180 MB/month**.
+- So the Free tier covers about **25–28 tablets** at that pace. In practice it's more:
+  - MP3s are fetched once per visit and kept for the session.
+  - Storage sends `cache-control: max-age=31536000`, so the browser can often reuse a hymn it
+    played on an earlier day without downloading it again.
 
-**Optional keep-alive:** `.github/workflows/keepalive.yml` runs one tiny anon-key read
-every 3 days. It ships **disabled**: the job only runs when the repo variable
-`KEEPALIVE_ENABLED` is `true`. To enable it, add the repo secrets `SUPABASE_URL` and
-`SUPABASE_ANON_KEY` (the publishable key, never the service role key), then set the
-variable. Steps are in the workflow file's header. Phase 8 expands this.
+**Storage:** the 40 published hymns plus 10 more with audio use 107 MB. Audio for **all** 301
+hymns would be about 640 MB, which is still under 1 GB but over the 600 MB target. Keep audio to
+hymns you'll actually use.
+
+### Restoring a paused Free project
+Free projects pause after **7 days with no requests**. Nothing is lost.
+1. Supabase dashboard → the project shows **Paused** → **Restore project**.
+2. Wait a few minutes until it's healthy.
+3. Open the public app and play a hymn to confirm.
+
+A project paused for a long time (around 90 days) may no longer be restorable from the
+dashboard. Then create a new project and follow **Part A** again. Every step is scripted, and
+content comes back from the importers and seed scripts. Hymn and prayer notes on tablets are
+local and unaffected.
+
+### Optional keep-alive (ships disabled)
+`.github/workflows/keepalive.yml` makes one tiny read with the **public** key every 3 days, so the
+project never sits idle for 7. It's off until you turn it on:
+1. GitHub repo → Settings → Secrets and variables → Actions → **Secrets**: add `SUPABASE_URL`
+   (`https://<ref>.supabase.co`) and `SUPABASE_ANON_KEY` (the publishable key, **never** the
+   service role key).
+2. Same page → **Variables**: add `KEEPALIVE_ENABLED` = `true`.
+3. Actions tab → **keepalive** → **Run workflow** once to test. It should finish green.
+
+Notes:
+- Scheduled workflows only run from the **default branch** (`main`), so it starts after `dev` is
+  merged.
+- GitHub pauses scheduled workflows in a repo with no commits for 60 days. Re-enable it from the
+  Actions tab if that happens.
+- To turn it off, delete the variable or set it to `false`.
+
+### Upgrading to Pro later (no code changes)
+Nothing in the code depends on a plan: Postgres, RLS, public Storage buckets and Edge Functions
+all work the same on Free and Pro.
+1. Supabase dashboard → Organization → Billing → upgrade the organization to **Pro**.
+2. Done. Pro projects don't pause, and the storage and egress limits go up.
+3. Optional: turn the keep-alive off (`KEEPALIVE_ENABLED` = `false`), since it's no longer needed.
+
+Keep the importer's 900 MB cap, or raise `AUDIO_CAP_BYTES` in `pipeline/supa.py` if you want
+audio for every hymn.
