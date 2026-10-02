@@ -5,10 +5,14 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
 `docs/PLAN_PROMPT.md` (phases 0–9). The approved design is `docs/PLAN.md`, and the runbook is
 `docs/DEPLOY.md`.
 
-**Status (2026-10-02): Phases 0–8 are done on `dev`, except production go-live. That needs the user
-to merge `dev` → `main`; Pages deploys `main` to `hymnal-reader-v2.pages.dev`, which still shows the
-placeholder until then. Next is Phase 9** (docs for judges). Still pending: the real-device checklist
-in `docs/TESTING.md` (speech on iPad, mute switch, VoiceOver); headless tests have no voices.
+**Status (2026-10-02): all phases (0–9) are done.**
+- Production is live at `https://hymnal-reader-v2.pages.dev/`: PR #1 merged `dev` → `main`, and the
+  production smoke test gave e2e 12/12 and axe 0 issues.
+- The Phase 9 docs (README for judges, `docs/VALIDATION.md` template, known gaps) are on `dev` and
+  reach `main` when the user merges.
+- Still pending, by people: the real-device checklist in `docs/TESTING.md` §2 (speech on iPad, mute
+  switch, VoiceOver), filling in `docs/VALIDATION.md`, and the "Known gaps" list in `README.md`.
+  That list is the backlog for any further work.
 
 ---
 
@@ -286,13 +290,16 @@ then the modules.
   (40 → 39 → 40 hymns).
 - **Production:** merge `dev` → `main`, then run `docs/TESTING.md` §J.
 
-## 12. Next: Phase 9
+## 12. Phase 9 (done)
 
-`docs/PLAN_PROMPT.md` Phase 9 covers:
-- `README.md` for judges: who it serves and the problem, the session flow, an architecture diagram,
-  guardrails, sources and licenses
-- `docs/VALIDATION.md` as a **template only** (the user fills it in)
-- a known-gaps list
+- **`README.md`** (judge-facing): who it serves and the problem, the session flow, an architecture
+  diagram (Mermaid), guardrails, sources and licenses, repo map, status, and **Known gaps**. Keep
+  the gaps list honest and current: it's the backlog.
+- **`docs/VALIDATION.md`:** a template only, for the user to fill in (roles only, no names).
+- **`docs/licenses/`:** `open-prayer-book-LICENSE.txt` (CC0) and `FluidR3_GM-MIT.txt` (the
+  soundfont used to render the MP3s; the GPL line in Debian's notice covers only its packaging).
+- **Future work:** take items from README "Known gaps". Follow the coordination rules in §1. Re-run
+  `tests/browser` (e2e + a11y) after any UI change.
 
 ## (Phase 8 brief, for reference)
 
