@@ -5,9 +5,10 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
 `docs/PLAN_PROMPT.md` (phases 0–9). The approved design is `docs/PLAN.md`, and the runbook is
 `docs/DEPLOY.md`.
 
-**Status (2026-10-02): Phases 0–7 are done and pushed to `dev`. Next is Phase 8** (accessibility,
-testing, production deploy). Real-device checks are still pending: hearing speech on an iPad or
-in desktop Chrome (headless tests have no voices).
+**Status (2026-10-02): Phases 0–8 are done on `dev`, except production go-live. That needs the user
+to merge `dev` → `main`; Pages deploys `main` to `hymnal-reader-v2.pages.dev`, which still shows the
+placeholder until then. Next is Phase 9** (docs for judges). Still pending: the real-device checklist
+in `docs/TESTING.md` (speech on iPad, mute switch, VoiceOver); headless tests have no voices.
 
 ---
 
@@ -263,7 +264,32 @@ then the modules.
   a Hymn, singing, reload-resume, Aide tools, Read the Bible and portrait. 20/20 passed on the
   Pages preview with no console errors.
 
-## 11. Next: Phase 8
+## 11. Phase 8 (done on dev)
+
+- **Accessibility:**
+  - Every screen has one `h1` (`.sr-only` where the design shows none), and the router focuses it
+    after navigation.
+  - Scrolling cards are `tabindex=0`, `aria-label` regions.
+  - Buttons, tiles and inputs use `--control-border` (#958873, 3.1:1). Keep the spec's #CFC3AE for
+    decorative dividers only.
+  - axe-core 4.13 (WCAG 2.0/2.1/2.2 A+AA + best practice) found 0 issues on 12 screen states. Keep it
+    that way: re-run axe after UI changes (recipe in `docs/TESTING.md` and §7).
+- **`docs/TESTING.md`:** automated results, the contrast table, and the manual device checklist.
+- **`docs/DEPLOY.md`:** rewritten as the from-zero runbook (Part A), day-to-day (B), reference (C)
+  and Free tier operations (D: pause/restore, keep-alive enable, Pro upgrade, cost math).
+- **Verified on the preview:** an admin status change shows on the public site after a refresh
+  (40 → 39 → 40 hymns).
+- **Production:** merge `dev` → `main`, then run `docs/TESTING.md` §J.
+
+## 12. Next: Phase 9
+
+`docs/PLAN_PROMPT.md` Phase 9 covers:
+- `README.md` for judges: who it serves and the problem, the session flow, an architecture diagram,
+  guardrails, sources and licenses
+- `docs/VALIDATION.md` as a **template only** (the user fills it in)
+- a known-gaps list
+
+## (Phase 8 brief, for reference)
 
 See `docs/PLAN_PROMPT.md` Phase 8: accessibility pass (semantic, keyboard, WCAG AA contrast,
 reduced motion), `docs/TESTING.md` manual checklist (iPad audio and speech unlock, ducking,
