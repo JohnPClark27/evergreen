@@ -117,7 +117,11 @@ export class AudioPlayer extends EventTarget {
   async play(url, { loop = false, fade = 1.5, from = 0 } = {}) {
     if (!this.ctx) throw new Error('Call unlock() from a tap first.');
     if (url === this.currentUrl) return this.resume();
+    // If another play() starts before this one finishes (e.g. a quick screen change), the
+    // newer request wins and this one quietly steps aside.
+    const token = this.playToken = (this.playToken ?? 0) + 1;
     const blobUrl = await this.load(url);
+    if (token !== this.playToken) return;
     const incoming = this.decks[1 - this.active];
     const outgoing = this.decks[this.active];
 
@@ -126,7 +130,13 @@ export class AudioPlayer extends EventTarget {
     incoming.el.loop = loop;
     incoming.el.src = blobUrl;
     incoming.el.currentTime = from;
-    await incoming.el.play();
+    try {
+      await incoming.el.play();
+    } catch (err) {
+      if (err.name === 'AbortError' || token !== this.playToken) return; // superseded, not a failure
+      throw err;
+    }
+    if (token !== this.playToken) return;
     this.userPaused = false;
 
     this.active = 1 - this.active;
@@ -139,6 +149,7 @@ export class AudioPlayer extends EventTarget {
   /** Fade everything to silence. */
   stop(fade = 1) {
     if (!this.ctx) return;
+    this.playToken = (this.playToken ?? 0) + 1; // cancels a play() that is still loading
     this.currentUrl = null;
     for (const deck of this.decks) this.#fadeOutDeck(deck, fade);
     this.dispatchEvent(new Event('stop'));
