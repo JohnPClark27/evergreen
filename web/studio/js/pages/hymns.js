@@ -62,7 +62,7 @@ export async function render(main) {
     status,
     h('div', { class: 'field-row' }, h('div', { class: 'field' }, search), h('div', { class: 'field' }, only)),
     h('table', { class: 'table' },
-      h('thead', {}, h('tr', {}, ['No.', 'Title', 'Status', 'Audio', 'Timing', 'Familiar', ''].map((t) => h('th', { scope: 'col' }, t)))),
+      h('thead', {}, h('tr', {}, ['No.', 'Title', 'Status', 'Audio', 'Timing', 'Familiar', 'Action'].map((t) => h('th', { scope: 'col' }, t)))),
       tbody));
   draw();
 }

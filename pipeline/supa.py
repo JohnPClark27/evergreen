@@ -1,7 +1,7 @@
 """
 supa.py - shared Supabase helpers for the pipeline scripts.
 
-Loads SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from admin/.env (or a root .env).
+Loads SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from .env in the repo root (or the older admin/.env).
 The service role key bypasses RLS: it is only ever read from the local .env and
 is never printed.
 """
@@ -24,7 +24,7 @@ STORAGE_TARGET_BYTES = 600 * MB   # what we aim to stay under (Free tier is 1 GB
 
 
 def load_env():
-    for p in (ROOT / "admin" / ".env", ROOT / ".env"):
+    for p in (ROOT / ".env", ROOT / "admin" / ".env"):  # admin/.env: where it lived before the Studio
         if p.exists():
             load_dotenv(p, override=False)
 
@@ -34,7 +34,7 @@ def client():
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not url or not key:
-        sys.exit("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing: copy .env.example to admin/.env and fill it in.")
+        sys.exit("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing: copy .env.example to .env (repo root) and fill it in.")
     return create_client(url, key)
 
 

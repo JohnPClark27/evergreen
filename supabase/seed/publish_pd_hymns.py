@@ -12,7 +12,8 @@ A hymn qualifies when its ABC file:
      is fully public domain (a dedication), so it qualifies.
 
 Candidates are the familiar hymns plus the extra well-known titles in EXTRA. Only hymns with
-audio are published. Every status change goes through admin/data.py (Audit Log).
+audio are published. Changes are summarised in one audit_log row per run. The Studio's Hymns page applies the same
+rule (web/studio/js/pd.js) when an admin publishes one hymn.
 
 Usage (repo root, venv active):
   python supabase/seed/publish_pd_hymns.py --dry-run
@@ -25,11 +26,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(ROOT / "admin"))
 sys.path.insert(0, str(ROOT / "pipeline"))
 
 import abc_meta  # noqa: E402  (pipeline/abc_meta.py: encoding-safe ABC reading)
-import data  # noqa: E402  (admin/data.py: audited writes)
+import supa  # noqa: E402  (pipeline/supa.py: service-role client from .env)
 
 TARGET = 40
 # Well-known hymns added beyond the familiar list (they must also pass the rule).
@@ -61,10 +61,11 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    d = data.Data(*data.load_config())
+    sb = supa.client()
     src = Path(os.path.expanduser(os.environ.get("OPENHYMNAL_DIR", "~/openhymnal"))) / "Complete"
-    hymns = d.hymns()
-    files = {r["id"]: r["source_file"] for r in d._all("hymns", "id,source_file")}
+    hymns = supa.select_all(sb, "hymns", "id,number,title,status,is_familiar,audio_path,source_file")
+    hymns.sort(key=lambda h: h["number"])
+    files = {h["id"]: h["source_file"] for h in hymns}
 
     chosen, rejected = [], []
     for h in hymns:
@@ -88,7 +89,10 @@ def main():
         return
     changed = [h for h, _ in chosen if h["status"] != "published"]
     for h in changed:
-        d.set_status("hymns", h["id"], "published")
+        sb.table("hymns").update({"status": "published"}).eq("id", h["id"]).execute()
+    # One audit row for the whole run (like the importers).
+    sb.table("audit_log").insert({"actor": supa.actor("pipeline"), "action": "publish", "table_name": "hymns",
+                                  "after": {"published": [h["number"] for h in changed], "rule": "publish_pd_hymns.py"}}).execute()
     print(f"\nPublished {len(changed)} hymns ({TARGET - len(changed)} were already published).")
 
 

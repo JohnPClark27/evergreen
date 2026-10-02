@@ -14,6 +14,53 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
   switch, VoiceOver), filling in `docs/VALIDATION.md`, and the "Known gaps" list in `README.md`.
   That list is the backlog for any further work.
 
+## 0. The `studio` branch (2026-10-02), read this if you're on it
+
+The user asked to **replace the Python admin app with a web Studio** that anyone can sign in to,
+and to **rework studies into modular study plans**. Built on branch `studio` (not merged; the user
+merges). Decisions the user made: **admin approval** before plans reach tablets, **magic-link**
+sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scoring**.
+
+- **Data (migrations 0005–0007, additive only; `main` still reads `plans/plan_days/studies`):**
+  - `profiles` (author/admin, created on sign-up)
+  - `study_plans` (owner, status draft → pending → published | archived, review_note) and
+    `study_plan_items` (position, `module_type`, jsonb `config`)
+  - RLS and a status-guard trigger: authors can't publish
+  - `module_config_ok()`: the DB refuses Scripture or prayer text in modules
+  - RPCs `save_study_plan` (atomic), `study_plan_problems`, `review_study_plan`, `admin_list_users`,
+    `set_user_role`
+  - audit triggers log the signer's email
+  - The 12 sample days were imported as 12 published 3-module plans.
+- **Modules:** `web/modules/*.js` with registry `web/modules/index.js`. See `docs/MODULES.md`.
+  Adding one = one file + one line.
+- **Runner:** `web/js/runner.js` plays any plan. The tablet uses it at `#/study/<id>`; the Studio
+  previews through the tablet's `#/preview` in an iframe, with the plan passed in `sessionStorage`
+  under `hr.preview`.
+- **Tablet:** Home → **Choose a Study** (`#/studies`) → runner → done (study notes). The day picker
+  and `#/session` are gone (`#/session` redirects).
+- **Studio:** `web/studio/` (`js/db.js` is its only Supabase module).
+  - Pages: plans, editor, review, hymns (publishing re-runs the PD rule from the ABC file:
+    `js/pd.js`, which agrees with the Python rule on all 301 files), prayers, people, audit,
+    account.
+  - Auth uses **PKCE** (the link returns `?code=`, which doesn't clash with `#/` routes).
+- **Removed:** `admin/` (PySide6), `supabase/seed/seed_plan.py` and `memory_care_30.json`.
+  - Pipeline scripts read `.env` in the repo root, falling back to `admin/.env`.
+  - `publish_pd_hymns.py` uses `pipeline/supa.py`.
+- **Auth config (set via the Management API):**
+  - site URL `https://hymnal-reader-v2.pages.dev/studio/`
+  - redirect allow-list: Pages production, `*.hymnal-reader-v2.pages.dev`, localhost:8080
+  - The built-in email sender is limited to **2/hour**; custom SMTP is recommended
+    (`docs/DEPLOY.md` A6b).
+  - **No users yet.** The first admin is made with one SQL line after they sign in (DEPLOY A6b).
+- **Tests:**
+  - `python supabase/tests/studio_rls_test.py` (32)
+  - `tests/browser/studio.mjs` + `studio_users.py` (27, including axe on Studio pages)
+  - `studies.mjs` + `fixture_all_modules.py` (17)
+  - `e2e.mjs` (14) and `a11y.mjs` (13 tablet states), updated for studies
+- **Another session** works on branch `mobile-layout` (worktree `.claude/worktrees/`, now
+  gitignored; never commit it). It was told which files `studio` changed. Expect merge overlap in
+  `web/css/app.css` and `web/js/screens/*`.
+
 ---
 
 ## 1. Coordination rules (avoid clashing)
@@ -27,7 +74,7 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
    If two agents must work in parallel, each uses its own branch off `dev` (e.g.
    `phase6-audio`) and touches **disjoint files**. See the ownership table in §6.
 4. **Migrations are append-only.** Never edit an applied migration. The next file is
-   `supabase/migrations/20261001000005_<name>.sql`. Pick the next free number after `git pull`;
+   `supabase/migrations/20261001000008_<name>.sql` (0005–0007 are used by `studio`). Pick the next free number after `git pull`;
    two agents must not pick the same number. Apply with `npx supabase db push`.
 5. **Update this file** at the end of your phase: the status line, §3 "Live state", and anything
    you learned in §8. Keep it accurate. It's how the next agent avoids redoing or breaking your work.
@@ -40,17 +87,19 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
   `supabase start`, local `db reset`, or anything needing Docker. Functions deploy with
   `--use-api`.
 - **No `sudo`, ever.** Anything that needs root goes in `setup.sh`, which the user runs.
-- **Secrets:** never print, cat, echo, or commit `admin/.env` (it holds the service role key).
+- **Secrets:** never print, cat, echo, or commit `.env` / `admin/.env` (they hold the service role key).
   Check key *names* only (`grep -q '^KEY=.' admin/.env`). `supabase secrets list`: print names only.
-- **Service role key:** only in the admin app and pipeline (from `admin/.env`). Never in `web/`,
+- **Service role key:** only in pipeline/seed/test scripts (from `.env`). Never in `web/` (the Studio signs people in),
   never in Edge Functions, never in git. The public app uses the publishable key in
   `web/config.js` (safe to publish, already committed).
 - **Content integrity:** never write prayers, Scripture, or theological text. Prayers come only
-  from Open Prayer Book (importer) or the admin app with a required `source`. Scripture comes
+  from Open Prayer Book (importer) or the Studio's Prayers page (admins) with a required `source`.
+  Authors' own notes and quizzes are their words; admin review gates them. Scripture comes
   from YouVersion at runtime: **never store verse text** (no DB columns, seeds, fixtures, or
   hardcoded text). Always show the YouVersion attribution with Scripture and the source with
   each prayer.
-- **Privacy:** no accounts, no personal data, progress only in `localStorage`. **No engagement
+- **Privacy:** no *resident* accounts or personal data; progress only in `localStorage`. Only Studio
+  *authors* sign in (approved by the user, 2026-10-02). **No engagement
   mechanics** (streaks, badges, scores, "you missed a day"). **No medical claims.**
 - **Audio:** browser Web Speech API with system voices only. No cloud TTS, no AI audio/music/art.
 - **Dependencies:** only those in the plan. Anything new needs a one-line justification, and you
@@ -153,7 +202,8 @@ client, 600/min total (Postgres-backed). Attribution text for ASV: "American Sta
 
 | Area | Files | Notes |
 |---|---|---|
-| Admin app | `admin/app.py` (entry), `data.py` (**the only module that talks to Supabase; every write is audited**), `worker.py` (QThread + global `NETWORK_LOCK`), `theme.py` + `style.qss`, `books.py`, `pages/*.py` | Run: `source .venv/bin/activate && python admin/app.py` |
+| Studio (on `studio`) | `web/studio/index.html`, `js/app.js` (router + shell + sign-in), `js/db.js` (**the only Studio module that talks to Supabase**), `js/pages/*.js`, `js/pd.js`, `studio.css` | Replaces the removed PySide6 `admin/` app |
+| Modules (on `studio`) | `web/modules/{index,kit,_template,hymn,scripture,prayer,note,quiz,finish-line}.js`, `web/js/runner.js` | `docs/MODULES.md` |
 | Pipeline | `pipeline/abc_meta.py`, `render_mp3.sh`, `timings/build_timings.mjs`, `import_hymns.py`, `import_prayers.py`, `supa.py`, `familiar.txt` | Output cache: `pipeline/out/` (gitignored) |
 | Supabase | `supabase/migrations/`, `functions/youversion/{index,lib,test}.ts`, `seed/`, `tests/rls_anon_test.sh`, `config.toml` | `node supabase/functions/youversion/test.ts` |
 | Public app | `web/index.html` → `js/app.js` (hash router + shared `AudioPlayer`/`Speaker`; routes `#/`, `#/session[?day=N]`, `#/done`, `#/sing[?page=N]`, `#/sing/<number>`, `#/aide`, `#/read`). Screens: `js/screens/{home,session,done,sing,aide,read}.js`. Shared: `js/hymn-panel.js` (title + karaoke + sheet toggle), `js/store.js` (localStorage), `js/ui.js` (`h()`, icons, confirm dialog), `js/books.js`. Styles: `css/core.css` (tokens) + `css/app.css` (screens). Core modules: §9a. | Each screen exports `render(root, params, ctx)` and returns a cleanup function |

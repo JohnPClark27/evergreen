@@ -3,13 +3,23 @@
 // approves; the tablet lists it; the hymn library refuses a not-fully-public-domain hymn.
 // Usage: node studio.mjs <baseUrl> <users.json from studio_users.py make>
 import { readFileSync } from 'node:fs';
-import { BASE, launch } from './launch.mjs';
+import { BASE, axe, launch } from './launch.mjs';
 
 const users = JSON.parse(readFileSync(process.argv[3], 'utf8'));
 const browser = await launch();
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m); };
 const shots = process.env.SHOTS;
+const audits = [];
+async function audit(page, name) { const v = await axe(page); audits.push(name); ok(v.length === 0, `axe clean: ${name}${v.length ? ' → ' + v.join(' | ') : ''}`); }
+
+// sign-in screen (no session)
+{
+  const p = await (await browser.newContext()).newPage();
+  await p.goto(BASE + 'studio/');
+  await p.getByRole('button', { name: 'Email me a sign-in link' }).waitFor({ timeout: 30000 });
+  await audit(p, 'studio sign-in');
+}
 
 async function signedIn(role) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -30,6 +40,7 @@ await a.goto(BASE + 'studio/');
 await a.getByRole('heading', { name: 'My study plans' }).waitFor({ timeout: 30000 });
 ok((await a.getByText('ZZ Author').count()) > 0, 'author is signed in (name in the top bar)');
 ok((await a.getByRole('link', { name: 'Review' }).count()) === 0, 'author sees no admin pages');
+await audit(a, 'studio: my plans (empty)');
 await a.getByRole('link', { name: /New study plan|first study plan/ }).first().click();
 await a.getByLabel('Title').fill('ZZ Studio e2e');
 await a.getByLabel('Description').fill('test plan');
@@ -50,6 +61,7 @@ await add('Hymn');
 await a.locator('.item').last().locator('select[size]').selectOption({ index: 1 });
 ok((await a.locator('.item').count()) === 5, 'five modules added (hymn, scripture, note, quiz, hymn)');
 ok((await a.locator('.item.has-errors').count()) === 0, 'no validation errors');
+await audit(a, 'studio: editor with 5 modules open');
 if (shots) await a.screenshot({ path: `${shots}/studio-editor.png`, fullPage: true });
 
 await a.getByRole('button', { name: 'Save', exact: true }).click();
@@ -97,6 +109,7 @@ ok((await ad.getByRole('link', { name: 'ZZ Studio e2e' }).count()) === 1, 'admin
 await ad.getByRole('link', { name: 'ZZ Studio e2e' }).click();
 await ad.getByText('Nothing blocks publishing.').waitFor({ timeout: 30000 });
 if (shots) await ad.screenshot({ path: `${shots}/studio-review.png`, fullPage: true });
+await audit(ad, 'studio: admin review panel');
 await ad.getByRole('button', { name: 'Approve and publish' }).click();
 await ad.getByText('Approved: it’s live on the tablets.').waitFor();
 ok(true, 'admin approved it');
@@ -119,10 +132,12 @@ await ad.goto(BASE + 'studio/#/hymns');
 await ad.getByLabel('Search hymns').fill('All Creatures');
 await ad.locator('tr', { hasText: 'All Creatures of Our God and King' }).getByRole('button', { name: 'Publish' }).click();
 await ad.locator('.banner.error').waitFor({ timeout: 30000 });
+await audit(ad, 'studio: hymns');
 ok((await ad.locator('.banner.error').innerText()).includes('not fully public domain'), 'PD rule refuses #8: ' + (await ad.locator('.banner.error').innerText()).slice(0, 110));
 await ad.goto(BASE + 'studio/#/people');
 await ad.locator('td', { hasText: users.author.email }).waitFor({ timeout: 30000 });
 ok(true, 'People lists the author');
+await audit(ad, 'studio: people');
 await ad.goto(BASE + 'studio/#/audit');
 await ad.locator('tbody tr').first().waitFor({ timeout: 30000 });
 ok((await ad.locator('tbody').innerText()).includes(users.author.email), 'audit log shows the author’s changes by email');

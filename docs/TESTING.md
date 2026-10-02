@@ -17,13 +17,16 @@ Test on the **Pages preview** (`https://dev.hymnal-reader-v2.pages.dev/`) before
 | RLS: the public key reads published rows only and can't write | `bash supabase/tests/rls_anon_test.sh` | 19/19 pass |
 | Edge Function logic (refs, CORS, rate-limit keys, cache) | `node supabase/functions/youversion/test.ts` | 22/22 pass |
 | Edge Function live | `curl "…/functions/v1/youversion?book=PSA&chapter=23&start=1&end=3"` | 200, Psalm 23:1-3 + attribution. Bad refs give 400. 61st request in a minute gives 429 |
-| End-to-end walk at iPad size (1180×820), first-time user, big buttons only | Playwright script (see below) | 13/13 pass, also with reduced motion on |
+| End-to-end walk at iPad size (1180×820), first-time user, big buttons only | `tests/browser/e2e.mjs` | see the `studio` branch results below |
+| Studio security as real users (author A, author B, admin) | `python supabase/tests/studio_rls_test.py` | 32/32 pass |
+| Tablet: study list + a plan using **every module type** | `tests/browser/studies.mjs` (+ `fixture_all_modules.py`) | 15/15 pass |
+| Studio end to end: author builds, reorders, previews, submits; admin approves; tablet lists it; PD rule refuses #8 | `tests/browser/studio.mjs` (+ `studio_users.py`) | 21/21 pass |
 | Accessibility (axe-core 4.13: WCAG 2.0/2.1/2.2 A+AA and best practice) | axe on 12 screen states: Home, Session (hymn with word lit, sheet music, scripture with verse lit, prayer), Finished, Sing grid, Sing player, Aide tools, confirm dialog, Read the Bible, Tap to continue | 0 issues |
 | Keyboard | Tab through Home; Enter on a tile starts the session | Tab order: 3 tiles, then Aide tools. Every stop shows a 4 px outline |
 | Portrait (820×1180) | e2e | no sideways scrolling |
 
 **The e2e walk:**
-1. Home, then *Today's Hymn & Verse*: Day 1 of 12, the hymn plays, and a word is highlighted.
+1. Home, then *Choose a Study*, then a study: the hymn plays and a word is highlighted.
 2. Next: Scripture with the YouVersion attribution. Next: the prayer with its source.
 3. Finish: "Day 2 will be ready next time". *Enjoyed it* is saved to `localStorage`.
 4. Home, then *Sing a Hymn*: a 3×3 grid with the enjoyed hymn first, then singing works.
@@ -61,11 +64,11 @@ Use an **iPad with Safari** (primary) and one desktop Chrome. Tick each item. A 
 the device, iOS version, and what happened.
 
 ### A. First tap: sound and speech unlock (iPad)
-- [ ] Open the app fresh (new tab). Tap **Today's Hymn & Verse**. Music starts within about 2 s.
+- [ ] Open the app fresh (new tab). Tap **Choose a Study**, then a study. Music starts within about 2 s.
 - [ ] The **ringer/mute switch** (or Control Center silent mode): with it ON, does the music still
       play? On some iPads, Web Audio follows the silent switch. Note the result. Aides need to
       know to turn it off.
-- [ ] Open a deep link directly (e.g. `…/#/session`). It shows **Tap to continue**, and one tap
+- [ ] Open a deep link directly (e.g. `…/#/study/1`). It shows **Tap to continue**, and one tap
       starts the music.
 - [ ] Go to Scripture. The **voice reads** each verse, and the current verse is highlighted.
 - [ ] Aide tools → **Test voice** speaks. The voice list shows only on-device voices.
@@ -116,9 +119,17 @@ the device, iOS version, and what happened.
 - [ ] Browser zoom 200%: text grows and nothing important is cut off.
 
 ### I. Admin → public (end-to-end publishing)
-- [ ] In the admin app, unpublish one hymn (status → approved) and save.
+- [ ] In the Studio (admin) → Hymns, unpublish one hymn.
 - [ ] **Refresh** the public app. The hymn is gone from Sing a Hymn.
 - [ ] Publish it again and refresh. It's back. Both changes show in the Audit Log.
+
+### K. Studio (any laptop or iPad browser)
+- [ ] `/studio/` → enter your email → the magic-link email arrives (built-in sender: about 2 per hour) → the link signs you in.
+- [ ] New study plan with: hymn, hymn, Scripture, your own note, a quiz, a hymn. Reorder by dragging and with ▲ ▼. Save.
+- [ ] **Preview** plays it exactly like a tablet. Close returns to the editor.
+- [ ] Submit for review. As an admin: Review → open it → Approve. It appears on the tablet's **Choose a Study**.
+- [ ] Send one back with a note: the author sees the note and can edit again.
+- [ ] Hymns: publishing a hymn that isn't fully public domain per its file is refused, with the reason.
 
 ### J. Production smoke test (after merging to `main`)
 - [ ] `https://hymnal-reader-v2.pages.dev/` shows **Welcome.** (not "coming soon").

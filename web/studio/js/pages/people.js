@@ -26,7 +26,7 @@ export async function render(main, _params, app) {
     h('p', { class: 'muted' }, 'Anyone can sign in and build plans; only admins publish. Authors’ plans reach tablets only after review.'),
     status,
     h('table', { class: 'table' },
-      h('thead', {}, h('tr', {}, ['Name', 'Email', 'Role', 'Joined', ''].map((t) => h('th', { scope: 'col' }, t)))),
+      h('thead', {}, h('tr', {}, ['Name', 'Email', 'Role', 'Joined', 'Action'].map((t) => h('th', { scope: 'col' }, t)))),
       tbody));
   await draw();
 }

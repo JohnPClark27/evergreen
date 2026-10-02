@@ -20,33 +20,49 @@ for that moment:
 
 The **aide** who would sit with them has a few spare minutes, not time to prepare a devotion.
 
-Hymnal Reader gives the aide **one big button**: *Today's Hymn & Verse*. Behind it is a short,
-calm session:
+Hymnal Reader gives the aide **one big button**: *Choose a Study*. Each study is a short, calm
+session in large type, with nothing to set up. A typical one has:
 - a well-known hymn, sung along with the words highlighted
 - a short passage read aloud at a gentle pace
 - a familiar prayer
 
-All of it is in large type, with nothing to set up.
+Studies are built in the **Studio** (`/studio/`). Anyone can sign in and combine **modules** in
+any order:
+- hymns
+- Scripture
+- prayers
+- their own notes
+- gentle quizzes
+- a sing-along "Finish the Line" game
 
-## The session (about 5–8 minutes)
+An admin reviews each plan before it reaches the tablets.
+
+## A study (any modules, any order)
 
 ```
- Home ──► 1 · Hymn ──────► 2 · Scripture ────────► 3 · Prayer ─────► Finished
-  │       piano hymn        1–6 verses, read        a Book of Common    "Day 2 will be
-  │       with sing-along   aloud verse by verse    Prayer prayer,      ready next time."
-  │       words lit as      (music softly           read line by line
-  │       they're sung;     underneath, lowered     with the current
-  │       sheet music       while the voice         line highlighted
-  │       on request        reads)
+ Home ──► Choose a Study ──► Part 1 · Hymn ──► Part 2 · Hymn ──► Part 3 · Scripture ──► Part 4 · Note ──► Part 5 · Quiz ──► … ──► Finished
+  │       big cards: title,   sing-along words  (two in a row     read aloud verse by   the author's own  answer revealed
+  │       parts, minutes,     lit as sung;      is fine)          verse, music softly   words, read       gently: nothing
+  │       "Enjoyed before"    sheet music                         underneath            aloud             is scored
   ├──► Sing a Hymn   3×3 grid of familiar hymns ("Enjoyed before" first)
   ├──► Read the Bible   large print, read aloud
-  └──► Aide tools   choose a day, reading speed (Slower/Slow/Normal), volume, voice
+  └──► Aide tools   reading speed (Slower/Slow/Normal), volume, voice, reset notes
 ```
+
+**Modules today:**
+- Hymn
+- Scripture (a reference; the text comes live from YouVersion)
+- Prayer (from the library, with its source)
+- Note
+- Quiz
+- Finish the Line
+
+A new kind of module is **one file plus one line**: see `docs/MODULES.md`.
 
 - **The aide is in charge.** Big **Back · Sing/Read again · Pause · Next** buttons. Nothing
   advances on its own, and nothing changes when you scroll.
-- **Remembers on the tablet only:** which day is next, and optional *Enjoyed it* / *Skip next
-  time* notes per hymn. There are no names, accounts or analytics.
+- **Remembers on the tablet only:** where a study was left, and optional *Enjoyed it* / *Skip
+  next time* notes per study and per hymn. There are no names, accounts or analytics.
 - **Built for the iPad:** landscape first, works in portrait. Touch targets are 64 px or larger,
   session text 28 px or larger. It respects Reduce Motion and passes automated WCAG 2.2 AA checks.
 
@@ -55,7 +71,7 @@ All of it is in large type, with nothing to set up.
 ```mermaid
 flowchart LR
   subgraph Laptop["Curator's laptop"]
-    A["Admin app<br/>(PySide6)"]
+    A["Studio (web, /studio/)<br/>authors + admins sign in"]
     P["Pipeline<br/>ABC → MP3 + lyric timings"]
   end
   subgraph Supabase["Supabase (Free tier)"]
@@ -79,7 +95,7 @@ flowchart LR
 | Part | What it does |
 |---|---|
 | **Pipeline** (`pipeline/`) | Reads 301 public-domain hymns from the Open Hymnal Project (ABC notation) and renders piano MP3s (abc2midi → FluidSynth → LAME, mono 96 kbps). It builds **word-by-word timings** by aligning the MIDI melody with the lyrics; 299/301 are verified. It imports 15 prayers verbatim from the Open Prayer Book. |
-| **Admin app** (`admin/`) | A desktop curation tool. It publishes hymns and prayers, builds studies (hymn + passage + prayer, with a live preview) and multi-day plans. **Every change is in an audit log.** A plan can only be published when everything in it is published. |
+| **Studio** (`web/studio/`) | A web app anyone can sign in to (magic link). Authors build **study plans** from modules in any order, preview them exactly as a tablet plays them, and submit them for review. Admins approve or send back plans, manage the hymn and prayer libraries, and see the audit log. **Every change is audited by the database.** |
 | **Supabase** (`supabase/`) | Postgres with Row Level Security, so the public key sees **published** content only. Public Storage holds the audio. The `youversion` Edge Function keeps the YouVersion key server-side and adds CORS and rate limiting. |
 | **Public app** (`web/`) | Static, no build step, on Cloudflare Pages. Web Audio crossfades and ducks the music; the browser's own speech voices read aloud; abcjs draws the sheet music with a moving cursor. |
 
@@ -97,12 +113,16 @@ math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
   are the device's own built-in voices; music is rendered from public-domain notation.
 - **Public domain only.** The 40 published hymns pass a strict rule: the ABC file says *public
   domain*, and the claim doesn't rest on a modern hymnal transcription or a "never renewed"
-  argument (`supabase/seed/publish_pd_hymns.py`).
-- **Privacy:** no accounts, no personal data, no analytics. Progress and notes stay in the
-  tablet's `localStorage`. The service-role key never leaves the curator's laptop.
+  argument (`supabase/seed/publish_pd_hymns.py`). The Studio applies the same rule, reading the
+  hymn's ABC file, whenever an admin publishes a hymn.
+- **Privacy:** residents have no accounts, and there's no personal data or analytics about
+  them. Progress and notes stay in the tablet's `localStorage`. Only **authors** sign in to the
+  Studio (email only, visible to admins). The service-role key never leaves the curator's laptop.
 - **Dignity:** no streaks, badges, scores or "you missed a day" messages, and no medical claims.
-- **Moderation:** drafts never reach residents. Content goes draft → approved → **published**,
-  enforced in the database (RLS), with an audit trail of who changed what.
+- **Moderation:** anyone may *build* a plan, but nothing reaches residents until an **admin approves
+  it**. The database enforces this (RLS plus a status trigger: authors can't publish). Approval is
+  refused while a plan uses unpublished hymns or prayers, and every change is audit-logged with
+  the signer's email.
 
 ## Sources and licenses
 
@@ -115,14 +135,14 @@ math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
 | Sheet music + timing alignment | [abcjs](https://www.abcjs.net/) 6.7.1, [@tonejs/midi](https://github.com/Tonejs/Midi) | MIT |
 | Data access | [supabase-js](https://github.com/supabase/supabase-js) 2.117.2, supabase-py | MIT |
 | Fonts | Literata, Atkinson Hyperlegible (Google Fonts) | SIL Open Font License |
-| Admin app UI | PySide6 (Qt for Python) | LGPL v3 |
 
 ## Repository map
 
 | Folder | Contents |
 |---|---|
 | `web/` | Public app: `index.html`, `js/` (screens + audio/speech/lyrics/sheet modules), `css/` |
-| `admin/` | PySide6 admin app (`python admin/app.py`) |
+| `web/studio/` | Studio: sign in, build and review study plans, manage libraries |
+| `web/modules/` | One file per module (hymn, scripture, prayer, note, quiz, finish-line) + the registry |
 | `pipeline/` | Hymn and prayer importers, MP3 renderer, lyric-timing builder |
 | `supabase/` | Migrations + RLS, the `youversion` Edge Function, seed scripts, RLS test |
 | `tests/browser/` | End-to-end and accessibility checks (Playwright + axe-core, dev-only) |
@@ -130,12 +150,16 @@ math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
 
 ## Status and testing
 
-- Production and the `dev` preview are live.
-- **Automated checks:**
+- Production (`main`) runs the day-based version. The **`studio` branch** adds the Studio and
+  modular study plans. Its preview is at `https://studio.hymnal-reader-v2.pages.dev/`.
+- **Automated checks on `studio`:**
+  - Studio security as real users: 32/32
+  - Studio end to end (author builds, previews, submits; admin approves; tablet lists it): 27/27
+  - a plan using every module type: 17/17
+  - tablet end to end: 14/14
   - RLS: 19/19
   - Edge Function: 22/22
-  - end-to-end at iPad size: 12/12 on production
-  - axe-core: 0 issues on 12 screen states
+  - axe-core: 0 issues on every tablet and Studio screen checked
 - **Manual device checks:** `docs/TESTING.md`.
 
 ## Known gaps
@@ -174,13 +198,21 @@ Things that are unfinished or limited, listed plainly:
 - The **rate limit** counts by IP address. Tablets behind one facility network share 60
   requests/minute, which is plenty for sessions but worth knowing.
 
-**Admin and pipeline**
-- The admin **Pipeline page** is a stand-in that shows how to run the importers and the last
-  report. Importing runs from the terminal.
-- Saving a hymn in the admin app is several separate writes, each audited. If one fails midway,
-  the earlier ones stay saved.
-- The admin app and pipeline have **no automated test suite** in the repo. They were tested
-  headless during development.
+**Studio, admin and pipeline**
+- **Sign-in emails:** Supabase's built-in sender allows only **about 2 per hour**. Real use needs a
+  free custom SMTP (`docs/DEPLOY.md` A6b).
+- **The first admin is made with one SQL line** after they sign in. After that, admins promote
+  others in the Studio.
+- **Authors write notes and quizzes in their own words.** An admin review is the safeguard before
+  that text reaches residents. Scripture and prayers can only be *referenced*, and the database
+  enforces that.
+- **Importing hymns and rendering audio** still runs from the terminal (`pipeline/`). The Studio
+  manages what's already imported.
+- **Preview of hymns that aren't published yet:** the preview plays exactly what a tablet would,
+  so unpublished hymns show as unavailable.
+- **The old day-based plan tables** (`plans`, `plan_days`, `studies`) are still in the database.
+  `main` used them until this branch, and they're no longer read by the app. Drop them in a later
+  migration once `studio` is merged.
 - The free **keep-alive** workflow ships disabled. Without it or a Pro plan, the Supabase project
   pauses after 7 idle days (`docs/DEPLOY.md` Part D explains restoring it).
 
