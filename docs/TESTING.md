@@ -46,11 +46,12 @@ inputs use `--control-border`, so their edges are visible to low-vision users.
 
 ### Running the browser checks
 
-The browser tests aren't in the repo yet, because they need two dev-only packages
-(`playwright-core`, `axe-core`). See `CLAUDE.md` §7 for the recipe:
-- a scratchpad install
-- `libnss3`/`libnspr4` via `apt-get download` + `dpkg -x` (no sudo)
-- `python3 -m http.server 8080` in `web/`
+See `tests/browser/README.md`:
+```sh
+cd tests/browser && npm install && ./setup-libs.sh
+node e2e.mjs  https://dev.hymnal-reader-v2.pages.dev/ reduce
+node a11y.mjs https://dev.hymnal-reader-v2.pages.dev/
+```
 
 ---
 

@@ -153,7 +153,8 @@ client, 600/min total (Postgres-backed). Attribution text for ASV: "American Sta
 | Pipeline | `pipeline/abc_meta.py`, `render_mp3.sh`, `timings/build_timings.mjs`, `import_hymns.py`, `import_prayers.py`, `supa.py`, `familiar.txt` | Output cache: `pipeline/out/` (gitignored) |
 | Supabase | `supabase/migrations/`, `functions/youversion/{index,lib,test}.ts`, `seed/`, `tests/rls_anon_test.sh`, `config.toml` | `node supabase/functions/youversion/test.ts` |
 | Public app | `web/index.html` → `js/app.js` (hash router + shared `AudioPlayer`/`Speaker`; routes `#/`, `#/session[?day=N]`, `#/done`, `#/sing[?page=N]`, `#/sing/<number>`, `#/aide`, `#/read`). Screens: `js/screens/{home,session,done,sing,aide,read}.js`. Shared: `js/hymn-panel.js` (title + karaoke + sheet toggle), `js/store.js` (localStorage), `js/ui.js` (`h()`, icons, confirm dialog), `js/books.js`. Styles: `css/core.css` (tokens) + `css/app.css` (screens). Core modules: §9a. | Each screen exports `render(root, params, ctx)` and returns a cleanup function |
-| Docs | `docs/PLAN_PROMPT.md` (spec), `PLAN.md`, `DEPLOY.md`, `licenses/` | |
+| Docs | `docs/PLAN_PROMPT.md` (spec), `PLAN.md`, `DEPLOY.md`, `TESTING.md`, `licenses/` | |
+| Browser tests | `tests/browser/{e2e,a11y,launch}.mjs`, `setup-libs.sh` | dev-only (`playwright-core`, `axe-core`) |
 
 Parallel-work guidance (Phase 7): screens are separable by file (Home, Session, Finished, Sing a
 Hymn, Aide tools, Read the Bible). Share `web/css/core.css` tokens and the Phase 6 modules. Don't
@@ -170,6 +171,10 @@ change module interfaces (§9a) without updating every caller.
   dies mid-way, use the audit_log rows to see exactly what to revert.
 - Ad-hoc SQL: `npx supabase db query --linked "…"` (Management API; bypasses RLS).
 - Every public-app phase is checked on the **Pages preview URL**, not just locally.
+- **Browser checks are in the repo:** `tests/browser/` (`e2e.mjs`, `a11y.mjs`, dev-only deps,
+  approved by the user). Run `npm install && ./setup-libs.sh` once, then
+  `node e2e.mjs <url> [reduce]` / `node a11y.mjs <url>`. Re-run both after any UI change. The
+  notes below explain how it works underneath.
 - **Browser tests without sudo:** Playwright's cached `chrome-headless-shell` (`~/.cache/ms-playwright/chromium_headless_shell-1243`)
   needs `libnss3`/`libnspr4`. Get them with `apt-get download libnspr4 libnss3`, then `dpkg -x` into the
   scratchpad, then launch with `env.LD_LIBRARY_PATH` pointing there. Install `playwright-core` in the
