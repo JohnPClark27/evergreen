@@ -45,6 +45,19 @@ ok((await text('.lyric-word.now')).length > 0, 'hymn module: word lit "' + await
 await shot('runner-hymn');
 await next(); await page.locator('.read-line').first().waitFor({ timeout: 30000 });
 ok((await text('.attribution')).includes('YouVersion'), 'scripture module: ' + await text('.reading-panel .title'));
+// Read-aloud is OFF by default (built-in voices sound robotic); the aide can switch it on.
+const voice = page.locator('.voice-toggle');
+const badgeShown = async () => page.locator('.reading-panel .badge').isVisible().catch(() => false);
+const againOff = async () => page.getByRole('button', { name: 'Read again' }).isDisabled();
+ok((await voice.innerText()) === 'Read aloud: Off' && !(await badgeShown()) && (await againOff()),
+  'read-aloud is off by default (no "Reading aloud" badge, Read again disabled)');
+await voice.click();
+ok((await voice.innerText()) === 'Read aloud: On' && (await badgeShown()) && !(await againOff())
+  && (await page.evaluate(() => JSON.parse(localStorage.getItem('hr.settings')).readAloud)) === true,
+  'switching it on shows the badge, enables Read again, and is saved on the tablet');
+await voice.click();
+ok((await voice.innerText()) === 'Read aloud: Off' && (await page.evaluate(() => JSON.parse(localStorage.getItem('hr.settings')).readAloud)) === false,
+  'switching it off again is saved too');
 await next(); await page.locator('.reading-panel .read-line').first().waitFor();
 ok((await text('.reading-panel .title')).includes('Test note'), 'note module: ' + await text('.reading-panel .title'));
 await next(); await page.locator('.quiz-choice').first().waitFor();
@@ -101,6 +114,11 @@ const planId = planUrl.match(/#\/plan\/(\d+)/)[1];
 await page.goto(BASE + `#/study/${planId}`);
 await page.getByRole('heading', { name: 'ZZ All modules' }).waitFor({ timeout: 10000 });
 ok(page.url().includes(`#/plan/${planId}`), 'old one-study link opens the plan page');
+const fresh = await (await browser.newContext({ viewport: { width: 1180, height: 820 } })).newPage();
+await fresh.goto(BASE + '#/aide');
+await fresh.getByRole('radiogroup', { name: 'Read aloud in studies' }).waitFor();
+ok((await fresh.getByRole('radio', { name: 'Off' }).getAttribute('aria-checked')) === 'true', 'Aide tools: read aloud is Off for a fresh tablet');
+ok((await axe(fresh)).length === 0, 'axe clean: aide tools with the read-aloud switch');
 ok(errors.length === 0, 'no console errors ' + JSON.stringify(errors));
 console.log(`${pass} passed, ${fail} failed`);
 await browser.close();

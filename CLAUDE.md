@@ -91,6 +91,24 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 
 ---
 
+## 0b. Read-aloud is OFF by default (2026-10-03, user's decision)
+
+- The user judged **every built-in TTS voice too poor, even on an iPad**, and **rejected AI voices**,
+  whether local (Piper/Kokoro), on-device, or cloud. Don't propose or add generated audio.
+- So in studies, read-aloud is **off by default**. It's one tablet setting, `hr.settings.readAloud`
+  (default `false`), switched in **Aide tools** or with the **Read aloud: Off/On** button in every
+  study's top bar.
+- **Mechanism:** `Speaker.enabled`. The runner sets it from the setting, and while it's false
+  `speakText`/`speakVerses` do nothing. So **every module, including new ones, obeys
+  automatically**; don't add per-module checks.
+- `kit.readAloud()` hides its badge when off and exposes `speakNow` (switching on mid-part starts
+  reading) and `needsSpeech` ("Read again" is disabled while off).
+- The runner restores `enabled = true` on exit, so Read the Bible's explicit "Read aloud" button and
+  Aide tools' "Test voice" still work.
+- **Future work:** natural reading voice (human recordings first), listed in README "Known gaps".
+- `core.css` now has `[hidden] { display: none !important; }`: classes that set `display` were
+  overriding `hidden`.
+
 ## 1. Coordination rules (avoid clashing)
 
 1. **Before you start:** `git fetch && git status && git log --oneline -5` on `dev`. If `dev`

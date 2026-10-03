@@ -1,4 +1,4 @@
-// Aide tools: reading speed, music volume, voice; reset notes.
+// Aide tools: read aloud (off by default), reading speed, music volume, voice; reset notes.
 // Everything is saved on this tablet only (localStorage). No names are saved.
 import { RATES } from '../speech.js';
 import { confirmDialog, h, icon } from '../ui.js';
@@ -8,6 +8,17 @@ const RATE_LABEL = { slower: 'Slower', slow: 'Slow', normal: 'Normal' };
 export async function render(root, _params, ctx) {
   const { store, speaker, audio } = ctx;
   const settings = store.settings();
+  // ---- Read aloud in studies (off by default; the same switch is in each study's top bar) ----
+  const aloud = h('div', { class: 'choice-row', role: 'radiogroup', 'aria-label': 'Read aloud in studies' });
+  function drawAloud() {
+    const on = store.settings().readAloud === true;
+    aloud.replaceChildren(...[[false, 'Off'], [true, 'On']].map(([value, label]) => h('button', {
+      class: `pill${on === value ? ' selected' : ''}`, type: 'button', role: 'radio',
+      'aria-checked': String(on === value),
+      onclick: () => { store.setSettings({ readAloud: value }); drawAloud(); },
+    }, label)));
+  }
+
   // ---- Reading speed ----
   const speed = h('div', { class: 'choice-row', role: 'radiogroup', 'aria-label': 'Reading speed' });
   function drawSpeed() {
@@ -58,6 +69,11 @@ export async function render(root, _params, ctx) {
       h('p', { class: 'day' }, '')),
     h('div', { class: 'card aide-card' },
       h('section', {},
+        h('h2', {}, 'Read aloud in studies'), aloud,
+        h('p', { class: 'muted' }, 'Off by default: the text is shown large, and the aide reads it or everyone reads along. '
+          + 'Turn it on to have this tablet read Scripture, prayers and notes with its built-in voice. '
+          + 'You can also switch it in any study, at the top of the screen.')),
+      h('section', {},
         h('h2', {}, 'Reading speed'), speed),
       h('section', {},
         h('h2', {}, 'Music volume'), volume),
@@ -68,6 +84,7 @@ export async function render(root, _params, ctx) {
       h('section', {},
         h('h2', {}, 'Notes'), resetBtn, notesStatus,
         h('p', { class: 'muted' }, 'Notes stay on this tablet. No names are saved.')))));
+  drawAloud();
   drawSpeed();
   return () => speaker.stop();
 }

@@ -27,7 +27,7 @@ page shows a big **Continue: Study 3** button and a ✓ next to each study alrea
 progress is kept on the tablet only, with no accounts. Each study is a short, calm session in large
 type, with nothing to set up. A typical one has:
 - a well-known hymn, sung along with the words highlighted
-- a short passage read aloud at a gentle pace
+- a short passage in large print, read by the aide or together (the tablet can also read it aloud, if the aide turns that on)
 - a familiar prayer
 
 Plans are built in the **Studio** (`/studio/`). Anyone can sign in, add studies to a plan (or copy a
@@ -50,7 +50,7 @@ An admin reviews each plan before it reaches the tablets.
   │       "Enjoyed before"        ▸ Study 3 (Next up) …     on request               underneath             nothing is scored)     the plan
   ├──► Sing a Hymn   3×3 grid of familiar hymns ("Enjoyed before" first)
   ├──► Read the Bible   large print, read aloud
-  └──► Aide tools   reading speed (Slower/Slow/Normal), volume, voice, reset notes
+  └──► Aide tools   read aloud On/Off (off by default), reading speed, volume, voice, reset notes
 ```
 
 **Modules today:**
@@ -101,7 +101,7 @@ flowchart LR
 | **Pipeline** (`pipeline/`) | Reads 301 public-domain hymns from the Open Hymnal Project (ABC notation) and renders piano MP3s (abc2midi → FluidSynth → LAME, mono 96 kbps). It builds **word-by-word timings** by aligning the MIDI melody with the lyrics; 299/301 are verified. It imports 15 prayers verbatim from the Open Prayer Book. |
 | **Studio** (`web/studio/`) | A web app anyone can sign in to (magic link). Authors build **study plans** from modules in any order, preview them exactly as a tablet plays them, and submit them for review. Admins approve or send back plans, manage the hymn and prayer libraries, and see the audit log. **Every change is audited by the database.** |
 | **Supabase** (`supabase/`) | Postgres with Row Level Security, so the public key sees **published** content only. Public Storage holds the audio. The `youversion` Edge Function keeps the YouVersion key server-side and adds CORS and rate limiting. |
-| **Public app** (`web/`) | Static, no build step, on Cloudflare Pages. Web Audio crossfades and ducks the music; the browser's own speech voices read aloud; abcjs draws the sheet music with a moving cursor. |
+| **Public app** (`web/`) | Static, no build step, on Cloudflare Pages. Web Audio crossfades and ducks the music; the browser's own speech voices can read aloud (off by default); abcjs draws the sheet music with a moving cursor. |
 
 Runs at **$0** on Supabase Free + Cloudflare Pages. See `docs/DEPLOY.md` for the runbook and cost
 math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
@@ -113,8 +113,10 @@ math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
     guess, and any prayer added later requires a **source**.
   - **Scripture** is fetched **live from YouVersion** with its attribution. Verse text is never
     stored in the database or the repo.
-- **No AI in the resident's experience.** No chatbot, no generated audio, music or images. Voices
-  are the device's own built-in voices; music is rendered from public-domain notation.
+- **No AI in the resident's experience.** No chatbot, no generated audio, music or images. Music
+  is rendered from public-domain notation. **Read-aloud is off by default**, because the built-in
+  voices still sound robotic. When an aide turns it on (in Aide tools, or the *Read aloud* button in
+  any study), it uses only the device's own voice.
 - **Public domain only.** The 40 published hymns pass a strict rule: the ABC file says *public
   domain*, and the claim doesn't rest on a modern hymnal transcription or a "never renewed"
   argument (`supabase/seed/publish_pd_hymns.py`). The Studio applies the same rule, reading the
@@ -169,6 +171,18 @@ math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
 ## Known gaps
 
 Things that are unfinished or limited, listed plainly:
+
+**Future work: a natural reading voice**
+- The devices' built-in text-to-speech voices sound robotic, even the best ones on an iPad. So
+  **read-aloud is off by default**: Scripture, prayers and notes are shown in large print for the
+  aide to read, or for everyone to read together. Aides can switch the device voice on when it helps.
+- We **chose not to use AI-generated voices**, whether on the device, from a local model, or from a
+  cloud service.
+- Open directions:
+  - **Human recordings** (for example, a pastor or volunteer recording the 15 prayers line by line
+    in the Studio)
+  - **public-domain human audio Bibles** matched to the translation on screen
+  - making it easier to pick a device's best installed voice
 
 **Not yet verified on real devices**
 - Hearing the read-aloud voice on an **iPad** (Safari). All automated tests run headless, which has

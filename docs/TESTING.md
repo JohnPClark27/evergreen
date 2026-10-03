@@ -19,7 +19,7 @@ Test on the **Pages preview** (`https://dev.hymnal-reader-v2.pages.dev/`) before
 | Edge Function live | `curl "…/functions/v1/youversion?book=PSA&chapter=23&start=1&end=3"` | 200, Psalm 23:1-3 + attribution. Bad refs give 400. 61st request in a minute gives 429 |
 | End-to-end walk at iPad size (1180×820), first-time user, big buttons only | `tests/browser/e2e.mjs` | see the `studio` branch results below |
 | Studio security as real users (author A, author B, admin), incl. studies inside plans | `python supabase/tests/studio_rls_test.py` | 39/39 pass |
-| Tablet: plan list, plan page (Start / Continue, ✓, Next up, Start over), study 1 using **every module type**, done → Next: Study 2, all done (+ axe on plan page, quiz) | `tests/browser/studies.mjs` (+ `fixture_all_modules.py`) | 27/27 pass |
+| Tablet: plan list, plan page (Start / Continue, ✓, Next up, Start over), study 1 using **every module type**, read-aloud Off by default + switching On/Off, done → Next: Study 2, all done (+ axe on plan page, quiz, Aide tools) | `tests/browser/studies.mjs` (+ `fixture_all_modules.py`) | 32/32 pass |
 | Studio end to end: author builds, reorders, adds/copies/removes studies, previews a study, submits; admin approves; tablet lists it with both studies; PD rule refuses #8; axe on every Studio page | `tests/browser/studio.mjs` (+ `studio_users.py make`) | 36/36 pass |
 | Studio sign-in: link opened in a *different* browser, one-time code, expired link | `tests/browser/signin.mjs` (+ `studio_users.py link`, no email sent) | 6/6 pass |
 | Accessibility (axe-core 4.13: WCAG 2.0/2.1/2.2 A+AA and best practice) | axe on 14 screen states: Home, plan list, plan page, study (hymn with word lit, sheet music, scripture with verse lit, prayer), Finished, Sing grid, Sing player, Aide tools, confirm dialog, Read the Bible, Tap to continue | 0 issues |
@@ -76,10 +76,11 @@ the device, iOS version, and what happened.
       know to turn it off.
 - [ ] Open a deep link directly (e.g. `…/#/study/<plan>/1`). It shows **Tap to continue**, and one tap
       starts the music.
-- [ ] Go to Scripture. The **voice reads** each verse, and the current verse is highlighted.
+- [ ] Go to Scripture. **Read aloud** is *Off* by default (top of the study): the text shows, with no voice and no "Reading aloud" badge.
+- [ ] Tap **Read aloud: Off** → **On**. The **voice reads** each verse and the current verse is highlighted. Go to another study: it stays On (saved on the tablet). Aide tools shows the same switch.
 - [ ] Aide tools → **Test voice** speaks. The voice list shows only on-device voices.
 
-### B. Ducking
+### B. Ducking (with read-aloud switched On)
 - [ ] On Scripture, the music keeps playing softly and **drops clearly** while the voice reads.
 - [ ] After the last verse, the music **comes back up** within about 1 s.
 - [ ] Same on the Prayer step, line by line.

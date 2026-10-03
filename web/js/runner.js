@@ -27,6 +27,10 @@ export async function runStudy(root, plan, ctx, opts = {}) {
   let token = 0;       // bumps on every step change so late async work is ignored
 
   const kit = { audio, speaker, api, paused: () => paused };
+  // Read-aloud: off unless the aide turned it on (saved on this tablet). Restored on exit so
+  // Read the Bible's own "Read aloud" button and Aide tools' "Test voice" are unaffected.
+  let readAloud = ctx.store?.settings().readAloud === true;
+  speaker.enabled = readAloud;
 
   // ---------- frame ----------
   const where = h('p', { class: 'where', 'aria-live': 'polite' });
@@ -37,6 +41,15 @@ export async function runStudy(root, plan, ctx, opts = {}) {
   const pauseBtn = h('button', { class: 'round', type: 'button', 'aria-label': 'Pause' }, icon('pause'));
   const backBtn = h('button', { class: 'pill', type: 'button' }, icon('back'), h('span', { class: 'label' }, 'Back'));
   const nextBtn = h('button', { class: 'pill primary', type: 'button' }, h('span', { class: 'label' }, 'Next'), icon('next'));
+  const voiceBtn = h('button', { class: 'pill voice-toggle', type: 'button', 'aria-pressed': 'false' });
+  const drawVoice = () => {
+    voiceBtn.textContent = `Read aloud: ${readAloud ? 'On' : 'Off'}`;
+    voiceBtn.setAttribute('aria-pressed', String(readAloud));
+    voiceBtn.classList.toggle('on', readAloud);
+  };
+  const refreshAgain = () => {
+    againBtn.disabled = !controller?.again || (controller.needsSpeech && !readAloud);
+  };
 
   root.append(h('div', { class: 'screen session' },
     h('h1', { class: 'sr-only', tabindex: '-1' }, plan.title),
@@ -44,6 +57,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       h('button', { class: 'pill', type: 'button', onclick: () => opts.onExit?.() },
         icon(opts.exitLabel ? 'back' : 'home'), h('span', { class: 'label' }, opts.exitLabel ?? 'Home')),
       h('div', { class: 'where-box' }, where, bar),
+      voiceBtn,
       h('p', { class: 'day plan-name' }, plan.subtitle ?? plan.title)),
     stage,
     h('footer', { class: 'bottombar' }, backBtn, againBtn, pauseBtn, nextBtn)));
@@ -100,7 +114,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
     controller = c ?? null;
     if (controller?.musicUrl) musicUrl = controller.musicUrl;
     againBtn.querySelector('.label').textContent = controller?.againLabel ?? 'Again';
-    againBtn.disabled = !controller?.again;
+    refreshAgain();
     stage.focus({ preventScroll: true });
   }
 
@@ -117,6 +131,15 @@ export async function runStudy(root, plan, ctx, opts = {}) {
     }
   });
   againBtn.addEventListener('click', () => { setPaused(false); controller?.again?.(); });
+  voiceBtn.addEventListener('click', () => {
+    readAloud = !readAloud;
+    speaker.enabled = readAloud;
+    ctx.store?.setSettings({ readAloud });
+    drawVoice();
+    refreshAgain();
+    if (!readAloud) speaker.stop();                       // stops at once; the music comes back up
+    else if (!paused) controller?.speakNow?.();           // start reading this part now
+  });
   backBtn.addEventListener('click', () => { if (index > 0) show(index - 1); });
   nextBtn.addEventListener('click', () => {
     if (index < items.length - 1) show(index + 1);
@@ -126,10 +149,12 @@ export async function runStudy(root, plan, ctx, opts = {}) {
   audio.addEventListener('ended', onEnded);
 
   setPaused(false);
+  drawVoice();
   await show(index);
 
   return () => {
     token++;
+    speaker.enabled = true;
     audio.removeEventListener('ended', onEnded);
     try { controller?.stop?.(); } catch (err) { console.error(err); }
     speaker.stop();
