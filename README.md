@@ -20,14 +20,18 @@ for that moment:
 
 The **aide** who would sit with them has a few spare minutes, not time to prepare a devotion.
 
-Hymnal Reader gives the aide **one big button**: *Choose a Study*. Each study is a short, calm
-session in large type, with nothing to set up. A typical one has:
+Hymnal Reader gives the aide **one big button**: *Choose a Study Plan*. A pastor publishes a
+**study plan** (for example, "Comfort in the evening", or a 12-week series) that holds one or more
+**studies**. On the tablet you pick a plan, then walk through its studies in any order. The plan
+page shows a big **Continue: Study 3** button and a ✓ next to each study already done. That
+progress is kept on the tablet only, with no accounts. Each study is a short, calm session in large
+type, with nothing to set up. A typical one has:
 - a well-known hymn, sung along with the words highlighted
 - a short passage read aloud at a gentle pace
 - a familiar prayer
 
-Studies are built in the **Studio** (`/studio/`). Anyone can sign in and combine **modules** in
-any order:
+Plans are built in the **Studio** (`/studio/`). Anyone can sign in, add studies to a plan (or copy a
+study from another plan), and build each study from **modules** in any order:
 - hymns
 - Scripture
 - prayers
@@ -37,13 +41,13 @@ any order:
 
 An admin reviews each plan before it reaches the tablets.
 
-## A study (any modules, any order)
+## A study plan, its studies, and their modules
 
 ```
- Home ──► Choose a Study ──► Part 1 · Hymn ──► Part 2 · Hymn ──► Part 3 · Scripture ──► Part 4 · Note ──► Part 5 · Quiz ──► … ──► Finished
-  │       big cards: title,   sing-along words  (two in a row     read aloud verse by   the author's own  answer revealed
-  │       parts, minutes,     lit as sung;      is fine)          verse, music softly   words, read       gently: nothing
-  │       "Enjoyed before"    sheet music                         underneath            aloud             is scored
+ Home ──► Choose a Study Plan ──► the plan ──────────────► a study: Part 1 · Hymn ──► Part 2 · Scripture ──► Part 3 · Note ──► … ──► Finished
+  │       big cards: title,       "Continue: Study 3"       sing-along words lit     read aloud verse by    the author's own       "Next: Study 4"
+  │       "3 of 12 done",         ✓ Study 1  ✓ Study 2      as sung; sheet music     verse, music softly    words (quizzes:        or back to
+  │       "Enjoyed before"        ▸ Study 3 (Next up) …     on request               underneath             nothing is scored)     the plan
   ├──► Sing a Hymn   3×3 grid of familiar hymns ("Enjoyed before" first)
   ├──► Read the Bible   large print, read aloud
   └──► Aide tools   reading speed (Slower/Slow/Normal), volume, voice, reset notes

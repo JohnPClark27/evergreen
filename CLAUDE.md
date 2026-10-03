@@ -21,22 +21,37 @@ and to **rework studies into modular study plans**. Built on branch `studio` (no
 merges). Decisions the user made: **admin approval** before plans reach tablets, **magic-link**
 sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scoring**.
 
-- **Data (migrations 0005–0007, additive only; `main` still reads `plans/plan_days/studies`):**
+- **Plans hold studies (2026-10-03, user's request):** a **study plan** (published by a pastor,
+  approved as a whole) holds one or more **studies**; each study holds modules. The user chose:
+  studies live **inside one plan** (with "copy a study from another plan"); tablets let people
+  open studies in **any order** with a "Next up" suggestion; the 12 imported days were
+  **combined** into one DRAFT plan "Sample — 12 Days" (12 studies), and the old 12 one-study
+  plans were archived (not deleted). Migration `0008_plan_studies`.
+- **Data (migrations 0005–0008, additive only; `main` still reads `plans/plan_days/studies`):**
   - `profiles` (author/admin, created on sign-up)
   - `study_plans` (owner, status draft → pending → published | archived, review_note) and
-    `study_plan_items` (position, `module_type`, jsonb `config`)
+    `plan_studies` (plan_id, position, title) and `study_plan_items` (plan_id, **study_id**,
+    position, `module_type`, jsonb `config`; FK `(study_id, plan_id)` → `plan_studies`)
   - RLS and a status-guard trigger: authors can't publish
   - `module_config_ok()`: the DB refuses Scripture or prayer text in modules
   - RPCs `save_study_plan` (atomic), `study_plan_problems`, `review_study_plan`, `admin_list_users`,
     `set_user_role`
   - audit triggers log the signer's email
-  - The 12 sample days were imported as 12 published 3-module plans.
+  - `save_study_plan(p_id, p_title, p_description, p_studies)` with
+    `p_studies = [{title, items: [{type, config}]}]`.
+  - `study_plan_problems` reports per study: "Study 3 … has no modules", "Study 2, module 1:
+    hymn #… isn't published".
 - **Modules:** `web/modules/*.js` with registry `web/modules/index.js`. See `docs/MODULES.md`.
   Adding one = one file + one line.
-- **Runner:** `web/js/runner.js` plays any plan. The tablet uses it at `#/study/<id>`; the Studio
+- **Runner:** `web/js/runner.js` plays one STUDY (`{title, subtitle, items}`). The tablet uses it at
+  `#/study/<planId>/<n>` (n = 1-based study number); the Studio
   previews through the tablet's `#/preview` in an iframe, with the plan passed in `sessionStorage`
   under `hr.preview`.
-- **Tablet:** Home → **Choose a Study** (`#/studies`) → runner → done (study notes). The day picker
+- **Tablet:** Home → **Choose a Study Plan** (`#/studies`) → plan page (`#/plan/<id>`: Start /
+  Continue: Study N, ✓ rows, Next up, Start this plan over) → study (`#/study/<id>/<n>`) → done
+  ("Next: Study N" / Back to the plan / Home). Progress: `hr.planProgress {[planId]: {done:
+  [studyKey], last, date}}`, where studyKey = the study's title in lower case, so a ✓ survives the
+  pastor re-saving or reordering. Old `#/study/<id>` links redirect to `#/plan/<id>`. The day picker
   and `#/session` are gone (`#/session` redirects).
 - **Studio:** `web/studio/` (`js/db.js` is its only Supabase module).
   - Pages: plans, editor, review, hymns (publishing re-runs the PD rule from the ABC file:
@@ -61,11 +76,13 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
     with no email sent (never rate-limited). Use it for the first admin and for anyone locked out.
   - Supabase keeps **one** pending sign-in token per user: generating a new one cancels the old.
 - **Tests** (all re-run green on the `studio` preview, 2026-10-03):
-  - `python supabase/tests/studio_rls_test.py` (32). Counts come from the live data, because
+  - `python supabase/tests/studio_rls_test.py` (39). Counts come from the live data, because
     admins publish and unpublish plans; don't hard-code them.
-  - `tests/browser/studio.mjs` + `studio_users.py` (27, including axe on Studio pages)
-  - `studies.mjs` + `fixture_all_modules.py` (17). Run `make` first and `clean` after, e.g. with a
-    shell `trap`.
+  - `tests/browser/studio.mjs` + `studio_users.py` (36, including studies and axe on Studio pages)
+  - `studies.mjs` + `fixture_all_modules.py` (27; the fixture is a published 2-study plan). Run
+    `make` first and `clean` after, e.g. with a shell `trap` that uses **absolute** paths.
+  - In Playwright, match "Next" with `exact: true`: the finish-the-line game has a "Next line"
+    button. Dialogs' `close` events arrive asynchronously, so wait for the result before counting.
   - `e2e.mjs` (14) and `a11y.mjs` (13 tablet states), updated for studies
   - `signin.mjs` + `studio_users.py link` (6: link in a fresh browser, code, expired link)
 - **Another session** works on branch `mobile-layout` (worktree `.claude/worktrees/`, now
@@ -85,7 +102,7 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
    If two agents must work in parallel, each uses its own branch off `dev` (e.g.
    `phase6-audio`) and touches **disjoint files**. See the ownership table in §6.
 4. **Migrations are append-only.** Never edit an applied migration. The next file is
-   `supabase/migrations/20261001000008_<name>.sql` (0005–0007 are used by `studio`). Pick the next free number after `git pull`;
+   `supabase/migrations/20261001000009_<name>.sql` (0005–0008 are used by `studio`). Pick the next free number after `git pull`;
    two agents must not pick the same number. Apply with `npx supabase db push`.
 5. **Update this file** at the end of your phase: the status line, §3 "Live state", and anything
    you learned in §8. Keep it accurate. It's how the next agent avoids redoing or breaking your work.
@@ -131,7 +148,7 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 | Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 107 MB total. Audio only for the 50 familiar hymns, so every published hymn has audio. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
 | Migrations applied | `…0001_schema`, `…0002_rls`, `…0003_storage_buckets`, `…0004_rate_limits`, plus the Studio's `…0005`–`…0007` (additive; checked 2026-10-03) |
-| Studio data (2026-10-03) | 1 user (the owner, **admin**). 13 study plans, **6 published**: imported days 1 and 9–12, plus the owner's own "Sample Study Plan" using all six module types. Imported days 2–8 were moved back to draft by the owner. **Real content: don't change it in tests.** |
+| Studio data (2026-10-03, after 0008) | 1 user (the owner, **admin**). Active plans: the owner's **"Sample Study Plan"** (published, 1 study, all six module types) and **"Sample — 12 Days"** (DRAFT, 12 studies, nothing blocks publishing: the owner decides). The 12 old one-study plans are archived. **Real content: don't change it in tests.** |
 
 **The public app sees: 40 hymns, 15 prayers, and the published "Sample — 12 Days" plan.** That's
 enough for Phase 7's session flow. For testing Phase 6/7 you'll need published content. Ask the user to publish
