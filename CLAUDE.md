@@ -60,10 +60,12 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   - `python pipeline/studio_signin.py <email> [--admin] [--url …]` makes a one-time link + code
     with no email sent (never rate-limited). Use it for the first admin and for anyone locked out.
   - Supabase keeps **one** pending sign-in token per user: generating a new one cancels the old.
-- **Tests:**
-  - `python supabase/tests/studio_rls_test.py` (32)
+- **Tests** (all re-run green on the `studio` preview, 2026-10-03):
+  - `python supabase/tests/studio_rls_test.py` (32). Counts come from the live data, because
+    admins publish and unpublish plans; don't hard-code them.
   - `tests/browser/studio.mjs` + `studio_users.py` (27, including axe on Studio pages)
-  - `studies.mjs` + `fixture_all_modules.py` (17)
+  - `studies.mjs` + `fixture_all_modules.py` (17). Run `make` first and `clean` after, e.g. with a
+    shell `trap`.
   - `e2e.mjs` (14) and `a11y.mjs` (13 tablet states), updated for studies
   - `signin.mjs` + `studio_users.py link` (6: link in a fresh browser, code, expired link)
 - **Another session** works on branch `mobile-layout` (worktree `.claude/worktrees/`, now
@@ -128,7 +130,8 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 | DB content | 301 hymns: **40 `published`** (well-known, fully public domain per a strict ABC-file rule: `supabase/seed/publish_pd_hymns.py`), the rest `approved`. 50 `is_familiar` (the original 46 plus #67, #83, #169, #170, set in the DB; `familiar.txt` only seeds first imports). 1313 scripture refs, 158 topics, 15 prayers (`published`). Plans: **"Sample — 12 Days" (`published`**, 12 published studies) and "Memory Care — 30 Days" (`draft`; 4 of its studies are shared with the sample plan and are published). |
 | Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 107 MB total. Audio only for the 50 familiar hymns, so every published hymn has audio. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
-| Migrations applied | `…0001_schema`, `…0002_rls`, `…0003_storage_buckets`, `…0004_rate_limits` |
+| Migrations applied | `…0001_schema`, `…0002_rls`, `…0003_storage_buckets`, `…0004_rate_limits`, plus the Studio's `…0005`–`…0007` (additive; checked 2026-10-03) |
+| Studio data (2026-10-03) | 1 user (the owner, **admin**). 13 study plans, **6 published**: imported days 1 and 9–12, plus the owner's own "Sample Study Plan" using all six module types. Imported days 2–8 were moved back to draft by the owner. **Real content: don't change it in tests.** |
 
 **The public app sees: 40 hymns, 15 prayers, and the published "Sample — 12 Days" plan.** That's
 enough for Phase 7's session flow. For testing Phase 6/7 you'll need published content. Ask the user to publish

@@ -67,10 +67,20 @@ try:
     prayer = service.table("prayers").select("id").eq("status", "published").limit(1).execute().data[0]
 
     # ---- public / tablets
+    # Compare with the real data (admins publish/unpublish plans, so counts change over time).
     pub = anon.table("study_plans").select("id,title,status").execute().data
-    check(len(pub) >= 12 and all(p["status"] == "published" for p in pub), f"anon sees published plans only ({len(pub)})")
-    items = anon.table("study_plan_items").select("module_type").eq("plan_id", pub[0]["id"]).execute().data
-    check([i["module_type"] for i in items] == ["hymn", "scripture", "prayer"], "imported plan = hymn, scripture, prayer")
+    want = service.table("study_plans").select("id").eq("status", "published").execute().data
+    check(len(pub) == len(want) and all(p["status"] == "published" for p in pub),
+          f"anon sees exactly the published plans ({len(pub)} of {len(want)} published)")
+    # An imported plan (owner_id null) that is still published shows its three modules.
+    imported = (service.table("study_plans").select("id").eq("status", "published")
+                .is_("owner_id", "null").order("id").limit(1).execute().data)
+    if imported:
+        items = (anon.table("study_plan_items").select("module_type").eq("plan_id", imported[0]["id"])
+                 .order("position").execute().data)
+        check([i["module_type"] for i in items] == ["hymn", "scripture", "prayer"], "imported plan = hymn, scripture, prayer")
+    else:
+        print("SKIP imported plan shape (no imported plan is published right now)")
     check(refused(lambda: anon.rpc("save_study_plan", {"p_id": None, "p_title": "x", "p_description": None, "p_items": []}).execute()),
           "anon can't create plans")
 
