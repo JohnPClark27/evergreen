@@ -66,6 +66,15 @@ async function player(root, number, ctx) {
   const sync = () => setPauseIcon();
   for (const e of ['play', 'pause', 'stop', 'ended']) audio.addEventListener(e, sync);
 
+  // Optional aide notes for this hymn (shown as "Enjoyed before" / hidden in the grid).
+  const noteStatus = h('span', { class: 'muted small', 'aria-live': 'polite' });
+  const note = (kind) => { ctx.store.setNote(hymn.number, kind); noteStatus.textContent = kind === 'enjoyed' ? 'Noted: shown first next time.' : 'Noted: hidden next time.'; };
+  panel.el.append(h('div', { class: 'row aide-row' },
+    h('span', { class: 'muted small' }, 'For the aide:'),
+    h('button', { class: 'pill small-pill', type: 'button', onclick: () => note('enjoyed') }, 'Enjoyed it'),
+    h('button', { class: 'pill small-pill', type: 'button', onclick: () => note('skip') }, 'Skip next time'),
+    noteStatus));
+
   root.append(h('div', { class: 'screen session' },
     h('header', { class: 'topbar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),

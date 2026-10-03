@@ -7,7 +7,7 @@
 #   3. the Open Hymnal repo (ABC files + its scripts), configured for this machine
 #   4. Python venv in .venv with requirements.txt
 #   5. Node deps for pipeline/timings (abcjs, @tonejs/midi; pinned)
-#   6. checks admin/.env has the Supabase keys (never prints them)
+#   6. checks .env (repo root, or the older admin/.env) has the Supabase keys (never prints them)
 #
 # Usage:   ./setup.sh            (safe to re-run: finished steps are skipped)
 # Options: OPENHYMNAL_DIR=...    where to clone Open Hymnal (default ~/openhymnal)
@@ -82,13 +82,15 @@ step "5/6 Timing builder deps (pipeline/timings)"
 echo "abcjs + @tonejs/midi installed."
 
 # ---------------------------------------------------------------------------
-step "6/6 admin/.env"
-if [[ -f admin/.env ]]; then
+step "6/6 .env"
+ENV_FILE=""
+for f in .env admin/.env; do [[ -f "$f" ]] && { ENV_FILE="$f"; break; }; done
+if [[ -n "$ENV_FILE" ]]; then
   for k in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
-    grep -q "^$k=." admin/.env && echo "$k: set" || echo "$k: MISSING (see .env.example)"
+    grep -q "^$k=." "$ENV_FILE" && echo "$k: set ($ENV_FILE)" || echo "$k: MISSING in $ENV_FILE (see .env.example)"
   done
 else
-  echo "admin/.env not found: cp .env.example admin/.env and fill it in (never commit it)."
+  echo ".env not found: cp .env.example .env and fill it in (never commit it)."
 fi
 
 cat <<'NEXT'

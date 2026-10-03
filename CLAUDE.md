@@ -5,10 +5,89 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
 `docs/PLAN_PROMPT.md` (phases 0–9). The approved design is `docs/PLAN.md`, and the runbook is
 `docs/DEPLOY.md`.
 
-**Status (2026-10-02): Phases 0–8 are done on `dev`, except production go-live. That needs the user
-to merge `dev` → `main`; Pages deploys `main` to `hymnal-reader-v2.pages.dev`, which still shows the
-placeholder until then. Next is Phase 9** (docs for judges). Still pending: the real-device checklist
-in `docs/TESTING.md` (speech on iPad, mute switch, VoiceOver); headless tests have no voices.
+**Status (2026-10-02): all phases (0–9) are done.**
+- Production is live at `https://hymnal-reader-v2.pages.dev/`: PR #1 merged `dev` → `main`, and the
+  production smoke test gave e2e 12/12 and axe 0 issues.
+- The Phase 9 docs (README for judges, `docs/VALIDATION.md` template, known gaps) are on `dev` and
+  reach `main` when the user merges.
+- Still pending, by people: the real-device checklist in `docs/TESTING.md` §2 (speech on iPad, mute
+  switch, VoiceOver), filling in `docs/VALIDATION.md`, and the "Known gaps" list in `README.md`.
+  That list is the backlog for any further work.
+
+## 0. The `studio` branch (2026-10-02), read this if you're on it
+
+The user asked to **replace the Python admin app with a web Studio** that anyone can sign in to,
+and to **rework studies into modular study plans**. Built on branch `studio` (not merged; the user
+merges). Decisions the user made: **admin approval** before plans reach tablets, **magic-link**
+sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scoring**.
+
+- **Plans hold studies (2026-10-03, user's request):** a **study plan** (published by a pastor,
+  approved as a whole) holds one or more **studies**; each study holds modules. The user chose:
+  studies live **inside one plan** (with "copy a study from another plan"); tablets let people
+  open studies in **any order** with a "Next up" suggestion; the 12 imported days were
+  **combined** into one DRAFT plan "Sample — 12 Days" (12 studies), and the old 12 one-study
+  plans were archived (not deleted). Migration `0008_plan_studies`.
+- **Data (migrations 0005–0008, additive only; `main` still reads `plans/plan_days/studies`):**
+  - `profiles` (author/admin, created on sign-up)
+  - `study_plans` (owner, status draft → pending → published | archived, review_note) and
+    `plan_studies` (plan_id, position, title) and `study_plan_items` (plan_id, **study_id**,
+    position, `module_type`, jsonb `config`; FK `(study_id, plan_id)` → `plan_studies`)
+  - RLS and a status-guard trigger: authors can't publish
+  - `module_config_ok()`: the DB refuses Scripture or prayer text in modules
+  - RPCs `save_study_plan` (atomic), `study_plan_problems`, `review_study_plan`, `admin_list_users`,
+    `set_user_role`
+  - audit triggers log the signer's email
+  - `save_study_plan(p_id, p_title, p_description, p_studies)` with
+    `p_studies = [{title, items: [{type, config}]}]`.
+  - `study_plan_problems` reports per study: "Study 3 … has no modules", "Study 2, module 1:
+    hymn #… isn't published".
+- **Modules:** `web/modules/*.js` with registry `web/modules/index.js`. See `docs/MODULES.md`.
+  Adding one = one file + one line.
+- **Runner:** `web/js/runner.js` plays one STUDY (`{title, subtitle, items}`). The tablet uses it at
+  `#/study/<planId>/<n>` (n = 1-based study number); the Studio
+  previews through the tablet's `#/preview` in an iframe, with the plan passed in `sessionStorage`
+  under `hr.preview`.
+- **Tablet:** Home → **Choose a Study Plan** (`#/studies`) → plan page (`#/plan/<id>`: Start /
+  Continue: Study N, ✓ rows, Next up, Start this plan over) → study (`#/study/<id>/<n>`) → done
+  ("Next: Study N" / Back to the plan / Home). Progress: `hr.planProgress {[planId]: {done:
+  [studyKey], last, date}}`, where studyKey = the study's title in lower case, so a ✓ survives the
+  pastor re-saving or reordering. Old `#/study/<id>` links redirect to `#/plan/<id>`. The day picker
+  and `#/session` are gone (`#/session` redirects).
+- **Studio:** `web/studio/` (`js/db.js` is its only Supabase module).
+  - Pages: plans, editor, review, hymns (publishing re-runs the PD rule from the ABC file:
+    `js/pd.js`, which agrees with the Python rule on all 301 files), prayers, people, audit,
+    account.
+  - Auth uses the **implicit** flow: the link returns `#access_token=…`, and `app.js` lets supabase-js
+    read it, then rewrites the address to `#/plans` before routing.
+  - **PKCE was tried first and broke real sign-ins:** its links only work in the browser that
+    requested them (the user's account was confirmed but never signed in).
+  - `#error=…otp_expired` shows a friendly message.
+- **Removed:** `admin/` (PySide6), `supabase/seed/seed_plan.py` and `memory_care_30.json`.
+  - Pipeline scripts read `.env` in the repo root, falling back to `admin/.env`.
+  - `publish_pd_hymns.py` uses `pipeline/supa.py`.
+- **Auth config (set via the Management API):**
+  - site URL `https://hymnal-reader-v2.pages.dev/studio/`
+  - redirect allow-list: Pages production, `*.hymnal-reader-v2.pages.dev`, localhost:8080
+  - The built-in email sender is limited to **2/hour**; custom SMTP is recommended
+    (`docs/DEPLOY.md` A6b).
+  - Email templates are **locked on the Free tier** without custom SMTP, so emails contain a
+    link only.
+  - `python pipeline/studio_signin.py <email> [--admin] [--url …]` makes a one-time link + code
+    with no email sent (never rate-limited). Use it for the first admin and for anyone locked out.
+  - Supabase keeps **one** pending sign-in token per user: generating a new one cancels the old.
+- **Tests** (all re-run green on the `studio` preview, 2026-10-03):
+  - `python supabase/tests/studio_rls_test.py` (39). Counts come from the live data, because
+    admins publish and unpublish plans; don't hard-code them.
+  - `tests/browser/studio.mjs` + `studio_users.py` (36, including studies and axe on Studio pages)
+  - `studies.mjs` + `fixture_all_modules.py` (27; the fixture is a published 2-study plan). Run
+    `make` first and `clean` after, e.g. with a shell `trap` that uses **absolute** paths.
+  - In Playwright, match "Next" with `exact: true`: the finish-the-line game has a "Next line"
+    button. Dialogs' `close` events arrive asynchronously, so wait for the result before counting.
+  - `e2e.mjs` (14) and `a11y.mjs` (13 tablet states), updated for studies
+  - `signin.mjs` + `studio_users.py link` (6: link in a fresh browser, code, expired link)
+- **Another session** works on branch `mobile-layout` (worktree `.claude/worktrees/`, now
+  gitignored; never commit it). It was told which files `studio` changed. Expect merge overlap in
+  `web/css/app.css` and `web/js/screens/*`.
 
 ---
 
@@ -23,7 +102,7 @@ in `docs/TESTING.md` (speech on iPad, mute switch, VoiceOver); headless tests ha
    If two agents must work in parallel, each uses its own branch off `dev` (e.g.
    `phase6-audio`) and touches **disjoint files**. See the ownership table in §6.
 4. **Migrations are append-only.** Never edit an applied migration. The next file is
-   `supabase/migrations/20261001000005_<name>.sql`. Pick the next free number after `git pull`;
+   `supabase/migrations/20261001000009_<name>.sql` (0005–0008 are used by `studio`). Pick the next free number after `git pull`;
    two agents must not pick the same number. Apply with `npx supabase db push`.
 5. **Update this file** at the end of your phase: the status line, §3 "Live state", and anything
    you learned in §8. Keep it accurate. It's how the next agent avoids redoing or breaking your work.
@@ -36,17 +115,19 @@ in `docs/TESTING.md` (speech on iPad, mute switch, VoiceOver); headless tests ha
   `supabase start`, local `db reset`, or anything needing Docker. Functions deploy with
   `--use-api`.
 - **No `sudo`, ever.** Anything that needs root goes in `setup.sh`, which the user runs.
-- **Secrets:** never print, cat, echo, or commit `admin/.env` (it holds the service role key).
+- **Secrets:** never print, cat, echo, or commit `.env` / `admin/.env` (they hold the service role key).
   Check key *names* only (`grep -q '^KEY=.' admin/.env`). `supabase secrets list`: print names only.
-- **Service role key:** only in the admin app and pipeline (from `admin/.env`). Never in `web/`,
+- **Service role key:** only in pipeline/seed/test scripts (from `.env`). Never in `web/` (the Studio signs people in),
   never in Edge Functions, never in git. The public app uses the publishable key in
   `web/config.js` (safe to publish, already committed).
 - **Content integrity:** never write prayers, Scripture, or theological text. Prayers come only
-  from Open Prayer Book (importer) or the admin app with a required `source`. Scripture comes
+  from Open Prayer Book (importer) or the Studio's Prayers page (admins) with a required `source`.
+  Authors' own notes and quizzes are their words; admin review gates them. Scripture comes
   from YouVersion at runtime: **never store verse text** (no DB columns, seeds, fixtures, or
   hardcoded text). Always show the YouVersion attribution with Scripture and the source with
   each prayer.
-- **Privacy:** no accounts, no personal data, progress only in `localStorage`. **No engagement
+- **Privacy:** no *resident* accounts or personal data; progress only in `localStorage`. Only Studio
+  *authors* sign in (approved by the user, 2026-10-02). **No engagement
   mechanics** (streaks, badges, scores, "you missed a day"). **No medical claims.**
 - **Audio:** browser Web Speech API with system voices only. No cloud TTS, no AI audio/music/art.
 - **Dependencies:** only those in the plan. Anything new needs a one-line justification, and you
@@ -66,7 +147,8 @@ in `docs/TESTING.md` (speech on iPad, mute switch, VoiceOver); headless tests ha
 | DB content | 301 hymns: **40 `published`** (well-known, fully public domain per a strict ABC-file rule: `supabase/seed/publish_pd_hymns.py`), the rest `approved`. 50 `is_familiar` (the original 46 plus #67, #83, #169, #170, set in the DB; `familiar.txt` only seeds first imports). 1313 scripture refs, 158 topics, 15 prayers (`published`). Plans: **"Sample — 12 Days" (`published`**, 12 published studies) and "Memory Care — 30 Days" (`draft`; 4 of its studies are shared with the sample plan and are published). |
 | Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 107 MB total. Audio only for the 50 familiar hymns, so every published hymn has audio. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
-| Migrations applied | `…0001_schema`, `…0002_rls`, `…0003_storage_buckets`, `…0004_rate_limits` |
+| Migrations applied | `…0001_schema`, `…0002_rls`, `…0003_storage_buckets`, `…0004_rate_limits`, plus the Studio's `…0005`–`…0007` (additive; checked 2026-10-03) |
+| Studio data (2026-10-03, after 0008) | 1 user (the owner, **admin**). Active plans: the owner's **"Sample Study Plan"** (published, 1 study, all six module types) and **"Sample — 12 Days"** (**published** 2026-10-03 at the owner's request: 12 studies, 36 modules; the problems check was empty; the status change is in the Audit Log as `claude-on-owner-request`). The 12 old one-study plans are archived. **Real content: don't change it in tests.** |
 
 **The public app sees: 40 hymns, 15 prayers, and the published "Sample — 12 Days" plan.** That's
 enough for Phase 7's session flow. For testing Phase 6/7 you'll need published content. Ask the user to publish
@@ -149,7 +231,8 @@ client, 600/min total (Postgres-backed). Attribution text for ASV: "American Sta
 
 | Area | Files | Notes |
 |---|---|---|
-| Admin app | `admin/app.py` (entry), `data.py` (**the only module that talks to Supabase; every write is audited**), `worker.py` (QThread + global `NETWORK_LOCK`), `theme.py` + `style.qss`, `books.py`, `pages/*.py` | Run: `source .venv/bin/activate && python admin/app.py` |
+| Studio (on `studio`) | `web/studio/index.html`, `js/app.js` (router + shell + sign-in), `js/db.js` (**the only Studio module that talks to Supabase**), `js/pages/*.js`, `js/pd.js`, `studio.css` | Replaces the removed PySide6 `admin/` app |
+| Modules (on `studio`) | `web/modules/{index,kit,_template,hymn,scripture,prayer,note,quiz,finish-line}.js`, `web/js/runner.js` | `docs/MODULES.md` |
 | Pipeline | `pipeline/abc_meta.py`, `render_mp3.sh`, `timings/build_timings.mjs`, `import_hymns.py`, `import_prayers.py`, `supa.py`, `familiar.txt` | Output cache: `pipeline/out/` (gitignored) |
 | Supabase | `supabase/migrations/`, `functions/youversion/{index,lib,test}.ts`, `seed/`, `tests/rls_anon_test.sh`, `config.toml` | `node supabase/functions/youversion/test.ts` |
 | Public app | `web/index.html` → `js/app.js` (hash router + shared `AudioPlayer`/`Speaker`; routes `#/`, `#/session[?day=N]`, `#/done`, `#/sing[?page=N]`, `#/sing/<number>`, `#/aide`, `#/read`). Screens: `js/screens/{home,session,done,sing,aide,read}.js`. Shared: `js/hymn-panel.js` (title + karaoke + sheet toggle), `js/store.js` (localStorage), `js/ui.js` (`h()`, icons, confirm dialog), `js/books.js`. Styles: `css/core.css` (tokens) + `css/app.css` (screens). Core modules: §9a. | Each screen exports `render(root, params, ctx)` and returns a cleanup function |
@@ -286,13 +369,16 @@ then the modules.
   (40 → 39 → 40 hymns).
 - **Production:** merge `dev` → `main`, then run `docs/TESTING.md` §J.
 
-## 12. Next: Phase 9
+## 12. Phase 9 (done)
 
-`docs/PLAN_PROMPT.md` Phase 9 covers:
-- `README.md` for judges: who it serves and the problem, the session flow, an architecture diagram,
-  guardrails, sources and licenses
-- `docs/VALIDATION.md` as a **template only** (the user fills it in)
-- a known-gaps list
+- **`README.md`** (judge-facing): who it serves and the problem, the session flow, an architecture
+  diagram (Mermaid), guardrails, sources and licenses, repo map, status, and **Known gaps**. Keep
+  the gaps list honest and current: it's the backlog.
+- **`docs/VALIDATION.md`:** a template only, for the user to fill in (roles only, no names).
+- **`docs/licenses/`:** `open-prayer-book-LICENSE.txt` (CC0) and `FluidR3_GM-MIT.txt` (the
+  soundfont used to render the MP3s; the GPL line in Debian's notice covers only its packaging).
+- **Future work:** take items from README "Known gaps". Follow the coordination rules in §1. Re-run
+  `tests/browser` (e2e + a11y) after any UI change.
 
 ## (Phase 8 brief, for reference)
 

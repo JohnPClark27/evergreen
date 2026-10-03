@@ -1,6 +1,8 @@
 // app.js - starts the public app: shared audio/speech, settings, and a tiny hash router.
 //   #/            Home (simple mode)       #/sing        Sing a Hymn (grid)
-//   #/session     Today's session          #/sing/19     Sing one hymn
+//   #/studies     Choose a Study (list)    #/sing/19     Sing one hymn
+//   #/plan/12     One study plan (its studies)
+//   #/study/12/3  Study 3 of plan 12
 //   #/done        Session finished         #/aide        Aide tools
 //   #/read        Read the Bible
 import { AudioPlayer } from './audio.js';
@@ -8,7 +10,10 @@ import { Speaker, localVoices } from './speech.js';
 import { store } from './store.js';
 import { h } from './ui.js';
 import * as home from './screens/home.js';
-import * as session from './screens/session.js';
+import * as studies from './screens/studies.js';
+import * as plan from './screens/plan.js';
+import * as study from './screens/study.js';
+import * as preview from './screens/preview.js';
 import * as done from './screens/done.js';
 import * as sing from './screens/sing.js';
 import * as aide from './screens/aide.js';
@@ -46,7 +51,12 @@ document.addEventListener('pointerdown', () => { if (unlocked) audio.unlock(); }
 
 const ROUTES = [
   [/^\/?$/, home, false],
-  [/^\/session$/, session, true],
+  [/^\/studies$/, studies, false],
+  [/^\/plan\/(\d+)$/, plan, false],
+  [/^\/study\/(\d+)\/(\d+)$/, study, true],
+  [/^\/study\/(\d+)$/, { render: (_r, p, c) => c.go(`#/plan/${p.arg}`) }, false], // old one-study links
+  [/^\/preview$/, preview, true],   // the Studio's preview frame
+  [/^\/session$/, { render: (_r, _p, c) => c.go('#/studies') }, false], // old links: the day-based session is now the study list
   [/^\/done$/, done, false],
   [/^\/sing$/, sing, false],
   [/^\/sing\/(\d+)$/, sing, true],
@@ -68,6 +78,7 @@ async function route() {
     if (match) { screen = mod; needsSound = sound; break; }
   }
   params.arg = match?.[1];
+  params.arg2 = match?.[2];
 
   // Leave the previous screen cleanly (stop speech, fade music, stop animations).
   try { cleanup?.(); } catch (err) { console.error(err); }

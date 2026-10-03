@@ -11,7 +11,8 @@ run the local Supabase stack: no `supabase start`, no Docker. The Supabase CLI i
 | Database + RLS | Supabase Postgres (`supabase/migrations/`) | the anon key reads **published** rows only |
 | Hymn files | Supabase Storage, public buckets `hymn-abc`, `hymn-audio`, `hymn-timings` | anyone reads; only the service role writes |
 | Scripture | Edge Function `youversion` (YouVersion key in Supabase secrets) | no key needed by callers; CORS + rate limit |
-| Admin app + importers | your computer (`admin/`, `pipeline/`) | **service role key** from `admin/.env` (secret, never in git) |
+| Studio (`web/studio/`) | same Pages site, at `/studio/` | each person **signs in** (magic link); the database's RLS decides what they may do |
+| Importers + seed/test scripts | your computer (`pipeline/`, `supabase/seed/`) | **service role key** from `.env` (secret, never in git) |
 
 ---
 
@@ -25,13 +26,13 @@ Use this to rebuild everything, e.g. on a new Supabase project. The current proj
 2. From Project Settings → API, note:
    - the project ref and URL (`https://<ref>.supabase.co`)
    - the anon or **publishable** key: public, goes in `web/config.js`
-   - the **service role** key: secret, goes only in `admin/.env`
+   - the **service role** key: secret, goes only in `.env` (repo root) for the pipeline scripts
 
 ### A2. This machine (Ubuntu / WSL)
 ```sh
 git clone https://github.com/JohnPClark27/hymnal-reader-v2 && cd hymnal-reader-v2 && git checkout dev
 ./setup.sh          # apt tools (the only sudo step), Open Hymnal clone, .venv, timing-builder deps
-cp .env.example admin/.env        # fill in SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY; never commit it
+cp .env.example .env              # fill in SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY; never commit it
 source .venv/bin/activate
 ```
 
@@ -60,13 +61,40 @@ python pipeline/import_hymns.py --dry-run && python pipeline/import_hymns.py
 #   all 301 hymns (approved); MP3s for familiar hymns only; prints Storage totals
 python supabase/seed/publish_pd_hymns.py --dry-run && python supabase/seed/publish_pd_hymns.py
 #   publishes 40 well-known hymns that are fully public domain per their ABC files
-python supabase/seed/seed_plan.py --title "Sample — 12 Days" --days 12 --publish
-python supabase/seed/seed_plan.py                 # optional: "Memory Care — 30 Days" as a draft
+#   study plans: built in the Studio (see A6b). Migration …0007 turned the original 12-day sample
+#   into 12 published study plans.
 ```
 
 ### A6. Public app config
 Copy `web/config.example.js` to `web/config.js` and fill in the URL and the anon/publishable key.
 Commit it: both values are safe to publish. **Never** put the service role key there.
+
+### A6b. Studio sign-in (Supabase Auth)
+Authors sign in to `/studio/` with an emailed **magic link**. There are no passwords.
+The link uses Supabase's *implicit* flow: the session travels in the link itself, so it works in
+**any** browser that opens it (a phone's mail app, another browser). The earlier PKCE links only
+worked in the browser that asked for them, which broke sign-in.
+1. Supabase dashboard → Authentication → URL Configuration:
+   - **Site URL** `https://hymnal-reader-v2.pages.dev/studio/`
+   - **Redirect URLs** `https://hymnal-reader-v2.pages.dev/**`, `https://*.hymnal-reader-v2.pages.dev/**`,
+     `http://localhost:8080/**`
+
+   This is set for the current project already, through the Management API.
+2. **Email sending:** Supabase's built-in sender only allows **about 2 sign-in emails per hour**.
+   That's fine for trying it out, but too few for real use.
+   - Set up a free custom SMTP (e.g. Resend, Brevo) under Authentication → Emails → SMTP Settings.
+   - Then raise the email rate limit under Authentication → Rate Limits.
+   - Email **templates** can't be changed on the Free tier with the built-in sender, so emails
+     contain a link only. With custom SMTP you can add `{{ .Token }}` to show a code as well.
+3. **First admin, or a locked-out person:** create a one-time sign-in **without sending email**
+   (never rate-limited):
+   ```sh
+   python pipeline/studio_signin.py you@example.com --admin            # Studio on production
+   python pipeline/studio_signin.py you@example.com --admin --url https://studio.hymnal-reader-v2.pages.dev/studio/
+   ```
+   - It prints a link (open it in any browser) and a code (Studio → "I have a sign-in code").
+     Both work once, for an hour. Treat them like a password.
+   - After that, admins promote others in Studio → **People**.
 
 ### A7. Cloudflare Pages
 1. Workers & Pages → Create → Pages → Connect to Git → `hymnal-reader-v2`.
@@ -82,7 +110,7 @@ Commit it: both values are safe to publish. **Never** put the service role key t
 3. Production smoke test: `docs/TESTING.md` section J.
 
 ### A9. Verify admin → public publishing
-In the admin app (`python admin/app.py`), change a hymn's status and save, then **refresh** the
+In the Studio (`/studio/` → Hymns, as an admin), change a hymn's status, then **refresh** the
 public app: the change shows up. There's nothing to redeploy. Content lives in the database, and
 the public app reads it on load. (`docs/TESTING.md` I.)
 
@@ -92,11 +120,13 @@ the public app reads it on load. (`docs/TESTING.md` I.)
 
 | Task | How |
 |---|---|
-| Publish or unpublish hymns, prayers, studies, plans | Admin app. Every change goes to the **Audit Log**. A plan only publishes when every day's study, hymn and prayer is published. |
-| Add a prayer | Admin app → Prayers → New. A **source is required**. Paste the text from the source; never write it. |
-| Build a plan | Admin app → Studies (hymn + passage + prayer, with a live preview) → Plans (drag days, Publish). |
+| Build a study plan | Studio → **New study plan**: add modules in any order (hymn, scripture, prayer, note, quiz, Finish the Line), Preview, **Submit for review**. |
+| Approve plans | Studio → **Review** (admins): preview, then **Approve** (blocked if it uses unpublished hymns/prayers) or **Send back** with a note. |
+| Publish or unpublish hymns | Studio → **Hymns** (admins). Publishing re-checks the hymn's ABC file against the strict public-domain rule and needs audio. |
+| Add a prayer | Studio → **Prayers** → New (admins). A **source is required**. Paste the text from the source; never write it. |
+| Add a new kind of module | One file in `web/modules/` + one line in `web/modules/index.js`: see `docs/MODULES.md`. |
 | Re-import after Open Hymnal changes | `python pipeline/import_hymns.py`: idempotent; unchanged files are skipped by hash; status, familiar flag, notes and numbers are never changed. |
-| Add audio for more hymns | Mark them familiar in the admin app, then `python pipeline/import_hymns.py --only <numbers>`. Publish only hymns that pass the public-domain rule (`publish_pd_hymns.py`). |
+| Add audio for more hymns | Mark them familiar in Studio → Hymns, then `python pipeline/import_hymns.py --only <numbers>`. Publish only hymns that pass the public-domain rule (`publish_pd_hymns.py`). |
 | Ship public-app changes | Push to `dev` → check the preview → merge to `main`. |
 
 ---
@@ -141,22 +171,27 @@ GET /functions/v1/youversion?book=PSA&chapter=23[&start=1&end=3]
   `RATE_LIMIT_TOTAL`.
 - **Unit tests:** `node supabase/functions/youversion/test.ts`.
 
-### Admin app
-- **Run:** `python admin/app.py`. If `admin/.env` is missing a key, it shows a setup screen.
-- **Writes:** every write goes through `admin/data.py` and is recorded in `audit_log` with
-  before/after JSON.
-- **Responsiveness:** background calls run one at a time (`admin/worker.py`), so the window never
-  freezes.
-- **Scripture preview** in Studies uses the Edge Function, or `YOUVERSION_API_KEY` in `admin/.env`
-  if you add one.
+### Studio (`web/studio/`)
+- **Pages:**
+  - Authors: **My plans**, the **plan editor** (modules palette, reorder, Preview, Submit) and Account.
+  - Admins also get **Review**, **Hymns**, **Prayers**, **People** and **Audit log**.
+- **Security is in the database:**
+  - RLS: tablets read published plans; authors read and edit their own drafts; admins see everything.
+  - A trigger stops authors publishing.
+  - `review_study_plan()` refuses to approve a plan that uses unpublished content.
+  - `module_config_ok()` refuses Scripture or prayer text stored in modules.
+  - Audit triggers log every change with the signer's email.
+  - Test: `python supabase/tests/studio_rls_test.py` (32 checks, run as real users).
+- **Modules:** `docs/MODULES.md`.
+- **Replaces the old PySide6 admin app**, which was removed in the `studio` branch.
 
 ### Public app
 - **Files:** `web/index.html` → `js/app.js` (hash router). Screens are in `js/screens/`, core
   modules in `js/{api,audio,speech,lyrics,sheet}.js`.
 - **CDN libraries** are pinned with SRI hashes: supabase-js 2.117.2 and abcjs 6.7.1. abcjs must
   match the pipeline's version so the sheet-music cursor lines up.
-- **Stored on the tablet:** only `localStorage` (`hr.progress`, `hr.sessionStep`, `hr.hymnNotes`,
-  `hr.settings`, `hr.lastSession`). No accounts, no names, no analytics.
+- **Stored on the tablet:** only `localStorage` (`hr.studyStep`, `hr.studyNotes`, `hr.hymnNotes`,
+  `hr.settings`, `hr.lastStudy`). No accounts, no names, no analytics.
 - **Developer test page:** `/dev/core-test` (Phase 6).
 
 ---
@@ -171,7 +206,7 @@ GET /functions/v1/youversion?book=PSA&chapter=23[&start=1&end=3]
 | Egress | 5 GB / month | depends on use: see the math below |
 | Inactivity | the project **pauses after 7 days** without requests | keep-alive optional |
 
-The dashboard card in the admin app shows Storage use against 1 GB, plus the pause reminder.
+Check Storage use against 1 GB in the Supabase dashboard (Usage), or with the importer's before/after totals.
 
 ### Cost note
 Everything is **$0**: Supabase Free plus Cloudflare Pages Free. Pages bandwidth for the app

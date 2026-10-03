@@ -23,32 +23,47 @@ for (let i = 0; i < 6; i++) {
 }
 console.log('\nkeyboard tab order (home):\n  ' + stops.join('\n  '));
 console.log('Enter on:', await page.evaluate(() => document.activeElement.textContent.trim().slice(0, 25)));
-await page.keyboard.press('Enter'); // activates "Today's Hymn & Verse" by keyboard
+await page.keyboard.press('Enter'); // activates "Choose a Study Plan" by keyboard
+await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
+await audit('choose a study plan');
+// The test plan (fixture_all_modules.py) has every module type; else the first plan.
+const planTile = (await page.getByRole('button', { name: /ZZ All modules/ }).count())
+  ? page.getByRole('button', { name: /ZZ All modules/ }) : page.locator('.study-tile').first();
+await planTile.focus(); await page.keyboard.press('Enter'); // a plan, by keyboard
+await page.locator('.continue').waitFor();
+await audit('plan page');
+await page.locator('.continue').focus(); await page.keyboard.press('Enter'); // its next study, by keyboard
 await page.locator('.lyric-word').first().waitFor({ timeout: 30000 }); await page.waitForTimeout(8000);
-await audit('session: hymn (word highlighted)');
+await audit('study: hymn (word highlighted)');
 await page.getByRole('button', { name: 'Show sheet music' }).click(); await page.locator('.sheet svg').first().waitFor({ timeout: 30000 }); await page.waitForTimeout(2500);
-await audit('session: sheet music');
-await page.getByRole('button', { name: 'Next' }).click(); await page.locator('.read-line').first().waitFor({ timeout: 30000 });
-await page.evaluate(() => document.querySelectorAll('.read-line')[1].classList.add('reading'));
-await audit('session: scripture (verse highlighted)');
-await page.getByRole('button', { name: 'Next' }).click(); await page.locator('.reading-panel.centered').waitFor();
-await audit('session: prayer');
-await page.getByRole('button', { name: 'Finish' }).click(); await page.getByRole('heading', { name: /session/ }).waitFor();
+await audit('study: sheet music');
+await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.locator('.read-line').first().waitFor({ timeout: 30000 });
+await page.evaluate(() => document.querySelectorAll('.read-line')[1]?.classList.add('reading'));
+await audit('study: scripture (verse highlighted)');
+for (let i = 0; i < 10 && !(await page.locator('.reading-panel.centered').count()); i++) {
+  await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.waitForTimeout(700);
+}
+if (await page.locator('.reading-panel.centered').count()) await audit('study: prayer');
+for (let i = 0; i < 20 && !(await page.getByRole('button', { name: 'Finish' }).count()); i++) {
+  await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.waitForTimeout(500);
+}
+await page.getByRole('button', { name: 'Finish' }).click(); await page.getByRole('heading', { name: /end of this study/ }).waitFor();
 await audit('finished');
-await page.getByRole('button', { name: 'Sing another hymn' }).click(); await page.locator('.hymn-tile').first().waitFor();
+await page.goto(BASE + '#/sing'); await page.locator('.hymn-tile').first().waitFor();
 await audit('sing: grid');
 await page.locator('.hymn-tile').first().click(); await page.locator('.lyric-word').first().waitFor({ timeout: 30000 }); await page.waitForTimeout(3000);
 await audit('sing: player');
-await page.goto(BASE + '#/aide'); await page.locator('.day-btn').first().waitFor();
+await page.goto(BASE + '#/aide'); await page.getByRole('radio', { name: 'Slow', exact: true }).waitFor();
 await audit('aide tools');
-await page.getByRole('button', { name: /Reset hymn notes/ }).click(); await page.locator('dialog[open]').waitFor();
+await page.getByRole('button', { name: /Reset notes/ }).click(); await page.locator('dialog[open]').waitFor();
 await audit('aide: confirm dialog');
 await page.keyboard.press('Escape');
 await page.goto(BASE + '#/read'); await page.waitForTimeout(400);
 if (await page.getByRole('button', { name: 'Tap to continue' }).count()) await page.getByRole('button', { name: 'Tap to continue' }).click();
 await page.locator('.bible .read-line').first().waitFor({ timeout: 30000 });
 await audit('read the bible');
-await page.goto(BASE + '#/session'); await page.reload(); await page.getByRole('button', { name: 'Tap to continue' }).waitFor();
+await page.goto(BASE + '#/studies'); await page.locator('.study-tile').first().click(); await page.locator('.continue').waitFor();
+await page.goto(page.url().replace('#/plan/', '#/study/') + '/1'); await page.reload(); await page.getByRole('button', { name: 'Tap to continue' }).waitFor();
 await audit('tap to continue');
 console.log('\nTOTAL by rule:', JSON.stringify(Object.fromEntries(all)));
 await browser.close();

@@ -32,3 +32,11 @@ export function launch() {
 
 /** Base URL from argv[2]; default is the local server (`python3 -m http.server 8080` in web/). */
 export const BASE = process.argv[2] ?? 'http://localhost:8080/';
+
+/** Run axe-core (WCAG 2.0/2.1/2.2 A+AA + best practice) on the page; returns ['rule (n): help', …]. */
+export async function axe(page) {
+  const { readFileSync } = await import('node:fs');
+  await page.addScriptTag({ content: readFileSync(new URL('./node_modules/axe-core/axe.min.js', import.meta.url), 'utf8') });
+  const r = await page.evaluate(() => window.axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'] }));
+  return r.violations.map((v) => `${v.id} (${v.nodes.length}): ${v.help} e.g. ${v.nodes[0].target.join(' ')}`);
+}

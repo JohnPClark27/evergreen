@@ -146,11 +146,54 @@ button { cursor: pointer; }
 .dialog p { font-size: 24px; margin: 0 0 24px; }
 .dialog-buttons { display: flex; gap: 16px; justify-content: flex-end; }
 
+/* ---------- Choose a Study ---------- */
+.study-grid { flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr; gap: 16px; min-height: 0; }
+.study-tile {
+  border-radius: 20px; border: 2px solid var(--control-border); background: var(--surface); color: var(--ink);
+  padding: 18px 22px; text-align: left; display: flex; flex-direction: column; gap: 6px; min-height: 150px;
+}
+.study-tile-title { font-family: var(--font-read); font-size: 28px; font-weight: 600; line-height: 1.2; }
+.study-tile-desc { color: var(--muted); font-size: 19px; }
+.study-tile-meta { font-size: 18px; color: var(--ink); margin-top: auto; }
+.tags { display: flex; gap: 8px; }
+.tag.quiet { background: var(--bg); color: var(--muted); border: 1px solid var(--border-strong); }
+
+/* ---------- Study runner: "Part 2 of 6" + progress bar ---------- */
+.where-box { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.where { margin: 0; font-size: 21px; font-weight: 700; color: var(--accent); }
+.progress { display: flex; gap: 4px; width: min(420px, 100%); }
+.progress span { flex: 1; height: 8px; border-radius: 4px; background: var(--border); }
+.progress span.done { background: var(--control-border); }
+.progress span.now { background: var(--accent); }
+.plan-name { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Quiz (gentle: the answer is shown, nothing is scored) ---------- */
+.quiz-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 18px 0; }
+.quiz-choice {
+  min-height: 88px; border-radius: 18px; border: 2px solid var(--control-border); background: var(--surface);
+  font-family: var(--font-read); font-size: var(--text-session); padding: 10px 18px; color: var(--ink);
+}
+.quiz-choice.picked { border-color: var(--ink); border-width: 3px; }
+.quiz-choice.answer { background: var(--highlight); border-color: var(--accent); }
+.quiz-reveal { font-family: var(--font-read); font-size: var(--text-session); min-height: 1.5em; margin: 0 0 12px; }
+
+/* ---------- Finish the Line ---------- */
+.finish-line { font-size: 36px; line-height: 1.5; margin: 18px 0; }
+.finish-blank { color: var(--muted); letter-spacing: 4px; }
+.finish-blank.revealed { color: var(--ink); background: var(--highlight); border-radius: 8px; padding: 0 6px; letter-spacing: normal; }
+
+/* ---------- Small aide controls (kept modest; aides, not residents) ---------- */
+.aide-row { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); }
+.pill.small-pill { min-height: 48px; font-size: 18px; padding: 0 18px; }
+
 /* ---------- Portrait (e.g. 820×1180) and small screens ---------- */
 @media (orientation: portrait), (max-width: 900px) {
   .tiles, .tiles.three { grid-template-columns: 1fr; }
   .tile { min-height: 150px; }
   .hymn-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: auto; overflow: auto; }
+  .study-grid { grid-template-columns: 1fr; grid-auto-rows: auto; overflow: auto; }
+  .quiz-choices { grid-template-columns: 1fr; }
+  .plan-name { display: none; }
   .topbar { flex-wrap: wrap; }
   .steps { order: 3; width: 100%; }
   .card { padding: 22px 24px; }
@@ -159,4 +202,34 @@ button { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
+}
+
+/* ---------- Study plan page (#/plan/<id>) ---------- */
+.plan-card { display: flex; flex-direction: column; gap: 18px; }
+.plan-desc { font-family: var(--font-read); font-size: 24px; color: var(--muted); margin: 0; }
+.continue { align-self: flex-start; }
+.study-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.study-row {
+  width: 100%; min-height: 88px; display: flex; align-items: center; gap: 18px; text-align: left;
+  padding: 14px 20px; border-radius: 18px; border: 2px solid var(--control-border);
+  background: var(--surface); color: var(--ink);
+}
+.study-row.next { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.study-row.done .study-row-title { color: var(--muted); }
+.study-row:disabled { opacity: 0.5; cursor: default; }
+.study-num {
+  flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg); border: 2px solid var(--control-border); font-size: 22px; font-weight: 700;
+}
+.study-row.done .study-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.study-row.done .study-num .icon { width: 30px; height: 30px; }
+.study-row-text { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.study-row-title { font-family: var(--font-read); font-size: 26px; font-weight: 600; line-height: 1.2; }
+.study-row-meta { color: var(--muted); font-size: 18px; }
+.mini-progress { display: flex; gap: 4px; flex-wrap: wrap; }
+.mini-progress span { width: 14px; height: 6px; border-radius: 3px; background: var(--border-strong); }
+.mini-progress span.done { background: var(--accent); }
+.link-button {
+  align-self: flex-start; background: none; border: none; color: var(--muted); text-decoration: underline;
+  font-size: 19px; padding: 12px 4px; min-height: 48px;
 }

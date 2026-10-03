@@ -1,13 +1,14 @@
 // store.js - everything remembered on THIS tablet, in localStorage only.
-// No accounts and no names: just plan progress, per-hymn notes, and settings.
+// No accounts and no names: just where a study was left, notes, and settings.
 // Every read/write is wrapped: private browsing or blocked storage must never break the app.
 
 const KEYS = {
-  progress: 'hr.progress',   // { planId, currentDay, lastCompletedDate }
-  step: 'hr.sessionStep',    // { planId, day, step } so a reload resumes the session
-  notes: 'hr.hymnNotes',     // { [hymnNumber]: 'enjoyed' | 'skip' }
+  step: 'hr.studyStep',      // { planId, studyKey, index } so a reload resumes the study where it was
+  progress: 'hr.planProgress', // { [planId]: { done: [studyKey], last: studyKey, date } }
+  notes: 'hr.hymnNotes',     // { [hymnNumber]: 'enjoyed' | 'skip' }   (Sing a Hymn)
+  studyNotes: 'hr.studyNotes', // { [planId]: 'enjoyed' | 'skip' }      (Choose a Study)
   settings: 'hr.settings',   // { rate, volume, voiceName }
-  last: 'hr.lastSession',    // { planId, day, hymnNumber } for the "finished" screen
+  last: 'hr.lastStudy',      // { planId, title, studyKey, studyTitle } for the "finished" screen
 };
 
 function read(key, fallback) {
@@ -30,28 +31,34 @@ function remove(key) {
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
 
 export const store = {
-  progress: () => read(KEYS.progress, { planId: null, currentDay: 1, lastCompletedDate: null }),
-  setProgress: (p) => write(KEYS.progress, p),
+  studyStep: () => read(KEYS.step, { planId: null, studyKey: null, index: 0 }),
+  setStudyStep: (s) => write(KEYS.step, s),
+  clearStudyStep: () => remove(KEYS.step),
 
-  /** Start a given day of a plan (Aide tools "Start Day"). */
-  startDay(planId, day) {
-    write(KEYS.progress, { ...store.progress(), planId, currentDay: day });
-    remove(KEYS.step);
+  /** Which studies of a plan this tablet has finished: { done: [studyKey], last, date }. */
+  planProgress(planId) {
+    const p = read(KEYS.progress, {})[planId];
+    return { done: p?.done ?? [], last: p?.last ?? null, date: p?.date ?? null };
   },
 
-  /** The day was finished: the next day is ready next time (plans start over after the last day). */
-  completeDay(planId, day, totalDays, hymnNumber) {
-    const next = day >= totalDays ? 1 : day + 1;
-    write(KEYS.progress, { planId, currentDay: next, lastCompletedDate: today() });
-    write(KEYS.last, { planId, day, hymnNumber });
+  /** A study was finished: tick it in its plan, and remember it for the "finished" screen. */
+  finishStudy(planId, planTitle, studyKey, studyTitle) {
+    const all = read(KEYS.progress, {});
+    const done = new Set(all[planId]?.done ?? []);
+    done.add(studyKey);
+    all[planId] = { done: [...done], last: studyKey, date: today() };
+    write(KEYS.progress, all);
+    write(KEYS.last, { planId, title: planTitle, studyKey, studyTitle, date: today() });
     remove(KEYS.step);
-    return next;
   },
+  lastStudy: () => read(KEYS.last, { planId: null, title: null, studyKey: null, studyTitle: null, date: null }),
 
-  sessionStep: () => read(KEYS.step, { planId: null, day: null, step: 0 }),
-  setSessionStep: (s) => write(KEYS.step, s),
-
-  lastSession: () => read(KEYS.last, { planId: null, day: null, hymnNumber: null }),
+  /** "Start this plan over": clear its ticks on this tablet. */
+  resetPlanProgress(planId) {
+    const all = read(KEYS.progress, {});
+    delete all[planId];
+    write(KEYS.progress, all);
+  },
 
   notes: () => read(KEYS.notes, {}),
   setNote(hymnNumber, note) {
@@ -59,7 +66,16 @@ export const store = {
     if (note) notes[hymnNumber] = note; else delete notes[hymnNumber];
     write(KEYS.notes, notes);
   },
-  resetNotes: () => remove(KEYS.notes),
+
+  studyNotes: () => read(KEYS.studyNotes, {}),
+  setStudyNote(planId, note) {
+    const notes = store.studyNotes();
+    if (note) notes[planId] = note; else delete notes[planId];
+    write(KEYS.studyNotes, notes);
+  },
+
+  /** Aide tools "Reset notes": clears hymn AND study notes. */
+  resetNotes() { remove(KEYS.notes); remove(KEYS.studyNotes); },
 
   settings: () => read(KEYS.settings, { rate: 'slow', volume: 0.8, voiceName: null }),
   setSettings: (changes) => write(KEYS.settings, { ...store.settings(), ...changes }),

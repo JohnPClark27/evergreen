@@ -1,0 +1,143 @@
+/* studio.css - the Studio (authors and admins, mostly on laptops). Tokens come from
+   ../css/core.css so it matches the tablet app; sizes are desktop-normal here. */
+
+html, body { min-height: 100%; }
+body { font-size: 16px; line-height: 1.45; background: var(--bg); }
+h1, h2, h3 { font-family: var(--font-read); font-weight: 600; margin: 0 0 12px; }
+h1 { font-size: 28px; }
+h2 { font-size: 21px; }
+h3 { font-size: 18px; }
+a { color: var(--accent); }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- shell ---- */
+.shell { min-height: 100vh; display: flex; flex-direction: column; }
+.topnav {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 10px 24px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.brand { font-family: var(--font-read); font-weight: 600; font-size: 19px; color: var(--accent); margin-right: 18px; text-decoration: none; }
+.topnav a.nav { padding: 8px 12px; border-radius: 8px; color: var(--ink); text-decoration: none; font-weight: 700; }
+.topnav a.nav:hover { background: var(--accent-soft); }
+.topnav a.nav[aria-current="page"] { background: var(--accent); color: #fff; }
+.topnav .who { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+.page { width: min(1180px, 100%); margin: 0 auto; padding: 24px; flex: 1; }
+
+/* ---- controls ---- */
+.btn {
+  min-height: 44px; padding: 0 16px; border-radius: 10px; border: 2px solid var(--control-border);
+  background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn:hover { background: var(--accent-soft); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #651E2A; }
+.btn.danger { color: #9b1c1c; }
+.btn.small { min-height: 34px; padding: 0 10px; font-size: 14px; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.input {
+  width: 100%; min-height: 42px; padding: 8px 10px; border-radius: 8px; border: 2px solid var(--control-border);
+  background: var(--surface); color: var(--ink); font: inherit;
+}
+.input.narrow { width: 100px; }
+textarea.input { min-height: 120px; resize: vertical; }
+select.input[size] { min-height: 0; }
+.field { margin: 0 0 14px; }
+.field-label { display: block; font-weight: 700; margin-bottom: 4px; }
+.field-hint { color: var(--muted); font-size: 14px; margin: 4px 0 8px; }
+.field-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+.field-row .field { flex: 1; min-width: 120px; }
+.check { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; }
+.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+.search-select { display: flex; flex-direction: column; gap: 6px; }
+.preview-text { margin: 8px 0 0; padding: 10px 14px; border-left: 4px solid var(--border-strong); background: var(--surface); white-space: pre-wrap; font-family: var(--font-read); }
+.quiz-q { border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px 14px; margin: 0 0 12px; }
+.choice-edit { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.choice-edit input[type=radio] { width: 20px; height: 20px; accent-color: var(--accent); }
+
+/* ---- cards, lists, chips ---- */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
+.chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; border: 1px solid var(--border-strong); background: var(--bg); color: var(--muted); }
+.chip.draft { }
+.chip.pending { background: #FFF4D6; color: #6b4e00; border-color: #e3c56b; }
+.chip.published { background: #E3F1E4; color: #1f5a2a; border-color: #9cc9a3; }
+.chip.archived { opacity: 0.8; }
+.chip.approved { background: #E8EEF8; color: #26446f; border-color: #a9bbd8; }
+.banner { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border-strong); background: var(--surface); }
+.banner.warn { background: #FFF4D6; border-color: #e3c56b; }
+.banner.ok { background: #E3F1E4; border-color: #9cc9a3; }
+.banner.error { background: #FBE7E7; border-color: #e3a0a0; }
+.table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; }
+.table th, .table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table th { background: var(--bg); font-size: 14px; }
+.table tr:hover td { background: #fffaf0; }
+.plan-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.plan-card { display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; }
+.plan-card:hover { border-color: var(--control-border); }
+.plan-card h3 { margin: 0; }
+.toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.toolbar h1 { margin: 0; margin-right: auto; }
+
+/* ---- plan editor ---- */
+.editor { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.outline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.item { background: var(--surface); border: 2px solid var(--border); border-radius: 12px; }
+.item.has-errors { border-color: #e3a0a0; }
+.item.dragging { opacity: 0.4; }
+.item.drop-before { box-shadow: 0 -4px 0 var(--accent); }
+.item-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.item-head .grip { cursor: grab; color: var(--muted); font-size: 20px; padding: 0 4px; user-select: none; }
+.item-num { font-weight: 700; color: var(--muted); min-width: 22px; }
+.item-icon { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; flex: none; }
+.item-text { flex: 1; min-width: 0; }
+.item-name { font-weight: 700; }
+.item-summary { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-errors { color: #9b1c1c; font-size: 14px; margin: 0 12px 10px 56px; }
+.item-body { padding: 4px 16px 16px 56px; border-top: 1px solid var(--border); }
+.palette { display: flex; flex-direction: column; gap: 8px; }
+.palette-btn { text-align: left; display: grid; grid-template-columns: 34px 1fr; gap: 4px 10px; padding: 10px; border-radius: 10px; border: 2px solid var(--control-border); background: var(--surface); cursor: pointer; font: inherit; color: var(--ink); }
+.palette-btn:hover { background: var(--accent-soft); }
+.palette-btn .item-icon { grid-row: span 2; }
+.palette-btn small { color: var(--muted); }
+.sticky { position: sticky; top: 16px; }
+
+/* ---- preview overlay (the real tablet app in a frame) ---- */
+.preview { position: fixed; inset: 0; background: rgb(34 30 25 / 0.7); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.preview > div { width: min(1180px, 100%); }
+.preview-frame { width: 100%; height: min(820px, calc(100vh - 90px)); border: 0; border-radius: 18px; background: var(--bg); box-shadow: 0 20px 60px rgb(0 0 0 / 0.4); }
+.preview-bar { display: flex; justify-content: space-between; align-items: center; width: min(1180px, 100%); color: #fff; margin-bottom: 8px; }
+
+/* ---- dialogs ---- */
+.studio-dialog { border: none; border-radius: 14px; padding: 22px; max-width: 520px; width: 92vw; background: var(--surface); color: var(--ink); }
+.studio-dialog::backdrop { background: rgb(34 30 25 / 0.45); }
+.studio-dialog p { margin: 0 0 14px; }
+.studio-dialog textarea { margin-bottom: 14px; }
+.studio-dialog .btn-row { justify-content: flex-end; }
+.palette-btn[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
+
+/* ---- sign in ---- */
+.signin { max-width: 460px; margin: 10vh auto; }
+
+@media (max-width: 860px) {
+  .editor { grid-template-columns: 1fr; }
+  .sticky { position: static; }
+  .item-body, .item-errors { padding-left: 16px; margin-left: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* ---- studies inside a plan (editor) ---- */
+.study-tabs { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.study-tab { display: flex; align-items: center; gap: 6px; border: 2px solid var(--border); border-radius: 10px; padding: 4px 6px 4px 4px; background: var(--surface); }
+.study-tab.current { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.study-tab.has-errors { border-color: #e3a0a0; }
+.study-tab.current.has-errors { border-color: #b23b3b; }
+.study-pick { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; text-align: left; background: none; border: none; padding: 8px; font: inherit; color: var(--ink); cursor: pointer; border-radius: 8px; min-height: 44px; }
+.study-pick:hover { background: var(--accent-soft); }
+.study-pick-title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.study-panel { margin-top: 16px; }
+.studio-dialog h2 { margin-top: 0; }
+.studio-dialog select { width: 100%; }
