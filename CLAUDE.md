@@ -148,7 +148,7 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 | Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 107 MB total. Audio only for the 50 familiar hymns, so every published hymn has audio. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
 | Migrations applied | `…0001_schema`, `…0002_rls`, `…0003_storage_buckets`, `…0004_rate_limits`, plus the Studio's `…0005`–`…0007` (additive; checked 2026-10-03) |
-| Studio data (2026-10-03, after 0008) | 1 user (the owner, **admin**). Active plans: the owner's **"Sample Study Plan"** (published, 1 study, all six module types) and **"Sample — 12 Days"** (DRAFT, 12 studies, nothing blocks publishing: the owner decides). The 12 old one-study plans are archived. **Real content: don't change it in tests.** |
+| Studio data (2026-10-03, after 0008) | 1 user (the owner, **admin**). Active plans: the owner's **"Sample Study Plan"** (published, 1 study, all six module types) and **"Sample — 12 Days"** (**published** 2026-10-03 at the owner's request: 12 studies, 36 modules; the problems check was empty; the status change is in the Audit Log as `claude-on-owner-request`). The 12 old one-study plans are archived. **Real content: don't change it in tests.** |
 
 **The public app sees: 40 hymns, 15 prayers, and the published "Sample — 12 Days" plan.** That's
 enough for Phase 7's session flow. For testing Phase 6/7 you'll need published content. Ask the user to publish
