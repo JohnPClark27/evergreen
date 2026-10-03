@@ -42,7 +42,7 @@ ok((await a.getByText('ZZ Author').count()) > 0, 'author is signed in (name in t
 ok((await a.getByRole('link', { name: 'Review' }).count()) === 0, 'author sees no admin pages');
 await audit(a, 'studio: my plans (empty)');
 await a.getByRole('link', { name: /New study plan|first study plan/ }).first().click();
-await a.getByLabel('Title').fill('ZZ Studio e2e');
+await a.getByLabel('Title', { exact: true }).fill('ZZ Studio e2e');
 await a.getByLabel('Description').fill('test plan');
 
 const add = (name) => a.locator('.palette-btn', { hasText: name }).first().click();
@@ -84,12 +84,55 @@ await a.locator('.item').nth(3).locator('.choice-edit input[type=text]').nth(1).
 // Back to exactly what was saved: nothing to save, and Submit is allowed again.
 ok((await a.getByRole('button', { name: 'Saved', exact: true }).count()) === 1, 'restoring the answer matches the saved plan (no unsaved changes)');
 
-// preview: the real tablet app in a frame
-await a.getByRole('button', { name: 'Preview' }).click();
+// ---- studies: a plan holds several, each with its own modules
+const tabs = a.locator('.study-tab');
+await a.getByLabel('Study title').fill('ZZ Week 1');
+await a.getByRole('button', { name: '+ Add a study' }).click();
+ok((await tabs.count()) === 2 && (await a.locator('.item').count()) === 0, 'added study 2 (it starts empty)');
+await a.getByLabel('Study title').fill('ZZ Week 2');
+await add('Hymn');
+await a.locator('.item').last().locator('select[size]').selectOption({ index: 2 });
+ok((await a.locator('.item').count()) === 1, 'study 2 has its own module');
+await tabs.nth(0).locator('.study-pick').click();
+ok((await a.locator('.item').count()) === 5 && (await a.getByLabel('Study title').inputValue()) === 'ZZ Week 1', 'study 1 still has its 5 modules');
+// an empty study blocks submitting (but not saving)
+await a.getByRole('button', { name: '+ Add a study' }).click();
+await a.getByRole('button', { name: 'Save', exact: true }).click();
+await a.getByText('Saved.').waitFor();
+const why = await a.locator('.btn-row details').textContent().catch(() => '(no details list)');
+const subDisabled = await a.getByRole('button', { name: 'Submit for review' }).isDisabled().catch(() => 'no submit button');
+ok(subDisabled === true && why.includes('has no modules'), `an empty study blocks submitting (and says why): disabled=${subDisabled}, "${why.replace(/\n/g, ' / ').slice(0, 120)}"`);
+// copy a study from another plan (any published plan), then remove the copy
+await a.getByRole('button', { name: /Copy a study from another plan/ }).click();
+// the dialog opens after the list of plans loads; with no other plan, a message shows instead
+await a.locator('dialog[open], .banner.error').first().waitFor({ timeout: 30000 });
+if (await a.locator('dialog[open]').count()) {
+  await a.locator('dialog[open]').getByRole('button', { name: 'Copy study' }).click();
+  // a dialog's "close" event arrives a moment after the click: wait for the copied study
+  await a.waitForFunction(() => document.querySelectorAll('.study-tab').length === 4, null, { timeout: 10000 }).catch(() => {});
+  ok((await tabs.count()) === 4 && (await a.locator('.item').count()) > 0, `copied a study from another plan (${await a.locator('.item').count()} modules)`);
+  await a.getByRole('button', { name: 'Remove study 4' }).click(); await okDialog(a);
+  await a.waitForFunction(() => document.querySelectorAll('.study-tab').length === 3, null, { timeout: 10000 }).catch(() => {});
+} else {
+  ok(true, 'no other plan to copy from (skipped)');
+}
+await a.getByRole('button', { name: 'Remove study 3' }).click(); await okDialog(a);
+await a.waitForFunction(() => document.querySelectorAll('.study-tab').length === 2, null, { timeout: 10000 }).catch(() => {});
+ok((await tabs.count()) === 2, 'removed the extra studies');
+await a.getByRole('button', { name: 'Save', exact: true }).click();
+await a.getByText('Saved.').waitFor();
+await a.reload(); await a.getByRole('heading', { name: 'ZZ Studio e2e' }).waitFor();
+ok((await tabs.count()) === 2 && (await tabs.nth(1).innerText()).includes('ZZ Week 2'), 'saved and reloaded with 2 studies');
+await audit(a, 'studio: editor with 2 studies');
+if (shots) await a.screenshot({ path: `${shots}/studio-studies.png`, fullPage: true });
+
+// preview: the real tablet app in a frame, playing the selected study
+await a.getByRole('button', { name: /Preview study 1/ }).click();
 const frame = a.frameLocator('iframe.preview-frame');
 await frame.getByRole('button', { name: 'Tap to continue' }).click();
 await frame.locator('.where').waitFor({ timeout: 30000 });
-ok((await frame.locator('.where').innerText()).startsWith('Part 1 of 5 · Scripture'), 'preview plays the plan: ' + await frame.locator('.where').innerText());
+ok((await frame.locator('.where').innerText()).startsWith('Part 1 of 5 · Scripture')
+  && (await frame.locator('.plan-name').innerText()) === 'Study 1 of 2', 'preview plays study 1: ' + await frame.locator('.where').innerText());
 if (shots) await a.screenshot({ path: `${shots}/studio-preview.png` });
 await frame.getByRole('button', { name: 'Close' }).click();
 ok((await a.locator('.preview').count()) === 0, 'closing the preview returns to the editor');
@@ -121,11 +164,14 @@ await tab.locator('.study-tile').first().waitFor({ timeout: 30000 });
 let found = false;
 for (let p = 0; p < 6 && !found; p++) {
   found = (await tab.getByRole('button', { name: /ZZ Studio e2e/ }).count()) > 0;
-  if (!found && await tab.getByRole('button', { name: /More studies/ }).isEnabled().catch(() => false)) {
-    await tab.getByRole('button', { name: /More studies/ }).click(); await tab.waitForTimeout(300);
+  if (!found && await tab.getByRole('button', { name: /More plans/ }).isEnabled().catch(() => false)) {
+    await tab.getByRole('button', { name: /More plans/ }).click(); await tab.waitForTimeout(300);
   } else break;
 }
 ok(found, 'the approved plan is on the tablet’s list');
+await tab.getByRole('button', { name: /ZZ Studio e2e/ }).click();
+await tab.locator('.study-row').first().waitFor({ timeout: 30000 });
+ok((await tab.locator('.study-row').count()) === 2 && (await tab.locator('.study-row').nth(1).innerText()).includes('ZZ Week 2'), 'the tablet shows both studies of the plan');
 
 // hymn library: the public-domain rule refuses #8 (transcribed from a 1982 hymnal)
 await ad.goto(BASE + 'studio/#/hymns');

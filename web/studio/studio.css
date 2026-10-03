@@ -128,3 +128,16 @@ select.input[size] { min-height: 0; }
   .item-body, .item-errors { padding-left: 16px; margin-left: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* ---- studies inside a plan (editor) ---- */
+.study-tabs { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.study-tab { display: flex; align-items: center; gap: 6px; border: 2px solid var(--border); border-radius: 10px; padding: 4px 6px 4px 4px; background: var(--surface); }
+.study-tab.current { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.study-tab.has-errors { border-color: #e3a0a0; }
+.study-tab.current.has-errors { border-color: #b23b3b; }
+.study-pick { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; text-align: left; background: none; border: none; padding: 8px; font: inherit; color: var(--ink); cursor: pointer; border-radius: 8px; min-height: 44px; }
+.study-pick:hover { background: var(--accent-soft); }
+.study-pick-title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.study-panel { margin-top: 16px; }
+.studio-dialog h2 { margin-top: 0; }
+.studio-dialog select { width: 100%; }

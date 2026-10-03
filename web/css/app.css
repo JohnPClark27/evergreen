@@ -203,3 +203,33 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
 }
+
+/* ---------- Study plan page (#/plan/<id>) ---------- */
+.plan-card { display: flex; flex-direction: column; gap: 18px; }
+.plan-desc { font-family: var(--font-read); font-size: 24px; color: var(--muted); margin: 0; }
+.continue { align-self: flex-start; }
+.study-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.study-row {
+  width: 100%; min-height: 88px; display: flex; align-items: center; gap: 18px; text-align: left;
+  padding: 14px 20px; border-radius: 18px; border: 2px solid var(--control-border);
+  background: var(--surface); color: var(--ink);
+}
+.study-row.next { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.study-row.done .study-row-title { color: var(--muted); }
+.study-row:disabled { opacity: 0.5; cursor: default; }
+.study-num {
+  flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg); border: 2px solid var(--control-border); font-size: 22px; font-weight: 700;
+}
+.study-row.done .study-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.study-row.done .study-num .icon { width: 30px; height: 30px; }
+.study-row-text { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.study-row-title { font-family: var(--font-read); font-size: 26px; font-weight: 600; line-height: 1.2; }
+.study-row-meta { color: var(--muted); font-size: 18px; }
+.mini-progress { display: flex; gap: 4px; flex-wrap: wrap; }
+.mini-progress span { width: 14px; height: 6px; border-radius: 3px; background: var(--border-strong); }
+.mini-progress span.done { background: var(--accent); }
+.link-button {
+  align-self: flex-start; background: none; border: none; color: var(--muted); text-decoration: underline;
+  font-size: 19px; padding: 12px 4px; min-height: 48px;
+}

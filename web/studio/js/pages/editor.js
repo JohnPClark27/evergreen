@@ -1,6 +1,7 @@
-// Plan editor (#/plan/new, #/plan/<id>): title + description, an outline of modules in any
-// order and combination, an "Add a module" palette, Save / Preview / Submit, and (for admins
-// on a submitted plan) the review panel.
+// Plan editor (#/plan/new, #/plan/<id>): title + description; the plan's STUDIES (add, rename,
+// reorder, copy, remove, or copy one from another plan); for the selected study, an outline of
+// its modules in any order and combination with an "Add a module" palette; Save / Preview /
+// Submit; and (for admins on a submitted plan) the review panel.
 import * as db from '../db.js';
 import { MODULES, moduleFor } from '../../../modules/index.js';
 import { ask, chip, flash, h } from '../ui.js';
@@ -18,9 +19,18 @@ export async function render(main, params, app) {
   }
 
   const plan = loaded ?? { id: null, title: '', description: '', status: 'draft', review_note: null };
-  let items = (loaded?.items ?? []).map((i) => ({ key: nextKey++, module_type: i.module_type, config: clone(i.config ?? {}), open: false }));
+  const toItem = (i) => ({ key: nextKey++, module_type: i.module_type, config: clone(i.config ?? {}), open: false });
+  // Every study keeps its own module list. `items` is the SELECTED study's list: the module
+  // outline, palette, and drag-and-drop below all work on it.
+  const studies = (loaded?.studies ?? []).map((st) => ({ key: nextKey++, title: st.title, items: st.items.map(toItem) }));
+  if (!studies.length) studies.push({ key: nextKey++, title: 'Study 1', items: [] });
+  let current = 0;
+  let items = studies[0].items;
   const editable = plan.status === 'draft' || isAdmin;
-  const snapshot = () => JSON.stringify({ t: plan.title.trim(), d: (plan.description ?? '').trim(), i: items.map((x) => [x.module_type, x.config]) });
+  const snapshot = () => JSON.stringify({
+    t: plan.title.trim(), d: (plan.description ?? '').trim(),
+    s: studies.map((st) => [st.title.trim(), st.items.map((x) => [x.module_type, x.config])]),
+  });
   let saved = isNew ? null : snapshot();
   app.dirty = () => editable && snapshot() !== saved;
 
@@ -29,9 +39,19 @@ export async function render(main, params, app) {
     const mod = moduleFor(item.module_type);
     return mod ? mod.validate(item.config, lib) : [];
   };
+  // Things that stop SAVING (missing titles, modules that are filled in wrongly)…
   const planErrors = () => [
     !plan.title.trim() && 'Give the plan a title.',
-    ...items.flatMap((item, n) => errorsOf(item).map((e) => `Part ${n + 1} (${moduleFor(item.module_type)?.name ?? item.module_type}): ${e}`)),
+    ...studies.flatMap((st, k) => [
+      !st.title.trim() && `Study ${k + 1} needs a title.`,
+      ...st.items.flatMap((item, n) => errorsOf(item).map((e) =>
+        `Study ${k + 1}, part ${n + 1} (${moduleFor(item.module_type)?.name ?? item.module_type}): ${e}`)),
+    ]),
+  ].filter(Boolean);
+  // …and things that also stop SUBMITTING (an empty study is fine while drafting).
+  const submitErrors = () => [
+    ...planErrors(),
+    ...studies.map((st, k) => !st.items.length && `Study ${k + 1} (“${st.title || 'untitled'}”) has no modules yet.`),
   ].filter(Boolean);
 
   // ---------- layout ----------
@@ -44,6 +64,14 @@ export async function render(main, params, app) {
   desc.value = plan.description ?? '';
   const actions = h('div', { class: 'btn-row' });
   const reviewBox = h('div');
+  const studyList = h('ol', { class: 'study-tabs', 'aria-label': 'Studies in this plan' });
+  const studyTitle = h('input', { class: 'input', id: 'study-title', maxlength: '120', disabled: !editable,
+    placeholder: 'e.g. “Week 1: The Lord is my shepherd”',
+    oninput: (e) => { studies[current].title = e.target.value; drawStudies(); refreshActions(); } });
+  const studyHeading = h('h2', {});
+  const studyAdd = editable && h('div', { class: 'btn-row' },
+    h('button', { class: 'btn small', type: 'button', onclick: () => addStudy() }, '+ Add a study'),
+    h('button', { class: 'btn small', type: 'button', onclick: () => copyFromOtherPlan() }, 'Copy a study from another plan…'));
 
   main.append(...[
     h('div', { class: 'toolbar' },
@@ -57,11 +85,17 @@ export async function render(main, params, app) {
         h('section', { class: 'panel', 'aria-label': 'Plan details' },
           h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'plan-title' }, 'Title'), title),
           h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'plan-desc' }, 'Description'), desc)),
-        h('h2', {}, 'Modules'),
-        h('p', { class: 'muted small' }, editable ? 'Drag ☰ (or use ▲ ▼) to reorder. Any mix, any order: two hymns in a row is fine.' : ''),
-        outline),
+        h('section', { class: 'panel', 'aria-label': 'Studies' },
+          h('h2', {}, 'Studies'),
+          h('p', { class: 'muted small' }, 'A plan holds one or more studies. On the tablet, people pick the plan, then walk through its studies (their progress is kept on the tablet).'),
+          studyList, studyAdd),
+        h('section', { class: 'panel study-panel', 'aria-label': 'Selected study' },
+          h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'study-title' }, 'Study title'), studyTitle),
+          studyHeading,
+          h('p', { class: 'muted small' }, editable ? 'Drag ☰ (or use ▲ ▼) to reorder. Any mix, any order: two hymns in a row is fine.' : ''),
+          outline)),
       h('aside', { class: 'sticky' },
-        editable && h('section', { class: 'panel' }, h('h2', {}, 'Add a module'),
+        editable && h('section', { class: 'panel' }, h('h2', {}, 'Add a module to this study'),
           h('div', { class: 'palette' }, MODULES.map((m) => h('button', { class: 'palette-btn', type: 'button',
             onclick: () => addItem(m) },
           h('span', { class: 'item-icon', 'aria-hidden': 'true' }, m.icon),
@@ -71,10 +105,94 @@ export async function render(main, params, app) {
         reviewBox)),
   ].filter(Boolean)); // statusBanner may be null
 
+  // ---------- studies ----------
+  function selectStudy(k) {
+    current = Math.max(0, Math.min(k, studies.length - 1));
+    items = studies[current].items;
+    studyTitle.value = studies[current].title;
+    drawStudies();
+    drawOutline();
+  }
+
+  function drawStudies() {
+    const sbtn = (label, aria, fn, disabled = false) =>
+      h('button', { class: 'btn small', type: 'button', 'aria-label': aria, title: aria, disabled: disabled || !editable, onclick: fn }, label);
+    studyList.replaceChildren(...studies.map((st, k) => {
+      const errs = st.items.some((x) => errorsOf(x).length) || !st.title.trim();
+      return h('li', { class: `study-tab${k === current ? ' current' : ''}${errs ? ' has-errors' : ''}` },
+        h('button', { class: 'study-pick', type: 'button', 'aria-current': k === current ? 'true' : null, onclick: () => selectStudy(k) },
+          h('span', { class: 'item-num' }, `${k + 1}.`),
+          h('span', { class: 'study-pick-title' }, st.title.trim() || 'Untitled study'),
+          h('span', { class: 'muted small' }, `${st.items.length} module${st.items.length === 1 ? '' : 's'}`)),
+        sbtn('▲', `Move study ${k + 1} up`, () => moveStudy(k, k - 1), k === 0),
+        sbtn('▼', `Move study ${k + 1} down`, () => moveStudy(k, k + 1), k === studies.length - 1),
+        sbtn('Copy', `Duplicate study ${k + 1}`, () => {
+          studies.splice(k + 1, 0, { key: nextKey++, title: `${st.title} (copy)`.slice(0, 120), items: st.items.map((x) => ({ ...toItem(x) })) });
+          selectStudy(k + 1);
+        }),
+        sbtn('✕', `Remove study ${k + 1}`, async () => {
+          if (studies.length === 1) { flash(status, 'A plan needs at least one study.', 'error'); return; }
+          if (await ask(`Remove study ${k + 1} (“${st.title || 'untitled'}”) and its ${st.items.length} module(s)?`, { ok: 'Remove', danger: true })) {
+            studies.splice(k, 1);
+            selectStudy(Math.min(current, studies.length - 1));
+          }
+        }));
+    }));
+    studyHeading.textContent = `Modules in study ${current + 1}`;
+    refreshActions();
+  }
+
+  function moveStudy(from, to) {
+    if (to < 0 || to >= studies.length) return;
+    const [x] = studies.splice(from, 1);
+    studies.splice(to, 0, x);
+    selectStudy(to);
+    studyList.children[to]?.querySelector('.study-pick')?.focus();
+  }
+
+  function addStudy(title = `Study ${studies.length + 1}`, fromItems = []) {
+    studies.push({ key: nextKey++, title, items: fromItems.map(toItem) });
+    selectStudy(studies.length - 1);
+    studyTitle.focus();
+    studyTitle.select();
+  }
+
+  /** Pick a study from one of your plans (or any published plan) and add a copy here. */
+  async function copyFromOtherPlan() {
+    let plans;
+    try { plans = (await db.plansToCopyFrom()).filter((p) => p.id !== plan.id); } catch (err) { flash(status, err.message, 'error'); return; }
+    if (!plans.length) { flash(status, 'There are no other plans with studies to copy from yet.', 'error'); return; }
+    const planSel = h('select', { class: 'input', id: 'copy-plan' }, plans.map((p, i) => h('option', { value: String(i) }, `${p.title}${p.status === 'published' ? '' : ` (${p.status})`}`)));
+    const studySel = h('select', { class: 'input', id: 'copy-study' });
+    const fillStudies = () => studySel.replaceChildren(...plans[Number(planSel.value)].studies.map((st, i) =>
+      h('option', { value: String(i) }, `${i + 1}. ${st.title} (${st.items.length} modules)`)));
+    planSel.addEventListener('change', fillStudies);
+    fillStudies();
+    const dlg = h('dialog', { class: 'studio-dialog' },
+      h('form', { method: 'dialog' },
+        h('h2', {}, 'Copy a study from another plan'),
+        h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'copy-plan' }, 'Plan'), planSel),
+        h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'copy-study' }, 'Study'), studySel),
+        h('p', { class: 'muted small' }, 'A copy is added to the end of this plan. Changing it later won’t change the original.'),
+        h('div', { class: 'btn-row' },
+          h('button', { class: 'btn', value: 'cancel' }, 'Cancel'),
+          h('button', { class: 'btn primary', value: 'ok' }, 'Copy study'))));
+    dlg.addEventListener('close', () => {
+      dlg.remove();
+      if (dlg.returnValue !== 'ok') return;
+      const st = plans[Number(planSel.value)].studies[Number(studySel.value)];
+      addStudy(st.title, st.items);
+      flash(status, `Copied “${st.title}” into this plan (not saved yet).`);
+    });
+    document.body.append(dlg);
+    dlg.showModal();
+    planSel.focus();
+  }
+
   // ---------- outline ----------
   function drawOutline() {
     outline.replaceChildren(...items.map((item, n) => itemCard(item, n)));
-    if (!items.length) outline.append(h('li', { class: 'panel muted' }, editable ? 'Add modules from the list on the right.' : 'No modules.'));
+    if (!items.length) outline.append(h('li', { class: 'panel muted' }, editable ? 'Add modules to this study from the list on the right.' : 'No modules.'));
     refreshActions();
   }
 
@@ -92,6 +210,7 @@ export async function render(main, params, app) {
       errs.hidden = !e.length;
       li.classList.toggle('has-errors', e.length > 0);
       refreshActions();
+      studyList.children[current]?.classList.toggle('has-errors', studies[current].items.some((x) => errorsOf(x).length) || !studies[current].title.trim());
     };
     const drawBody = () => {
       if (!mod || !item.open) return;
@@ -123,9 +242,9 @@ export async function render(main, params, app) {
         h('div', { class: 'item-text' }, h('div', { class: 'item-name' }, mod?.name ?? item.module_type), summary),
         btn('▲', `Move part ${n + 1} up`, () => move(n, n - 1), n === 0),
         btn('▼', `Move part ${n + 1} down`, () => move(n, n + 1), n === items.length - 1),
-        btn('Copy', `Duplicate part ${n + 1}`, () => { items.splice(n + 1, 0, { ...item, key: nextKey++, config: clone(item.config), open: false }); drawOutline(); }),
+        btn('Copy', `Duplicate part ${n + 1}`, () => { items.splice(n + 1, 0, { ...item, key: nextKey++, config: clone(item.config), open: false }); drawOutline(); drawStudies(); }),
         btn('✕', `Remove part ${n + 1}`, async () => {
-          if (await ask(`Remove part ${n + 1} (${mod?.name ?? item.module_type})?`, { ok: 'Remove', danger: true })) { items.splice(n, 1); drawOutline(); }
+          if (await ask(`Remove part ${n + 1} (${mod?.name ?? item.module_type})?`, { ok: 'Remove', danger: true })) { items.splice(n, 1); drawOutline(); drawStudies(); }
         }),
         toggle),
       errs, body);
@@ -159,6 +278,7 @@ export async function render(main, params, app) {
   function addItem(mod) {
     items.push({ key: nextKey++, module_type: mod.type, config: mod.defaults(), open: true });
     drawOutline();
+    drawStudies();
     outline.lastElementChild?.scrollIntoView({ block: 'center' });
     outline.lastElementChild?.querySelector('input, select, textarea')?.focus();
   }
@@ -166,15 +286,15 @@ export async function render(main, params, app) {
   // ---------- actions ----------
   function refreshActions() {
     const dirty = app.dirty();
-    const errs = planErrors();
+    const errs = submitErrors();
     const b = (label, fn, { primary = false, danger = false, disabled = false, hint = null } = {}) =>
       h('button', { class: `btn${primary ? ' primary' : ''}${danger ? ' danger' : ''}`, type: 'button', disabled, title: hint, onclick: fn }, label);
     actions.replaceChildren(...[
       editable && b(dirty || isNew ? 'Save' : 'Saved', save, { primary: true, disabled: !(dirty || isNew) }),
-      b('Preview', preview, { disabled: !items.length }),
+      b(`Preview study ${current + 1}`, preview, { disabled: !items.length }),
       plan.id && plan.status === 'draft' && b('Submit for review', submit, {
-        disabled: dirty || errs.length > 0 || !items.length,
-        hint: dirty ? 'Save first' : errs.length ? 'Fix the parts marked in red first' : 'An admin will review it',
+        disabled: dirty || errs.length > 0,
+        hint: dirty ? 'Save first' : errs.length ? 'Fix the things listed below first' : 'An admin will review it',
       }),
       plan.id && plan.status === 'pending' && b('Withdraw (edit again)', () => setStatus('draft', 'Withdrawn: you can edit it again.')),
       plan.id && plan.status === 'published' && b('Take back to edit', async () => {
@@ -186,7 +306,9 @@ export async function render(main, params, app) {
       plan.id && plan.status === 'published' && b('Archive', () => setStatus('archived', 'Archived: removed from the tablets.')),
       plan.id && plan.status === 'archived' && b('Restore as draft', () => setStatus('draft', 'Restored as a draft.')),
       plan.id && ['draft', 'archived'].includes(plan.status) && b('Delete', remove, { danger: true }),
-      errs.length > 0 && editable && h('p', { class: 'muted small' }, `${errs.length} thing${errs.length === 1 ? '' : 's'} to fix before submitting.`),
+      errs.length > 0 && editable && h('details', { class: 'small' },
+        h('summary', {}, `${errs.length} thing${errs.length === 1 ? '' : 's'} to fix before submitting`),
+        h('ul', {}, errs.map((e) => h('li', {}, e)))),
     ].filter(Boolean)); // replaceChildren would print false/null as text
   }
 
@@ -194,12 +316,17 @@ export async function render(main, params, app) {
     const errs = planErrors();
     if (errs.length) {
       flash(status, `Fix these first: ${errs.join(' · ')}`, 'error');
-      const bad = items.find((x) => errorsOf(x).length);
-      if (bad && !bad.open) { bad.open = true; drawOutline(); }
+      // jump to the first study with a problem and open the module
+      const k = studies.findIndex((st) => !st.title.trim() || st.items.some((x) => errorsOf(x).length));
+      if (k >= 0) {
+        const bad = studies[k].items.find((x) => errorsOf(x).length);
+        if (bad) bad.open = true;
+        selectStudy(k);
+      }
       return;
     }
     try {
-      const id = await db.savePlan(plan.id, plan.title.trim(), plan.description?.trim(), items);
+      const id = await db.savePlan(plan.id, plan.title.trim(), plan.description?.trim(), studies);
       saved = snapshot();
       if (!plan.id) { app.dirty = null; app.go(`#/plan/${id}`); return; }
       flash(status, 'Saved.');
@@ -226,7 +353,7 @@ export async function render(main, params, app) {
 
   async function duplicate() {
     try {
-      const id = await db.savePlan(null, `${plan.title.trim()} (copy)`.slice(0, 120), plan.description?.trim(), items);
+      const id = await db.savePlan(null, `${plan.title.trim()} (copy)`.slice(0, 120), plan.description?.trim(), studies);
       app.dirty = null;
       app.go(`#/plan/${id}`);
     } catch (err) { flash(status, err.message, 'error'); }
@@ -240,7 +367,12 @@ export async function render(main, params, app) {
 
   /** Preview = the real tablet app, in a frame, playing these (unsaved) modules. */
   function preview() {
-    sessionStorage.setItem('hr.preview', JSON.stringify({ id: plan.id ?? 0, title: plan.title || 'Preview', items: items.map((x) => ({ module_type: x.module_type, config: x.config })) }));
+    // The selected study, exactly as a tablet would play it (unsaved changes included).
+    const st = studies[current];
+    sessionStorage.setItem('hr.preview', JSON.stringify({
+      id: plan.id ?? 0, title: st.title || 'Preview', subtitle: `Study ${current + 1} of ${studies.length}`,
+      items: st.items.map((x) => ({ module_type: x.module_type, config: x.config })),
+    }));
     const frame = h('iframe', { class: 'preview-frame', src: '../#/preview', title: 'Tablet preview', allow: 'autoplay' });
     const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = (e) => { if (e.key === 'Escape') close(); };
@@ -278,7 +410,7 @@ export async function render(main, params, app) {
 
   const pending = sessionStorage.getItem('hr.studio.flash');
   if (pending) { sessionStorage.removeItem('hr.studio.flash'); flash(status, pending); }
-  drawOutline();
+  selectStudy(0);
   drawReview();
   if (isNew) title.focus();
   return () => { app.dirty = null; };

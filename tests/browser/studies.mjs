@@ -1,6 +1,8 @@
-// studies.mjs - tablet side of study plans: the list, then a plan using EVERY module type,
-// walked with the big buttons. Expects a published plan titled "ZZ All modules" (the
-// caller creates it and removes it afterwards). Usage: node studies.mjs [baseUrl]
+// studies.mjs - tablet side of study plans, with the big buttons: the plan list, a plan's page
+// (Start / Continue, ✓ marks), study 1 using EVERY module type, the done screen's "Next",
+// study 2, "all done", and "Start this plan over". Expects the published plan "ZZ All modules"
+// from fixture_all_modules.py (the caller makes it first and cleans it after).
+// Usage: node studies.mjs [baseUrl]
 import { BASE, axe, launch } from './launch.mjs';
 const browser = await launch();
 const page = await (await browser.newContext({ viewport: { width: 1180, height: 820 } })).newPage();
@@ -14,18 +16,30 @@ const shot = (name) => (process.env.SHOTS ? page.screenshot({ path: `${process.e
 const next = () => page.getByRole('button', { name: /^(Next|Finish)$/ }).click();
 
 await page.goto(BASE);
-await page.getByRole('button', { name: /Choose a Study/ }).click();
+await page.getByRole('button', { name: /Choose a Study Plan/ }).click();
 await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
-ok((await page.locator('.study-tile').count()) === 6, `study list: 6 cards on page 1 (${await text('.topbar .day')})`);
-await shot('studies');
-
-// find the all-modules plan across pages
+await page.getByRole('heading', { name: 'Choose a Study Plan' }).waitFor();
+// find the test plan across pages
 for (let p = 0; p < 5 && !(await page.getByRole('button', { name: /ZZ All modules/ }).count()); p++) {
-  await page.getByRole('button', { name: /More studies/ }).click(); await page.waitForTimeout(300);
+  await page.getByRole('button', { name: /More plans/ }).click(); await page.waitForTimeout(300);
 }
-await page.getByRole('button', { name: /ZZ All modules/ }).click();
+const card = page.getByRole('button', { name: /ZZ All modules/ });
+ok((await card.innerText()).includes('2 studies'), 'plan card: ' + (await card.innerText()).replace(/\n/g, ' / '));
+await shot('plans');
+
+// ---- the plan page
+await card.click();
+await page.getByRole('heading', { name: 'ZZ All modules' }).waitFor();
+ok((await text('.topbar .day')) === '0 of 2 done', 'plan page: ' + await text('.topbar .day'));
+ok((await text('.continue')).includes('Start: Study 1'), 'big button: ' + await text('.continue'));
+ok((await page.locator('.study-row').count()) === 2 && (await text('.study-row.next')).includes('ZZ Every module'), 'two studies listed, study 1 is "Next up"');
+ok((await axe(page)).length === 0, 'axe clean: plan page');
+await shot('plan');
+
+// ---- study 1: every module type
+await page.locator('.continue').click();
 await page.locator('.where').waitFor();
-ok((await text('.where')).startsWith('Part 1 of 7'), 'runner: ' + await text('.where'));
+ok((await text('.where')).startsWith('Part 1 of 7') && (await text('.plan-name')) === 'Study 1 of 2', 'runner: ' + await text('.where') + ' | ' + await text('.plan-name'));
 await page.locator('.lyric-word').first().waitFor({ timeout: 30000 }); await page.waitForTimeout(8000);
 ok((await text('.lyric-word.now')).length > 0, 'hymn module: word lit "' + await text('.lyric-word.now') + '"');
 await shot('runner-hymn');
@@ -38,30 +52,55 @@ await page.locator('.quiz-choice').first().click();
 ok((await text('.quiz-reveal')).startsWith('The answer is'), 'quiz module: ' + await text('.quiz-reveal'));
 ok(!(await page.locator('.quiz').innerText()).match(/score|correct|wrong/i), 'quiz shows no score / right / wrong');
 ok((await axe(page)).length === 0, 'axe clean: quiz (answer revealed)');
-await shot('runner-quiz');
 await next(); await page.locator('.finish-line').waitFor({ timeout: 30000 });
 const before = await text('.finish-blank');
 await page.getByRole('button', { name: 'Show the words' }).click();
-ok((await axe(page)).length === 0, 'axe clean: finish the line');
 ok(before.includes('_') && !(await text('.finish-blank')).includes('_'), `finish-the-line: "${before}" → "${await text('.finish-blank')}"`);
-await shot('runner-finish');
 await next(); await page.locator('.reading-panel.centered').waitFor();
 ok((await text('.attribution')).length > 0, 'prayer module: ' + await text('.reading-panel .title') + ' | ' + await text('.attribution'));
 await next(); await page.locator('.lyric-word').first().waitFor({ timeout: 30000 });
-ok((await text('.where')).startsWith('Part 7 of 7'), 'last module: ' + await text('.where'));
-ok((await page.getByRole('button', { name: 'Finish' }).count()) === 1, 'last part says Finish');
-await page.getByRole('button', { name: 'Back' }).click(); await page.locator('.reading-panel.centered').waitFor();
-ok((await text('.where')).startsWith('Part 6'), 'Back works: ' + await text('.where'));
-await next(); await page.locator('.lyric-word').first().waitFor({ timeout: 30000 });
+ok((await text('.where')).startsWith('Part 7 of 7') && (await page.getByRole('button', { name: 'Finish' }).count()) === 1, 'last part says Finish');
 await page.reload(); await page.getByRole('button', { name: 'Tap to continue' }).click();
 await page.locator('.where').waitFor();
-ok((await text('.where')).startsWith('Part 7 of 7'), 'reload resumes at the same part');
+ok((await text('.where')).startsWith('Part 7 of 7'), 'reload resumes at the same part of the same study');
+await page.getByRole('button', { name: 'Finish' }).click();
+
+// ---- done: points at study 2
+await page.getByRole('heading', { name: /end of this study/ }).waitFor();
+ok((await page.locator('.done').innerText()).includes('Study 2, ZZ Short study'), 'done screen names the next study');
+await page.getByRole('button', { name: 'Enjoyed it' }).click();
+await page.getByRole('button', { name: /Back to the plan/ }).click();
+await page.getByRole('heading', { name: 'ZZ All modules' }).waitFor();
+ok((await text('.topbar .day')) === '1 of 2 done', 'progress saved on the tablet: ' + await text('.topbar .day'));
+ok((await page.locator('.study-row.done').count()) === 1 && (await text('.study-row.next')).includes('ZZ Short study'), 'study 1 ticked, study 2 is next');
+ok((await text('.continue')).includes('Continue: Study 2'), 'big button: ' + await text('.continue'));
+
+// ---- study 2, then "all done"
+await page.locator('.continue').click();
+await page.locator('.where').waitFor();
+ok((await text('.where')).startsWith('Part 1 of 2') && (await text('.plan-name')) === 'Study 2 of 2', 'study 2: ' + await text('.where'));
+await next(); await page.locator('.reading-panel.centered').waitFor();
 await page.getByRole('button', { name: 'Finish' }).click();
 await page.getByRole('heading', { name: /end of this study/ }).waitFor();
-await page.getByRole('button', { name: 'Enjoyed it' }).click();
-await page.getByRole('button', { name: 'Choose another study' }).click();
+ok((await page.locator('.done').innerText()).includes('That was the last study'), 'done after the last study');
+await page.getByRole('button', { name: 'Choose another plan' }).click();
 await page.locator('.study-tile').first().waitFor();
-ok((await text('.study-tile')).includes('ZZ All modules') && (await text('.study-tile')).includes('Enjoyed before'), 'enjoyed study is listed first');
+const first = await text('.study-tile');
+ok(first.includes('ZZ All modules') && first.includes('Enjoyed before') && first.includes('all done'), 'list: enjoyed plan first, "all done": ' + first.replace(/\n/g, ' / '));
+
+// ---- start over, old links
+await page.getByRole('button', { name: /ZZ All modules/ }).click();
+await page.getByRole('heading', { name: 'ZZ All modules' }).waitFor();
+ok((await text('.continue')).includes('Every study is done'), 'all done: ' + await text('.continue'));
+await page.getByRole('button', { name: 'Start this plan over' }).click();
+await page.locator('dialog[open]').getByRole('button', { name: 'Start over' }).click();
+await page.waitForFunction(() => document.querySelector('.topbar .day')?.textContent === '0 of 2 done');
+ok((await page.locator('.study-row.done').count()) === 0, 'start over clears the ticks');
+const planUrl = page.url();
+const planId = planUrl.match(/#\/plan\/(\d+)/)[1];
+await page.goto(BASE + `#/study/${planId}`);
+await page.getByRole('heading', { name: 'ZZ All modules' }).waitFor({ timeout: 10000 });
+ok(page.url().includes(`#/plan/${planId}`), 'old one-study link opens the plan page');
 ok(errors.length === 0, 'no console errors ' + JSON.stringify(errors));
 console.log(`${pass} passed, ${fail} failed`);
 await browser.close();

@@ -88,22 +88,33 @@ export const getChapterHymns = (book, chapter) => memo(cache.queries, `ch:${book
 // ---------- Plans, studies, prayers ----------
 
 /** Published study plans for the tablet's list: [{id, title, description, types: [module_type…]}]. */
+// A study plan holds studies; a study holds modules. Both come back in order:
+//   { id, title, description, studies: [{ id, position, title, key, items: [{ module_type, config? }] }] }
+// `key` identifies a study for this tablet's progress (see store.js): its title, so a ✓
+// survives the pastor re-saving or reordering the plan.
+function shapePlan(p) {
+  p.studies = (p.studies ?? []).sort((a, b) => a.position - b.position).map((s) => ({
+    ...s,
+    key: s.title.trim().toLowerCase(),
+    items: (s.items ?? []).sort((a, b) => a.position - b.position),
+  }));
+  return p;
+}
+
+/** Every published study plan, with its studies' module types (for the list cards). */
 export const getStudyPlans = () => memo(cache.queries, 'studyPlans', async () => {
   const plans = await rows(db.from('study_plans')
-    .select('id,title,description,updated_at,items:study_plan_items(position,module_type)').order('title'));
-  return plans.map((p) => ({
-    ...p, types: p.items.sort((a, b) => a.position - b.position).map((i) => i.module_type),
-  }));
+    .select('id,title,description,updated_at,studies:plan_studies(id,position,title,items:study_plan_items(position,module_type))')
+    .order('title'));
+  return plans.map(shapePlan);
 });
 
-/** One published study plan with its modules in order: {id, title, description, items: [{module_type, config}]}. */
+/** One published study plan with every study's modules (and their settings), or null. */
 export const getStudyPlan = (id) => memo(cache.queries, `studyPlan:${id}`, async () => {
   const found = await rows(db.from('study_plans')
-    .select('id,title,description,items:study_plan_items(position,module_type,config)').eq('id', id));
-  if (!found.length) return null;
-  const plan = found[0];
-  plan.items.sort((a, b) => a.position - b.position);
-  return plan;
+    .select('id,title,description,studies:plan_studies(id,position,title,items:study_plan_items(position,module_type,config))')
+    .eq('id', id));
+  return found.length ? shapePlan(found[0]) : null;
 });
 
 export const getHymnById = async (id) => (await getHymns()).find((x) => x.id === Number(id)) ?? null;

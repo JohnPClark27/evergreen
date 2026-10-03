@@ -12,7 +12,7 @@ import { moduleFor } from '../modules/index.js';
 import { h, icon } from './ui.js';
 
 /**
- * plan: { id, title, items: [{ module_type, config }] }
+ * plan: { id, title, subtitle?, items: [{ module_type, config }] }  (one study: its modules in order)
  * ctx:  { audio, speaker } (+ store, for resuming)
  * opts: { onExit(), onFinish(), exitLabel, startAt, onStep(index) }
  * Returns a cleanup function.
@@ -32,6 +32,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
   const where = h('p', { class: 'where', 'aria-live': 'polite' });
   const bar = h('div', { class: 'progress', 'aria-hidden': 'true' });
   const stage = h('section', { class: 'card', tabindex: '0', 'aria-label': plan.title });
+  // (plan.subtitle, e.g. "Study 3 of 12", is shown top right when the study is part of a plan)
   const againBtn = h('button', { class: 'pill', type: 'button' }, icon('again'), h('span', { class: 'label' }, 'Again'));
   const pauseBtn = h('button', { class: 'round', type: 'button', 'aria-label': 'Pause' }, icon('pause'));
   const backBtn = h('button', { class: 'pill', type: 'button' }, icon('back'), h('span', { class: 'label' }, 'Back'));
@@ -43,7 +44,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       h('button', { class: 'pill', type: 'button', onclick: () => opts.onExit?.() },
         icon(opts.exitLabel ? 'back' : 'home'), h('span', { class: 'label' }, opts.exitLabel ?? 'Home')),
       h('div', { class: 'where-box' }, where, bar),
-      h('p', { class: 'day plan-name' }, plan.title)),
+      h('p', { class: 'day plan-name' }, plan.subtitle ?? plan.title)),
     stage,
     h('footer', { class: 'bottombar' }, backBtn, againBtn, pauseBtn, nextBtn)));
 

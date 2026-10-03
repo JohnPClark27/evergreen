@@ -90,34 +90,59 @@ export async function loadLibrary() {
 }
 
 // ---------- study plans ----------
+// A plan holds studies; a study holds modules ({module_type, config}), both kept in order.
 
 const PLAN_FIELDS = 'id,title,description,status,review_note,owner_id,submitted_at,reviewed_at,updated_at,owner:profiles!study_plans_owner_id_fkey(display_name)';
 
+// For list pages: how many studies and which module types (icons).
+const LIST_FIELDS = `${PLAN_FIELDS},studies:plan_studies(id,items:study_plan_items(module_type))`;
+// For the editor and copying: every study with its modules and their settings.
+const FULL_STUDIES = 'studies:plan_studies(id,position,title,items:study_plan_items(position,module_type,config))';
+
+function sortStudies(plan) {
+  plan.studies = (plan.studies ?? []).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  for (const s of plan.studies) s.items = (s.items ?? []).sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  return plan;
+}
+
 export async function myPlans() {
   const uid = (await session()).user.id;
-  return q(sb.from('study_plans').select(`${PLAN_FIELDS},items:study_plan_items(module_type)`)
+  return q(sb.from('study_plans').select(LIST_FIELDS)
     .eq('owner_id', uid).order('updated_at', { ascending: false }));
 }
 
 /** Admin: every plan, optionally one status. */
 export const allPlans = (status = null) => {
-  let query = sb.from('study_plans').select(`${PLAN_FIELDS},items:study_plan_items(module_type)`).order('updated_at', { ascending: false });
+  let query = sb.from('study_plans').select(LIST_FIELDS).order('updated_at', { ascending: false });
   if (status) query = query.eq('status', status);
   return q(query);
 };
 
 export async function getPlan(id) {
-  const rows = await q(sb.from('study_plans').select(`${PLAN_FIELDS},items:study_plan_items(position,module_type,config)`).eq('id', id));
-  if (!rows.length) return null;
-  rows[0].items.sort((a, b) => a.position - b.position);
-  return rows[0];
+  const rows = await q(sb.from('study_plans').select(`${PLAN_FIELDS},${FULL_STUDIES}`).eq('id', id));
+  return rows.length ? sortStudies(rows[0]) : null;
 }
 
-/** Save title, description and ALL modules in one transaction. Returns the plan id. */
-export const savePlan = (id, title, description, items) => q(sb.rpc('save_study_plan', {
+/** Plans whose studies this person may copy from: their own (any status) and every published
+ * plan (admins see all). Used by "Copy a study from another plan". */
+export async function plansToCopyFrom() {
+  const rows = await q(sb.from('study_plans').select(`id,title,status,${FULL_STUDIES}`)
+    .neq('status', 'archived').order('title'));
+  return rows.map(sortStudies).filter((p) => p.studies.length);
+}
+
+/** Save title, description, ALL studies and ALL their modules in one transaction.
+ * studies: [{ title, items: [{ module_type, config }] }]. Returns the plan id. */
+export const savePlan = (id, title, description, studies) => q(sb.rpc('save_study_plan', {
   p_id: id ?? null, p_title: title, p_description: description || null,
-  p_items: items.map((i) => ({ type: i.module_type, config: i.config })),
+  p_studies: studies.map((s) => ({
+    title: s.title.trim(),
+    items: s.items.map((i) => ({ type: i.module_type, config: i.config })),
+  })),
 }));
+
+/** Total modules across a plan's studies (list pages). */
+export const moduleTypes = (plan) => (plan.studies ?? []).flatMap((s) => (s.items ?? []).map((i) => i.module_type));
 
 export const setPlanStatus = (id, status) => q(sb.from('study_plans').update({ status }).eq('id', id).select('id'));
 export const deletePlan = (id) => q(sb.from('study_plans').delete().eq('id', id));

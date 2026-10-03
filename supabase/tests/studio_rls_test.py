@@ -81,10 +81,20 @@ try:
         check([i["module_type"] for i in items] == ["hymn", "scripture", "prayer"], "imported plan = hymn, scripture, prayer")
     else:
         print("SKIP imported plan shape (no imported plan is published right now)")
-    check(refused(lambda: anon.rpc("save_study_plan", {"p_id": None, "p_title": "x", "p_description": None, "p_items": []}).execute()),
+    # Archived plans (e.g. the 12 one-study imports, combined into "Sample — 12 Days") never reach tablets.
+    archived = service.table("study_plans").select("id").eq("status", "archived").limit(1).execute().data
+    if archived:
+        check(anon.table("study_plans").select("id").eq("id", archived[0]["id"]).execute().data == []
+              and anon.table("plan_studies").select("id").eq("plan_id", archived[0]["id"]).execute().data == [],
+              "archived plans and their studies are hidden from tablets")
+    check(refused(lambda: anon.rpc("save_study_plan", {"p_id": None, "p_title": "x", "p_description": None, "p_studies": []}).execute()),
           "anon can't create plans")
 
-    # ---- author creates a draft
+    # A plan holds studies; each study holds modules. one([...]) = a plan with a single study.
+    def one(items):
+        return [{"title": "Study 1", "items": items}]
+
+    # ---- author creates a draft (two studies: 3 modules + 2 modules)
     good_items = [
         {"type": "hymn", "config": {"hymn_id": hymn["id"]}},
         {"type": "scripture", "config": {"book": "PSA", "chapter": 23, "start": 1, "end": 3}},
@@ -92,27 +102,38 @@ try:
         {"type": "hymn", "config": {"hymn_id": hymn["id"]}},
         {"type": "prayer", "config": {"prayer_id": prayer["id"]}},
     ]
+    good_studies = [{"title": "ZZ Week 1", "items": good_items[:3]}, {"title": "ZZ Week 2", "items": good_items[3:]}]
     pid = A.rpc("save_study_plan", {"p_id": None, "p_title": "ZZ Studio test", "p_description": "test",
-                                     "p_items": good_items}).execute().data
-    check(isinstance(pid, int), f"author A saved a 5-module draft (id {pid})")
+                                     "p_studies": good_studies}).execute().data
+    check(isinstance(pid, int), f"author A saved a draft with 2 studies, 5 modules (id {pid})")
+    st = A.table("plan_studies").select("title,position").eq("plan_id", pid).order("position").execute().data
+    check([x["title"] for x in st] == ["ZZ Week 1", "ZZ Week 2"], "studies saved in order")
+    per = [len(A.table("study_plan_items").select("id").eq("study_id", x["id"]).execute().data)
+           for x in A.table("plan_studies").select("id").eq("plan_id", pid).order("position").execute().data]
+    check(per == [3, 2], f"each study keeps its own modules ({per})")
+    check(anon.table("plan_studies").select("id").eq("plan_id", pid).execute().data == [], "anon can't see a draft's studies")
+    check(B.table("plan_studies").select("id").eq("plan_id", pid).execute().data == [], "author B can't see A's studies")
     row = A.table("study_plans").select("status,owner_id").eq("id", pid).execute().data[0]
     check(row["status"] == "draft" and row["owner_id"] == a_user.id, "new plan is A's draft")
     check(anon.table("study_plans").select("id").eq("id", pid).execute().data == [], "anon can't see the draft")
     check(B.table("study_plans").select("id").eq("id", pid).execute().data == [], "author B can't see A's draft")
     check(refused(lambda: B.rpc("save_study_plan", {"p_id": pid, "p_title": "hijack", "p_description": None,
-                                                     "p_items": []}).execute()), "author B can't overwrite A's plan")
+                                                     "p_studies": []}).execute()), "author B can't overwrite A's plan")
+    check(refused(lambda: B.table("plan_studies").insert({"plan_id": pid, "position": 9, "title": "hijack"}).execute()),
+          "author B can't add a study to A's plan")
     check(refused(lambda: B.table("study_plan_items").insert({"plan_id": pid, "position": 9, "module_type": "note",
                                                               "config": {}}).execute()), "author B can't add modules to A's plan")
 
     # ---- content integrity enforced by the database
     check(refused(lambda: A.rpc("save_study_plan", {"p_id": pid, "p_title": "ZZ Studio test", "p_description": None,
-                                                     "p_items": [{"type": "scripture", "config": {"book": "PSA", "chapter": 23, "text": "verse text"}}]}).execute()),
+                                                     "p_studies": one([{"type": "scripture", "config": {"book": "PSA", "chapter": 23, "text": "verse text"}}])}).execute()),
           "DB refuses Scripture text in a scripture module")
     check(refused(lambda: A.rpc("save_study_plan", {"p_id": pid, "p_title": "ZZ Studio test", "p_description": None,
-                                                     "p_items": [{"type": "prayer", "config": {"prayer_id": prayer["id"], "text": "typed prayer"}}]}).execute()),
+                                                     "p_studies": one([{"type": "prayer", "config": {"prayer_id": prayer["id"], "text": "typed prayer"}}])}).execute()),
           "DB refuses typed-in prayer text in a prayer module")
     after = A.table("study_plan_items").select("id").eq("plan_id", pid).execute().data
     check(len(after) == 5, "a refused save changes nothing (still 5 modules)")
+    check(len(A.table("plan_studies").select("id").eq("plan_id", pid).execute().data) == 2, "…and still 2 studies")
 
     # ---- status rules
     check(refused(lambda: A.table("study_plans").update({"status": "published"}).eq("id", pid).execute()),
@@ -125,9 +146,11 @@ try:
 
     # ---- admin review
     ADMIN.rpc("save_study_plan", {"p_id": pid, "p_title": "ZZ Studio test", "p_description": "test",
-                                  "p_items": good_items + [{"type": "hymn", "config": {"hymn_id": unpub["id"]}}]}).execute()
+                                  "p_studies": good_studies + [{"title": "ZZ Week 3", "items": [{"type": "hymn", "config": {"hymn_id": unpub["id"]}}]},
+                                                               {"title": "ZZ Empty", "items": []}]}).execute()
     probs = ADMIN.rpc("study_plan_problems", {"p_id": pid}).execute().data
-    check(any("isn't published" in p for p in probs), f"problems list flags unpublished hymn: {probs}")
+    check(any("Study 3" in p and "isn't published" in p for p in probs), f"problems flag the unpublished hymn in study 3: {probs}")
+    check(any("Study 4" in p and "no modules" in p for p in probs), "problems flag the empty study 4")
     check(refused(lambda: ADMIN.rpc("review_study_plan", {"p_id": pid, "p_approve": True}).execute()),
           "admin can't approve a plan with unpublished content")
     ADMIN.rpc("review_study_plan", {"p_id": pid, "p_approve": False, "p_note": "Please remove the last hymn."}).execute()
@@ -135,13 +158,14 @@ try:
     check(row["status"] == "draft" and row["review_note"] == "Please remove the last hymn.", "sent back to A with a note")
     check(refused(lambda: A.table("study_plans").update({"review_note": "approved!"}).eq("id", pid).execute()),
           "author can't change the review note")
-    A.rpc("save_study_plan", {"p_id": pid, "p_title": "ZZ Studio test", "p_description": "test", "p_items": good_items}).execute()
+    A.rpc("save_study_plan", {"p_id": pid, "p_title": "ZZ Studio test", "p_description": "test", "p_studies": good_studies}).execute()
     A.table("study_plans").update({"status": "pending"}).eq("id", pid).execute()
     ADMIN.rpc("review_study_plan", {"p_id": pid, "p_approve": True}).execute()
     check(len(anon.table("study_plans").select("id").eq("id", pid).execute().data) == 1, "approved plan is visible to tablets")
-    check(len(anon.table("study_plan_items").select("id").eq("plan_id", pid).execute().data) == 5, "…with its 5 modules")
+    check(len(anon.table("plan_studies").select("id").eq("plan_id", pid).execute().data) == 2, "…with its 2 studies")
+    check(len(anon.table("study_plan_items").select("id").eq("plan_id", pid).execute().data) == 5, "…and 5 modules")
     check(refused(lambda: A.rpc("save_study_plan", {"p_id": pid, "p_title": "edit live", "p_description": None,
-                                                     "p_items": []}).execute()), "author can't edit a published plan in place")
+                                                     "p_studies": []}).execute()), "author can't edit a published plan in place")
 
     # ---- libraries and admin-only functions
     check(refused(lambda: A.table("hymns").update({"is_familiar": False}).eq("id", hymn["id"]).execute()), "author can't change hymns")

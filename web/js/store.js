@@ -3,11 +3,12 @@
 // Every read/write is wrapped: private browsing or blocked storage must never break the app.
 
 const KEYS = {
-  step: 'hr.studyStep',      // { planId, index } so a reload resumes the study where it was
+  step: 'hr.studyStep',      // { planId, studyKey, index } so a reload resumes the study where it was
+  progress: 'hr.planProgress', // { [planId]: { done: [studyKey], last: studyKey, date } }
   notes: 'hr.hymnNotes',     // { [hymnNumber]: 'enjoyed' | 'skip' }   (Sing a Hymn)
   studyNotes: 'hr.studyNotes', // { [planId]: 'enjoyed' | 'skip' }      (Choose a Study)
   settings: 'hr.settings',   // { rate, volume, voiceName }
-  last: 'hr.lastStudy',      // { planId, title } for the "finished" screen and "Last time" tag
+  last: 'hr.lastStudy',      // { planId, title, studyKey, studyTitle } for the "finished" screen
 };
 
 function read(key, fallback) {
@@ -30,16 +31,34 @@ function remove(key) {
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
 
 export const store = {
-  studyStep: () => read(KEYS.step, { planId: null, index: 0 }),
+  studyStep: () => read(KEYS.step, { planId: null, studyKey: null, index: 0 }),
   setStudyStep: (s) => write(KEYS.step, s),
   clearStudyStep: () => remove(KEYS.step),
 
-  /** A study was finished: remember it for the "finished" screen and the "Last time" tag. */
-  finishStudy(planId, title) {
-    write(KEYS.last, { planId, title, date: today() });
+  /** Which studies of a plan this tablet has finished: { done: [studyKey], last, date }. */
+  planProgress(planId) {
+    const p = read(KEYS.progress, {})[planId];
+    return { done: p?.done ?? [], last: p?.last ?? null, date: p?.date ?? null };
+  },
+
+  /** A study was finished: tick it in its plan, and remember it for the "finished" screen. */
+  finishStudy(planId, planTitle, studyKey, studyTitle) {
+    const all = read(KEYS.progress, {});
+    const done = new Set(all[planId]?.done ?? []);
+    done.add(studyKey);
+    all[planId] = { done: [...done], last: studyKey, date: today() };
+    write(KEYS.progress, all);
+    write(KEYS.last, { planId, title: planTitle, studyKey, studyTitle, date: today() });
     remove(KEYS.step);
   },
-  lastStudy: () => read(KEYS.last, { planId: null, title: null, date: null }),
+  lastStudy: () => read(KEYS.last, { planId: null, title: null, studyKey: null, studyTitle: null, date: null }),
+
+  /** "Start this plan over": clear its ticks on this tablet. */
+  resetPlanProgress(planId) {
+    const all = read(KEYS.progress, {});
+    delete all[planId];
+    write(KEYS.progress, all);
+  },
 
   notes: () => read(KEYS.notes, {}),
   setNote(hymnNumber, note) {

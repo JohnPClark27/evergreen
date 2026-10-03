@@ -2,7 +2,7 @@
 import * as db from '../db.js';
 import { h, when } from '../ui.js';
 
-const TABLES = [['', 'All'], ['study_plans', 'Plans'], ['study_plan_items', 'Plan modules'], ['hymns', 'Hymns'], ['prayers', 'Prayers'], ['profiles', 'People']];
+const TABLES = [['', 'All'], ['study_plans', 'Plans'], ['plan_studies', 'Studies'], ['study_plan_items', 'Modules'], ['hymns', 'Hymns'], ['prayers', 'Prayers'], ['profiles', 'People']];
 const short = (v) => { const s = typeof v === 'string' ? v : JSON.stringify(v); return s && s.length > 120 ? `${s.slice(0, 119)}…` : s ?? ''; };
 
 function changes(before, after) {

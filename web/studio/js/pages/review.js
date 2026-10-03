@@ -1,6 +1,7 @@
 // Review (admins): plans waiting for review first, then every plan by status.
 import * as db from '../db.js';
 import { chip, flash, h, when } from '../ui.js';
+import { studyCount } from './plans.js';
 
 export async function render(main, params) {
   const filter = params.status ?? 'pending';
@@ -18,11 +19,11 @@ export async function render(main, params) {
     h('p', {}),
     plans.length
       ? h('table', { class: 'table' },
-        h('thead', {}, h('tr', {}, ['Plan', 'Author', 'Modules', 'Status', filter === 'pending' ? 'Submitted' : 'Updated'].map((t) => h('th', { scope: 'col' }, t)))),
+        h('thead', {}, h('tr', {}, ['Plan', 'Author', 'Contents', 'Status', filter === 'pending' ? 'Submitted' : 'Updated'].map((t) => h('th', { scope: 'col' }, t)))),
         h('tbody', {}, plans.map((p) => h('tr', {},
           h('td', {}, h('a', { href: `#/plan/${p.id}` }, p.title)),
           h('td', {}, p.owner?.display_name || (p.owner_id ? 'An author' : 'Imported')),
-          h('td', {}, String(p.items.length)),
+          h('td', {}, studyCount(p)),
           h('td', {}, chip(p.status)),
           h('td', { class: 'small muted' }, when(filter === 'pending' ? p.submitted_at : p.updated_at))))))
       : h('p', { class: 'panel muted' }, filter === 'pending' ? 'Nothing is waiting for review.' : 'No plans here.'));
