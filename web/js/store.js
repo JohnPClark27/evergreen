@@ -77,6 +77,7 @@ export const store = {
   /** Aide tools "Reset notes": clears hymn AND study notes. */
   resetNotes() { remove(KEYS.notes); remove(KEYS.studyNotes); },
 
-  settings: () => read(KEYS.settings, { rate: 'slow', volume: 0.8, voiceName: null }),
+  // readAloud: off by default in studies (built-in voices still sound robotic); the aide can turn it on.
+  settings: () => read(KEYS.settings, { rate: 'slow', volume: 0.8, voiceName: null, readAloud: false }),
   setSettings: (changes) => write(KEYS.settings, { ...store.settings(), ...changes }),
 };

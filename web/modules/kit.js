@@ -84,16 +84,19 @@ export const stack = (cls, ...children) => h('div', { class: cls }, ...children)
 /**
  * Show text in large print and read it aloud, highlighting the part being read.
  * lines: [{num, text}] (Scripture verses) or [string] (prayer/note lines).
- * Returns a player controller ({ againLabel, again, pause, resume, stop }).
+ * Returns a player controller ({ againLabel, again, pause, resume, stop, speakNow, needsSpeech }).
+ * If read-aloud is off (speaker.enabled false), the text is shown without being read and the
+ * badge is hidden; speakNow() starts reading if the aide switches read-aloud on mid-module.
  */
 export function readAloud(stage, kit, { title, badge = null, lines, footer = null, centered = false, speak = true }) {
   const { speaker } = kit;
   const items = lines.map((line) => (typeof line === 'string'
     ? h('p', { class: 'read-line' }, line)
     : h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(line.num)), ' ', line.text)));
+  const badgeEl = badge && h('p', { class: 'badge', hidden: !speaker.enabled }, badge);
   stage.replaceChildren(h('div', { class: `reading-panel${centered ? ' centered' : ''}` },
     title && h('h2', { class: 'title' }, title),
-    badge && h('p', { class: 'badge' }, badge),
+    badgeEl,
     h('div', { class: 'read-lines' }, items),
     footer && h('p', { class: 'muted small attribution' }, footer)));
 
@@ -106,13 +109,16 @@ export function readAloud(stage, kit, { title, badge = null, lines, footer = nul
   speaker.addEventListener('end', onEnd);
 
   const start = () => {
-    if (!speak) return;
+    if (!speak || !speaker.enabled) return;
+    if (badgeEl) badgeEl.hidden = false;
     const run = typeof lines[0] === 'string' ? speaker.speakText(lines.join('\n')) : speaker.speakVerses(lines);
     run.catch(() => {});
   };
   if (!kit.paused()) start();
   return {
     againLabel: 'Read again',
+    needsSpeech: speak,      // "Read again" only makes sense while read-aloud is on
+    speakNow: start,
     again: () => (speaker.state === 'idle' ? start() : speaker.repeat().catch(() => {})),
     pause: () => speaker.pause(),
     resume: () => (speaker.state === 'paused' ? speaker.resume() : null),

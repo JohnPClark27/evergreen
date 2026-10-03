@@ -233,3 +233,7 @@ button { cursor: pointer; }
   align-self: flex-start; background: none; border: none; color: var(--muted); text-decoration: underline;
   font-size: 19px; padding: 12px 4px; min-height: 48px;
 }
+
+/* ---------- Read-aloud switch in the study top bar (off by default) ---------- */
+.voice-toggle { white-space: nowrap; font-size: 19px; }
+.voice-toggle.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }

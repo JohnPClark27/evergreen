@@ -26,7 +26,7 @@ export default {
       field('Heading (optional)', textInput(c.title, (v) => set({ title: v }), { maxLength: 80 })),
       field('Note', textArea(c.text, (v) => set({ text: v }),
         { placeholder: 'Short sentences read best. Each new line is read and highlighted on its own.' })),
-      h('label', { class: 'check' }, aloud, ' Read it aloud'));
+      h('label', { class: 'check' }, aloud, ' Read it aloud (when the tablet’s read-aloud is on; it’s off by default)'));
   },
 
   play(stage, c, kit) {

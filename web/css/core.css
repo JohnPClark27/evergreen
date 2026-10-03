@@ -19,6 +19,8 @@
 }
 
 * { box-sizing: border-box; }
+/* `hidden` always hides, even on elements whose class sets a display (e.g. .badge). */
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-ui); }
 
 /* ---- Lyrics (lyrics.js) ---- */

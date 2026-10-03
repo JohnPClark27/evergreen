@@ -65,6 +65,9 @@ export class Speaker extends EventTarget {
     this.index = 0;
     this.state = 'idle';
     this.token = 0;             // bumped on every stop/pause so old loops quit
+    // Studies turn this off unless the aide switched read-aloud on (off by default: the
+    // built-in voices still sound robotic). While off, speak calls do nothing at all.
+    this.enabled = true;
   }
 
   get rate() { return RATES[this.rateName]; }
@@ -123,6 +126,7 @@ export class Speaker extends EventTarget {
 
   #start(segments) {
     this.stop();
+    if (!this.enabled) return Promise.resolve(); // read-aloud is off: show the text only
     this.segments = segments;
     this.index = 0;
     return this.#run();
