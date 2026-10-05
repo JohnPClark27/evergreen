@@ -129,6 +129,10 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 - **Thumbs:** *Enjoyed it* / *Skip next time* (end of a study, and under a hymn in Sing a Hymn)
   are round 👍 / 👎 buttons (`ui.js` `thumbButtons`); the words are their `aria-label`s, the
   chosen one is filled (`aria-pressed`). The "For the aide" fine print was removed.
+- **Choose a Study Plan grid:** no more pages (`?page=` and "More plans" are gone). All plans
+  are in one scrolling `.study-grid`, 3 wide (1 on phones ≤ 600 px), rows half the visible
+  height (a third in portrait) with a 170 px minimum, so 2 plans don't stretch down the screen.
+  `studies.mjs` now scrolls to the fixture plan instead of paging.
 - **Sheet music follows the window:** `sheet.js` picks its layout from the width (narrow < 600 px
   reflows to ~2 bars a line). A `ResizeObserver` on the sheet redraws it when the width changes
   (debounced 150 ms; skipped while hidden), and the cursor moves onto the new drawing.
