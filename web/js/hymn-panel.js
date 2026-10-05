@@ -1,9 +1,12 @@
 // hymn-panel.js - one hymn on screen: title, "Based on …", "Verse X of Y", large sing-along
-// words, and a "Show sheet music" switch. Used by the Session (step 1) and Sing a Hymn.
+// words, and a "Show sheet music" switch. Used by the hymn module and Sing a Hymn.
+//
+// The switch sits in a bar just above the words that sticks to the top of the card while it
+// scrolls, so "Close sheet music" is always in the same place, however far down the music goes.
 import * as api from './api.js';
 import { LyricsView } from './lyrics.js';
 import { createSheet } from './sheet.js';
-import { h } from './ui.js';
+import { h, icon } from './ui.js';
 
 export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
   const { audio } = ctx;
@@ -11,8 +14,12 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
   const verseLabel = h('p', { class: 'verse-label', 'aria-live': 'polite' });
   const words = h('div', { class: 'lyrics' });
   const sheetBox = h('div', { class: 'sheet', hidden: true });
-  const sheetStatus = h('p', { class: 'muted small' });
-  const toggle = h('button', { class: 'pill', type: 'button', 'aria-pressed': 'false' }, 'Show sheet music');
+  const sheetStatus = h('p', { class: 'verse-label', hidden: true });
+  const toggle = h('button', { class: 'pill big sheet-toggle', type: 'button', 'aria-pressed': 'false' });
+  const drawToggle = () => toggle.replaceChildren(
+    icon(sheetShown ? 'close' : 'music'),
+    h('span', { class: 'label' }, sheetShown ? 'Close sheet music' : 'Show sheet music'));
+  const bar = h('div', { class: 'hymn-bar' }, verseLabel, sheetStatus, toggle);
 
   const lyrics = new LyricsView(words, {
     getTime: () => audio.position,
@@ -23,13 +30,28 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
   const sheet = createSheet(sheetBox, { getTime: () => audio.position, onStatus: (s) => { sheetStatus.textContent = s; } });
   let timing = null;
   let sheetShown = false;
+  drawToggle();
+
+  // After switching, if the card is scrolled past the top of the words / music, scroll back
+  // so they start right under the bar (the bar itself never moves out of view).
+  function showTop() {
+    const card = el.closest('.card');
+    const target = sheetShown ? sheetBox : words;
+    if (!card) return;
+    const gap = target.getBoundingClientRect().top - bar.getBoundingClientRect().bottom;
+    if (gap < 0) card.scrollTop += gap;
+  }
 
   toggle.addEventListener('click', async () => {
     sheetShown = !sheetShown;
-    toggle.textContent = sheetShown ? 'Show words' : 'Show sheet music';
+    drawToggle();
     toggle.setAttribute('aria-pressed', String(sheetShown));
+    toggle.classList.toggle('primary', sheetShown); // "Close" is filled, so it stands out
     words.hidden = sheetShown;
     sheetBox.hidden = !sheetShown;
+    verseLabel.hidden = sheetShown;   // the music shows its own "Stanza 2 of 5 · page 1"
+    sheetStatus.hidden = !sheetShown;
+    showTop();
     if (sheetShown && timing) {
       if (!sheetBox.childElementCount) await sheet.show(timing);
       sheet.start();
@@ -41,10 +63,9 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
   const el = h('div', { class: 'hymn-panel' },
     h('h2', { class: 'title' }, hymn.title),
     basedOn && h('p', { class: 'muted' }, `Based on ${basedOn}`),
-    verseLabel,
+    bar,
     words,
-    sheetBox,
-    h('div', { class: 'row' }, toggle, sheetStatus));
+    sheetBox);
 
   return {
     el,
@@ -53,9 +74,12 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
       timing = await api.getTiming(hymn).catch(() => null);
       if (timing) lyrics.setData(timing);
       else words.replaceChildren(h('p', { class: 'muted' }, 'The words for this hymn are not available.'));
+      // The music may have been switched on before the timing loaded (e.g. "open with the sheet music").
+      if (sheetShown && timing && !sheetBox.childElementCount) await sheet.show(timing);
       if (url) {
         await audio.play(url, { loop });
         lyrics.start();
+        if (sheetShown) sheet.start();
       }
     },
     /** "Sing again": back to the start of the hymn. */
@@ -66,6 +90,8 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
       if (sheetShown) sheet.start();
     },
     stop() { lyrics.stop(); sheet.stop(); },
+    /** Open the sheet music (the hymn module's "open with the sheet music showing"). */
+    showSheet() { if (!sheetShown) toggle.click(); },
     url,
   };
 }

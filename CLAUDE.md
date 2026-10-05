@@ -116,6 +116,12 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   (`.stage-row` → `.side-arrow` in `runner.js` / `app.css`). The bottom bar keeps Again + Pause.
 - The arrows keep a visible word ("Back", "Next", "Finish"), so their accessible names and the
   browser tests are unchanged. e2e 14/14 and axe 0 issues locally.
+- **Sheet music button:** `hymn-panel.js` puts a sticky `.hymn-bar` (verse or page label + a big
+  **Show sheet music / Close sheet music** button) just above the words. It sticks to the top of
+  the scrolling card, so Close is always in the same place. It reaches into the card's padding
+  through `--pad-y`/`--pad-x` on `.card`. `panel.showSheet()` replaces the old `.row .pill` click,
+  and `start()` now loads the music when it was opened before the timing arrived (before, "open
+  with the sheet music showing" gave an empty sheet).
 - The `mobile-layout` branch hides `.bottombar` pill labels on phones and hasn't seen this
   change yet: expect overlap in `web/css/app.css` when it merges.
 
