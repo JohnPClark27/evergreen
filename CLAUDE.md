@@ -109,6 +109,16 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 - `core.css` now has `[hidden] { display: none !important; }`: classes that set `display` were
   overriding `hidden`.
 
+## 0c. Side arrows (2026-10-05, branch `side-arrows`, user's request)
+
+- Older testers had trouble finding Back/Next in the bottom bar. In a study, **Back** and
+  **Next/Finish** are now big arrows on the left and right of the card, as tall as the card
+  (`.stage-row` → `.side-arrow` in `runner.js` / `app.css`). The bottom bar keeps Again + Pause.
+- The arrows keep a visible word ("Back", "Next", "Finish"), so their accessible names and the
+  browser tests are unchanged. e2e 14/14 and axe 0 issues locally.
+- The `mobile-layout` branch hides `.bottombar` pill labels on phones and hasn't seen this
+  change yet: expect overlap in `web/css/app.css` when it merges.
+
 ## 1. Coordination rules (avoid clashing)
 
 1. **Before you start:** `git fetch && git status && git log --oneline -5` on `dev`. If `dev`

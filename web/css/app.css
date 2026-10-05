@@ -85,6 +85,24 @@ button { cursor: pointer; }
 .bottombar .round { margin: 0 auto; }
 .bottombar > .pill:last-child { margin-left: auto; }
 
+/* Study runner: big Back / Next arrows on either side of the card, as tall as the card.
+   Older testers had trouble finding small buttons in the bottom bar. */
+.stage-row { flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 16px; }
+.stage-row .card { min-width: 0; }
+.side-arrow {
+  flex: none; width: 112px; padding: 0; border-radius: 24px;
+  border: 3px solid var(--control-border); background: var(--surface); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  font-size: 22px; font-weight: 700;
+}
+.side-arrow .icon { width: 72px; height: 72px; }
+.side-arrow.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.side-arrow:disabled { opacity: 0.3; cursor: default; }
+.side-arrow.attention { box-shadow: 0 0 0 6px var(--highlight); }
+/* With Back/Next moved to the sides, the bottom bar holds just Again + Pause, centred. */
+.study-bar { justify-content: center; gap: 32px; }
+.study-bar .round { margin: 0; }
+
 /* ---------- Hymn ---------- */
 .hymn-panel .title, .reading-panel .title { font-size: 40px; }
 .verse-label { color: var(--muted); font-size: 22px; margin: 4px 0 12px; min-height: 1.4em; }
@@ -199,6 +217,9 @@ button { cursor: pointer; }
   .card { padding: 22px 24px; }
   .bottombar { flex-wrap: wrap; gap: 12px; }
   .bottombar .round { width: 92px; height: 92px; }
+  .stage-row { gap: 10px; }
+  .side-arrow { width: 84px; font-size: 19px; }
+  .side-arrow .icon { width: 56px; height: 56px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }

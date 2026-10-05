@@ -63,7 +63,8 @@ An admin reviews each plan before it reaches the tablets.
 
 A new kind of module is **one file plus one line**: see `docs/MODULES.md`.
 
-- **The aide is in charge.** Big **Back · Sing/Read again · Pause · Next** buttons. Nothing
+- **The aide is in charge.** Big **Back** and **Next** arrows, as tall as the card, sit on either
+  side of it; **Sing/Read again** and **Pause** are below. Nothing
   advances on its own, and nothing changes when you scroll.
 - **Remembers on the tablet only:** where a study was left, and optional *Enjoyed it* / *Skip
   next time* notes per study and per hymn. There are no names, accounts or analytics.

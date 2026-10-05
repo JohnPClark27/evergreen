@@ -1,8 +1,10 @@
 // runner.js - plays a study plan: its modules one after another, each in the big card.
 //
 //   top bar     Home (or Close) · "Part 2 of 6 · Scripture" · progress bar
+//   middle      big Back arrow · card · big Next / Finish arrow (as tall as the card, so
+//               they're easy to find; older testers missed small buttons at the bottom)
 //   card        whatever the current module draws (web/modules/*.js → play())
-//   bottom bar  Back · Again (the module's label) · round Pause · Next / Finish
+//   bottom bar  Again (the module's label) · round Pause
 //
 // The aide moves with Back/Next; nothing advances on its own. A hymn sung just before keeps
 // playing softly under modules that allow it (musicBed), and speech lowers it further.
@@ -39,8 +41,9 @@ export async function runStudy(root, plan, ctx, opts = {}) {
   // (plan.subtitle, e.g. "Study 3 of 12", is shown top right when the study is part of a plan)
   const againBtn = h('button', { class: 'pill', type: 'button' }, icon('again'), h('span', { class: 'label' }, 'Again'));
   const pauseBtn = h('button', { class: 'round', type: 'button', 'aria-label': 'Pause' }, icon('pause'));
-  const backBtn = h('button', { class: 'pill', type: 'button' }, icon('back'), h('span', { class: 'label' }, 'Back'));
-  const nextBtn = h('button', { class: 'pill primary', type: 'button' }, h('span', { class: 'label' }, 'Next'), icon('next'));
+  // The arrows keep a visible word under them: it names the button for screen readers too.
+  const backBtn = h('button', { class: 'side-arrow', type: 'button' }, icon('back'), h('span', { class: 'label' }, 'Back'));
+  const nextBtn = h('button', { class: 'side-arrow primary', type: 'button' }, icon('next'), h('span', { class: 'label' }, 'Next'));
   const voiceBtn = h('button', { class: 'pill voice-toggle', type: 'button', 'aria-pressed': 'false' });
   const drawVoice = () => {
     voiceBtn.textContent = `Read aloud: ${readAloud ? 'On' : 'Off'}`;
@@ -59,8 +62,8 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       h('div', { class: 'where-box' }, where, bar),
       voiceBtn,
       h('p', { class: 'day plan-name' }, plan.subtitle ?? plan.title)),
-    stage,
-    h('footer', { class: 'bottombar' }, backBtn, againBtn, pauseBtn, nextBtn)));
+    h('div', { class: 'stage-row' }, backBtn, stage, nextBtn),
+    h('footer', { class: 'bottombar study-bar' }, againBtn, pauseBtn)));
 
   function setPaused(p) {
     paused = p;

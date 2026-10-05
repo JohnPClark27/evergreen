@@ -74,7 +74,8 @@ export default {
   aloud with the current line highlighted. It returns a ready-made controller.
 
 **The runner** (`web/js/runner.js`) provides the frame and buttons: Home/Close, "Part 2 of 6",
-the progress bar, Back · Again · Pause · Next/Finish. A module only draws its own content.
+the progress bar, big Back and Next/Finish arrows beside the card, and Again · Pause below it.
+A module only draws its own content.
 
 ## Rules every module must follow
 
