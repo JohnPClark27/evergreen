@@ -45,6 +45,8 @@ export const ICON = {
   next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 4.5 16 12l-7.5 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   music: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.2 19 4v11.5a2.5 2.5 0 1 1-2-2.45V7.5l-6 1.3v8.7A2.5 2.5 0 1 1 9 15.05z"/></svg>',
+  thumbsUp: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10h4v11H2zM8 21h9.2a2 2 0 0 0 1.96-1.6l1.4-7A2 2 0 0 0 18.6 10H14l.9-4.3A1.6 1.6 0 0 0 13.3 3.8L8 10z"/></svg>',
+  thumbsDown: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 14h-4V3h4zM16 3H6.8a2 2 0 0 0-1.96 1.6l-1.4 7A2 2 0 0 0 5.4 14H10l-.9 4.3a1.6 1.6 0 0 0 1.6 1.9L16 14z"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>',
 };
 
@@ -64,6 +66,26 @@ export function roundControl(iconName, label) {
 export function setControl(btn, iconName, label) {
   btn.querySelector('.ctl-circle').replaceChildren(icon(iconName));
   btn.querySelector('.label').textContent = label;
+}
+
+/**
+ * The aide's optional note: a round thumbs-up ("Enjoyed it") and thumbs-down ("Skip next
+ * time"). The words stay as the buttons' names for screen readers and as a hover tip.
+ * current: 'enjoyed' | 'skip' | undefined (shown as pressed).  onPick(kind) saves it.
+ */
+export function thumbButtons(current, onPick, groupLabel) {
+  const make = (kind, iconName, label) => {
+    const btn = h('button', { class: 'thumb', type: 'button', 'aria-label': label, title: label,
+      'aria-pressed': String(current === kind) }, icon(iconName));
+    btn.addEventListener('click', () => {
+      for (const b of group.children) b.setAttribute('aria-pressed', String(b === btn));
+      onPick(kind);
+    });
+    return btn;
+  };
+  const group = h('div', { class: 'thumbs', role: 'group', 'aria-label': groupLabel });
+  group.append(make('enjoyed', 'thumbsUp', 'Enjoyed it'), make('skip', 'thumbsDown', 'Skip next time'));
+  return group;
 }
 
 /** <span> with an icon from ICON (SVG markup is a fixed constant, not user data). */

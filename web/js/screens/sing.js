@@ -2,7 +2,7 @@
 // and a simple player for one hymn (#/sing/<number>).
 import * as api from '../api.js';
 import { hymnPanel } from '../hymn-panel.js';
-import { h, icon, roundControl } from '../ui.js';
+import { h, icon, roundControl, thumbButtons } from '../ui.js';
 
 const PER_PAGE = 9;
 
@@ -72,9 +72,7 @@ async function player(root, number, ctx) {
   const noteStatus = h('span', { class: 'muted small', 'aria-live': 'polite' });
   const note = (kind) => { ctx.store.setNote(hymn.number, kind); noteStatus.textContent = kind === 'enjoyed' ? 'Noted: shown first next time.' : 'Noted: hidden next time.'; };
   panel.el.append(h('div', { class: 'row aide-row' },
-    h('span', { class: 'muted small' }, 'For the aide:'),
-    h('button', { class: 'pill small-pill', type: 'button', onclick: () => note('enjoyed') }, 'Enjoyed it'),
-    h('button', { class: 'pill small-pill', type: 'button', onclick: () => note('skip') }, 'Skip next time'),
+    thumbButtons(ctx.store.notes()[hymn.number], note, `Notes for ${hymn.title}`),
     noteStatus));
 
   root.append(h('div', { class: 'screen session' },

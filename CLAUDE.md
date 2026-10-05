@@ -126,6 +126,9 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   Sing a Hymn uses the same panel; its All hymns / Another hymn stay in the footer.
   `start()` loads the music if it was opened before the timing arrived ("open with the sheet
   music showing" used to give an empty sheet).
+- **Thumbs:** *Enjoyed it* / *Skip next time* (end of a study, and under a hymn in Sing a Hymn)
+  are round 👍 / 👎 buttons (`ui.js` `thumbButtons`); the words are their `aria-label`s, the
+  chosen one is filled (`aria-pressed`). The "For the aide" fine print was removed.
 - **Sheet music follows the window:** `sheet.js` picks its layout from the width (narrow < 600 px
   reflows to ~2 bars a line). A `ResizeObserver` on the sheet redraws it when the width changes
   (debounced 150 ms; skipped while hidden), and the cursor moves onto the new drawing.
