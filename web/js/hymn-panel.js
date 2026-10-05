@@ -6,7 +6,7 @@
 import * as api from './api.js';
 import { LyricsView } from './lyrics.js';
 import { createSheet } from './sheet.js';
-import { h, icon } from './ui.js';
+import { h, roundControl, setControl } from './ui.js';
 
 export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
   const { audio } = ctx;
@@ -15,10 +15,9 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
   const words = h('div', { class: 'lyrics' });
   const sheetBox = h('div', { class: 'sheet', hidden: true });
   const sheetStatus = h('p', { class: 'verse-label', hidden: true });
-  const toggle = h('button', { class: 'pill sheet-toggle', type: 'button', 'aria-pressed': 'false' });
-  const drawToggle = () => toggle.replaceChildren(
-    icon(sheetShown ? 'close' : 'music'),
-    h('span', { class: 'label' }, sheetShown ? 'Close sheet music' : 'Show sheet music'));
+  const toggle = roundControl('music', 'Show sheet music');
+  toggle.setAttribute('aria-pressed', 'false');
+  const drawToggle = () => setControl(toggle, sheetShown ? 'close' : 'music', sheetShown ? 'Close sheet music' : 'Show sheet music');
   const labels = h('div', { class: 'verse-line' }, verseLabel, sheetStatus);
 
   const lyrics = new LyricsView(words, {
@@ -45,7 +44,6 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
     sheetShown = !sheetShown;
     drawToggle();
     toggle.setAttribute('aria-pressed', String(sheetShown));
-    toggle.classList.toggle('primary', sheetShown); // "Close" is filled, so it stands out
     words.hidden = sheetShown;
     sheetBox.hidden = !sheetShown;
     verseLabel.hidden = sheetShown;   // the music shows its own "Stanza 2 of 5 · page 1"

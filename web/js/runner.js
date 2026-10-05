@@ -4,7 +4,7 @@
 //   middle      big Back arrow · panel · big Next / Finish arrow (as tall as the panel, so
 //               they're easy to find; older testers missed small buttons at the bottom)
 //   panel       the card: whatever the current module draws (web/modules/*.js → play())
-//               and, joined under it, a bar: Again (the module's label) · round Pause ·
+//               and, joined under it, a bar of round controls: Again (the module's label) · Pause ·
 //               the module's own tools (e.g. the hymn's "Show sheet music")
 //
 // The aide moves with Back/Next; nothing advances on its own. A hymn sung just before keeps
@@ -12,7 +12,7 @@
 // Used by the tablet (#/study/<id>) and the Studio's preview, so authors see the real thing.
 import * as api from './api.js';
 import { moduleFor } from '../modules/index.js';
-import { h, icon } from './ui.js';
+import { h, icon, roundControl, setControl } from './ui.js';
 
 /**
  * plan: { id, title, subtitle?, items: [{ module_type, config }] }  (one study: its modules in order)
@@ -40,8 +40,8 @@ export async function runStudy(root, plan, ctx, opts = {}) {
   const bar = h('div', { class: 'progress', 'aria-hidden': 'true' });
   const stage = h('section', { class: 'card', tabindex: '0', 'aria-label': plan.title });
   // (plan.subtitle, e.g. "Study 3 of 12", is shown top right when the study is part of a plan)
-  const againBtn = h('button', { class: 'pill', type: 'button' }, icon('again'), h('span', { class: 'label' }, 'Again'));
-  const pauseBtn = h('button', { class: 'round', type: 'button', 'aria-label': 'Pause' }, icon('pause'));
+  const againBtn = roundControl('again', 'Again');
+  const pauseBtn = roundControl('pause', 'Pause', { primary: true });
   // The arrows keep a visible word under them: it names the button for screen readers too.
   const backBtn = h('button', { class: 'side-arrow', type: 'button' }, icon('back'), h('span', { class: 'label' }, 'Back'));
   const nextBtn = h('button', { class: 'side-arrow primary', type: 'button' }, icon('next'), h('span', { class: 'label' }, 'Next'));
@@ -71,8 +71,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
 
   function setPaused(p) {
     paused = p;
-    pauseBtn.replaceChildren(icon(p ? 'play' : 'pause'));
-    pauseBtn.setAttribute('aria-label', p ? 'Play' : 'Pause');
+    setControl(pauseBtn, p ? 'play' : 'pause', p ? 'Play' : 'Pause');
     pauseBtn.classList.toggle('is-paused', p);
   }
 

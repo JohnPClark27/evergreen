@@ -107,20 +107,32 @@ button { cursor: pointer; }
 .module-panel > .card { border: none; border-radius: 0; }
 .module-panel > .card:focus-visible { outline-offset: -4px; } /* the panel clips outside rings */
 .panel-bar {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
-  gap: 16px; padding: 12px 24px; background: var(--bg); border-top: 1px solid var(--border-strong);
+  display: flex; justify-content: center; align-items: flex-start; gap: 56px;
+  padding: 10px 24px 8px; background: var(--bg); border-top: 1px solid var(--border-strong);
 }
-.panel-bar > :first-child { justify-self: start; }
-.panel-bar .round { width: 88px; height: 88px; }
-.panel-bar .round .icon { width: 42px; height: 42px; }
-.panel-tools { justify-self: end; display: flex; gap: 12px; }
-.panel-bar .pill { line-height: 1.1; text-align: center; } /* long labels may wrap on narrow screens */
+.panel-tools { display: flex; gap: 56px; }
+.panel-tools:empty { display: none; }
+/* Round controls (ui.js roundControl): an 80px circle with its word underneath. All the same
+   size; outlined paper, except the filled Pause. The whole column is the tap target. */
+.ctl {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0;
+  border: none; background: none; color: var(--ink); width: 128px;
+  font-size: 18px; font-weight: 700; line-height: 1.15; text-align: center;
+}
+.ctl-circle {
+  width: 80px; height: 80px; border-radius: 50%; display: grid; place-items: center;
+  border: 3px solid var(--control-border); background: var(--surface); color: var(--ink);
+}
+.ctl-circle .icon { width: 40px; height: 40px; }
+.ctl.primary .ctl-circle { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ctl.primary.is-paused .ctl-circle { background: var(--ink); border-color: var(--ink); }
+.ctl:disabled { opacity: 0.4; cursor: default; }
+.ctl:focus-visible { outline: none; }
+.ctl:focus-visible .ctl-circle { outline: 4px solid var(--accent); outline-offset: 3px; }
 
 /* ---------- Hymn ---------- */
 .hymn-panel .title, .reading-panel .title { font-size: 40px; }
 .verse-label { color: var(--muted); font-size: 22px; margin: 4px 0 12px; min-height: 1.4em; }
-.sheet-toggle { border-width: 3px; border-color: var(--accent); color: var(--accent); }
-.sheet-toggle.primary { color: #fff; }
 .lyrics .lyric-line { font-size: 32px; }
 .row { display: flex; align-items: center; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
 
@@ -230,8 +242,7 @@ button { cursor: pointer; }
   .topbar { flex-wrap: wrap; }
   .steps { order: 3; width: 100%; }
   .card { padding: 22px 24px; }
-  .panel-bar { gap: 10px; padding: 10px 14px; }
-  .panel-bar .pill { padding: 0 16px; }
+  .panel-bar, .panel-tools { gap: 24px; }
   .bottombar { flex-wrap: wrap; gap: 12px; }
   .bottombar .round { width: 92px; height: 92px; }
   .stage-row { gap: 10px; }

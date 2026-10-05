@@ -48,6 +48,23 @@ export const ICON = {
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>',
 };
 
+/**
+ * A round control for the bar under the card: a circle with an icon and a word under it.
+ * The word is the button's name for screen readers too. primary = filled (Pause).
+ */
+export function roundControl(iconName, label, { primary = false } = {}) {
+  const btn = h('button', { class: primary ? 'ctl primary' : 'ctl', type: 'button' },
+    h('span', { class: 'ctl-circle' }), h('span', { class: 'label' }));
+  setControl(btn, iconName, label);
+  return btn;
+}
+
+/** Change a round control's icon and word (e.g. Pause → Play). */
+export function setControl(btn, iconName, label) {
+  btn.querySelector('.ctl-circle').replaceChildren(icon(iconName));
+  btn.querySelector('.label').textContent = label;
+}
+
 /** <span> with an icon from ICON (SVG markup is a fixed constant, not user data). */
 export function icon(name) {
   const span = h('span', { class: 'icon' });

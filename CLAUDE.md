@@ -117,7 +117,9 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 - The arrows keep a visible word ("Back", "Next", "Finish"), so their accessible names and the
   browser tests are unchanged. e2e 14/14 and axe 0 issues locally.
 - **Module panel (replaces the sticky sheet-music bar):** the card and a bar joined to its bottom
-  form `.module-panel`; the bar (`.panel-bar`) holds Again · round Pause · `.panel-tools`.
+  form `.module-panel`; the bar (`.panel-bar`) holds Again · Pause · `.panel-tools`, all
+  **round controls** (`ui.js` `roundControl(icon, word)` / `setControl`): same 80 px circle with
+  the word underneath; outlined paper, except the filled Pause (its word now shows: Pause/Play).
   Modules can return `tools: [button]` in their controller (see `docs/MODULES.md`); the hymn
   module passes `panel.sheetButton` (Show / Close sheet music), so Close never scrolls away.
   Sing a Hymn uses the same panel; its All hymns / Another hymn stay in the footer.
