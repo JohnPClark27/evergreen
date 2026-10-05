@@ -122,6 +122,9 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   through `--pad-y`/`--pad-x` on `.card`. `panel.showSheet()` replaces the old `.row .pill` click,
   and `start()` now loads the music when it was opened before the timing arrived (before, "open
   with the sheet music showing" gave an empty sheet).
+- **Sheet music follows the window:** `sheet.js` picks its layout from the width (narrow < 600 px
+  reflows to ~2 bars a line). A `ResizeObserver` on the sheet redraws it when the width changes
+  (debounced 150 ms; skipped while hidden), and the cursor moves onto the new drawing.
 - The `mobile-layout` branch hides `.bottombar` pill labels on phones and hasn't seen this
   change yet: expect overlap in `web/css/app.css` when it merges.
 

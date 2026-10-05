@@ -231,6 +231,7 @@ function pageSpecs(data) {
  */
 export function createSheet(container, { getTime, onStatus } = {}) {
   let raf = 0, data = null, pages = [], litKey = null;
+  let abcjsLib = null, drawnWidth = 0, resizeTimer = 0;
   const cursor = createCursor();
   const smooth = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
   const status = (text) => onStatus?.(text);
@@ -270,6 +271,25 @@ export function createSheet(container, { getTime, onStatus } = {}) {
     }
   }
 
+  // Draw every page of the current hymn at the container's current width.
+  function draw() {
+    container.replaceChildren();
+    drawnWidth = container.clientWidth;
+    pages = pageSpecs(data).map((spec) => ({ ...renderPage(abcjsLib, spec.abc, { label: spec.label, into: container }), stanzas: spec.stanzas }));
+    litKey = null; // the cursor moves onto the new drawing at the next frame
+  }
+
+  // The layout depends on the width (see renderPage), so redraw when the window or the iPad's
+  // orientation changes. Waits until resizing pauses; skips while hidden (width 0).
+  new ResizeObserver(() => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const w = container.clientWidth;
+      if (!w || !pages.length || Math.abs(w - drawnWidth) < 8) return;
+      draw();
+    }, 150);
+  }).observe(container);
+
   return {
     /** Draw a hymn's sheet music (timing JSON from api.getTiming). */
     async show(timing) {
@@ -277,12 +297,13 @@ export function createSheet(container, { getTime, onStatus } = {}) {
       cursor.hide();
       litKey = null;
       data = timing;
+      pages = []; // nothing to redraw on resize until this hymn is drawn
       container.replaceChildren(el('p', 'sheet-message', 'Loading sheet music…'));
       try {
         const [abcjs] = await Promise.all([loadAbcjs(), document.fonts?.ready]);
         if (data !== timing) return; // another hymn was requested meanwhile
-        container.replaceChildren();
-        pages = pageSpecs(data).map((spec) => ({ ...renderPage(abcjs, spec.abc, { label: spec.label, into: container }), stanzas: spec.stanzas }));
+        abcjsLib = abcjs;
+        draw();
       } catch (err) {
         container.replaceChildren(el('p', 'sheet-message', `Couldn't show the sheet music. ${err.message}`));
       }
