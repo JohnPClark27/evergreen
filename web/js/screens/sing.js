@@ -2,7 +2,7 @@
 // and a simple player for one hymn (#/sing/<number>).
 import * as api from '../api.js';
 import { hymnPanel } from '../hymn-panel.js';
-import { h, icon, roundControl, setControl } from '../ui.js';
+import { h, icon, roundControl } from '../ui.js';
 
 const PER_PAGE = 9;
 
@@ -51,10 +51,11 @@ async function player(root, number, ctx) {
     return null;
   }
   const panel = hymnPanel(ctx, hymn);
-  const pauseBtn = roundControl('pause', 'Pause', { primary: true });
+  const pauseBtn = h('button', { class: 'round', type: 'button', 'aria-label': 'Pause' }, icon('pause'));
   const setPauseIcon = () => {
     const p = audio.paused;
-    setControl(pauseBtn, p ? 'play' : 'pause', p ? 'Play' : 'Pause');
+    pauseBtn.replaceChildren(icon(p ? 'play' : 'pause'));
+    pauseBtn.setAttribute('aria-label', p ? 'Play' : 'Pause');
   };
   const againBtn = roundControl('again', 'Sing again');
   againBtn.addEventListener('click', () => { panel.restart(); setPauseIcon(); });

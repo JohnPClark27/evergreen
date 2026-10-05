@@ -49,17 +49,18 @@ export const ICON = {
 };
 
 /**
- * A round control for the bar under the card: a circle with an icon and a word under it.
- * The word is the button's name for screen readers too. primary = filled (Pause).
+ * A control for the bar under the card (Sing again, Show sheet music): a wide rounded button
+ * with its icon and word inside; when the bar is narrow, CSS turns it into a circle with the
+ * word underneath. The word is the button's name for screen readers too.
  */
-export function roundControl(iconName, label, { primary = false } = {}) {
-  const btn = h('button', { class: primary ? 'ctl primary' : 'ctl', type: 'button' },
+export function roundControl(iconName, label) {
+  const btn = h('button', { class: 'ctl', type: 'button' },
     h('span', { class: 'ctl-circle' }), h('span', { class: 'label' }));
   setControl(btn, iconName, label);
   return btn;
 }
 
-/** Change a round control's icon and word (e.g. Pause → Play). */
+/** Change a control's icon and word (e.g. Show → Close sheet music). */
 export function setControl(btn, iconName, label) {
   btn.querySelector('.ctl-circle').replaceChildren(icon(iconName));
   btn.querySelector('.label').textContent = label;
