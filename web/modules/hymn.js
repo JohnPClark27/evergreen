@@ -45,10 +45,11 @@ export default {
     const r = refs[0];
     const panel = hymnPanel(kit, hymn, { basedOn: r ? refLabel(r.book, r.chapter, r.verse_start, r.verse_end) : null });
     stage.replaceChildren(panel.el);
-    if (c.sheet) panel.el.querySelector('.row .pill')?.click(); // "Show sheet music"
+    if (c.sheet) panel.showSheet();
     if (!kit.paused()) await panel.start({ loop: false });
     return {
       againLabel: 'Sing again',
+      tools: [panel.sheetButton], // shown in the bar under the card
       musicUrl: panel.url, // later modules can keep this hymn playing softly underneath
       again: () => panel.restart(),
       pause: () => kit.audio.pause(),

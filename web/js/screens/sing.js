@@ -2,7 +2,7 @@
 // and a simple player for one hymn (#/sing/<number>).
 import * as api from '../api.js';
 import { hymnPanel } from '../hymn-panel.js';
-import { h, icon } from '../ui.js';
+import { h, icon, roundControl, thumbButtons } from '../ui.js';
 
 const PER_PAGE = 9;
 
@@ -57,6 +57,8 @@ async function player(root, number, ctx) {
     pauseBtn.replaceChildren(icon(p ? 'play' : 'pause'));
     pauseBtn.setAttribute('aria-label', p ? 'Play' : 'Pause');
   };
+  const againBtn = roundControl('again', 'Sing again');
+  againBtn.addEventListener('click', () => { panel.restart(); setPauseIcon(); });
   pauseBtn.addEventListener('click', async () => {
     if (!audio.paused) await audio.pause();
     else if (audio.currentUrl) await audio.resume();
@@ -70,9 +72,7 @@ async function player(root, number, ctx) {
   const noteStatus = h('span', { class: 'muted small', 'aria-live': 'polite' });
   const note = (kind) => { ctx.store.setNote(hymn.number, kind); noteStatus.textContent = kind === 'enjoyed' ? 'Noted: shown first next time.' : 'Noted: hidden next time.'; };
   panel.el.append(h('div', { class: 'row aide-row' },
-    h('span', { class: 'muted small' }, 'For the aide:'),
-    h('button', { class: 'pill small-pill', type: 'button', onclick: () => note('enjoyed') }, 'Enjoyed it'),
-    h('button', { class: 'pill small-pill', type: 'button', onclick: () => note('skip') }, 'Skip next time'),
+    thumbButtons(ctx.store.notes()[hymn.number], note, `Notes for ${hymn.title}`),
     noteStatus));
 
   root.append(h('div', { class: 'screen session' },
@@ -80,11 +80,15 @@ async function player(root, number, ctx) {
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Sing a Hymn'),
       h('p', { class: 'day' }, `Hymn ${hymn.number}`)),
-    h('section', { class: 'card', tabindex: '0', 'aria-label': hymn.title }, panel.el),
+    // Same panel as in a study: the card with Sing again · Pause · Sheet music joined under it.
+    h('div', { class: 'module-panel' },
+      h('section', { class: 'card', tabindex: '0', 'aria-label': hymn.title }, panel.el),
+      h('div', { class: 'panel-bar' },
+        againBtn,
+        pauseBtn,
+        h('div', { class: 'panel-tools' }, panel.sheetButton))),
     h('footer', { class: 'bottombar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/sing') }, icon('back'), h('span', { class: 'label' }, 'All hymns')),
-      h('button', { class: 'pill', type: 'button', onclick: () => { panel.restart(); setPauseIcon(); } }, icon('again'), h('span', { class: 'label' }, 'Sing again')),
-      pauseBtn,
       h('button', { class: 'pill primary', type: 'button', onclick: () => ctx.go('#/sing') }, h('span', { class: 'label' }, 'Another hymn'), icon('next')))));
 
   await panel.start();

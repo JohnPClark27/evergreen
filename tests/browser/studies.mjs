@@ -19,10 +19,8 @@ await page.goto(BASE);
 await page.getByRole('button', { name: /Choose a Study Plan/ }).click();
 await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
 await page.getByRole('heading', { name: 'Choose a Study Plan' }).waitFor();
-// find the test plan across pages
-for (let p = 0; p < 5 && !(await page.getByRole('button', { name: /ZZ All modules/ }).count()); p++) {
-  await page.getByRole('button', { name: /More plans/ }).click(); await page.waitForTimeout(300);
-}
+// every plan is in one scrolling grid (no pages)
+await page.getByRole('button', { name: /ZZ All modules/ }).scrollIntoViewIfNeeded();
 const card = page.getByRole('button', { name: /ZZ All modules/ });
 ok((await card.innerText()).includes('2 studies'), 'plan card: ' + (await card.innerText()).replace(/\n/g, ' / '));
 await shot('plans');

@@ -1,20 +1,16 @@
 // Choose a Study Plan: every approved plan as a big card, with this tablet's progress
 // ("3 of 12 done"). Enjoyed plans come first; plans marked "Skip next time" are hidden.
-// Tapping a card opens the plan's page (#/plan/<id>).
+// Tapping a card opens the plan's page (#/plan/<id>). The cards sit in a grid 3 wide with
+// fixed-size rows (2 fill the screen), so a few plans don't stretch; more plans scroll down.
 import * as api from '../api.js';
 import { doneCount, nextStudy } from '../plan-progress.js';
 import { h, icon } from '../ui.js';
 
-const PER_PAGE = 6;
-
-export async function render(root, params, ctx) {
+export async function render(root, _params, ctx) {
   const notes = ctx.store.studyNotes();
   const plans = (await api.getStudyPlans())
     .filter((p) => notes[p.id] !== 'skip' && p.studies.some((s) => s.items.length))
     .sort((a, b) => ((notes[b.id] === 'enjoyed') - (notes[a.id] === 'enjoyed')) || a.title.localeCompare(b.title));
-  const pages = Math.max(1, Math.ceil(plans.length / PER_PAGE));
-  const page = Math.min(Math.max(0, Number(params.page ?? 0)), pages - 1);
-  const shown = plans.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
 
   const card = (p) => {
     const progress = ctx.store.planProgress(p.id);
@@ -40,14 +36,9 @@ export async function render(root, params, ctx) {
     h('header', { class: 'topbar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Choose a Study Plan'),
-      h('p', { class: 'day' }, pages > 1 ? `Page ${page + 1} of ${pages}` : '')),
-    shown.length
-      ? h('div', { class: 'study-grid' }, shown.map(card))
-      : h('p', { class: 'big-text card' }, 'No study plans are ready yet.'),
-    pages > 1 && h('footer', { class: 'bottombar' },
-      h('button', { class: 'pill', type: 'button', disabled: page === 0, onclick: () => ctx.go(`#/studies?page=${page - 1}`) },
-        icon('back'), h('span', { class: 'label' }, 'Previous')),
-      h('button', { class: 'pill primary', type: 'button', disabled: page >= pages - 1, onclick: () => ctx.go(`#/studies?page=${page + 1}`) },
-        h('span', { class: 'label' }, 'More plans'), icon('next')))));
+      h('p', { class: 'day' }, '')),
+    plans.length
+      ? h('div', { class: 'study-grid', tabindex: '0', role: 'region', 'aria-label': 'Study plans' }, plans.map(card))
+      : h('p', { class: 'big-text card' }, 'No study plans are ready yet.')));
   return null;
 }

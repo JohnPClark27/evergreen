@@ -109,6 +109,36 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 - `core.css` now has `[hidden] { display: none !important; }`: classes that set `display` were
   overriding `hidden`.
 
+## 0c. Side arrows (2026-10-05, branch `side-arrows`, user's request)
+
+- Older testers had trouble finding Back/Next in the bottom bar. In a study, **Back** and
+  **Next/Finish** are now big arrows on the left and right of the card, as tall as the card
+  (`.stage-row` → `.side-arrow` in `runner.js` / `app.css`).
+- The arrows keep a visible word ("Back", "Next", "Finish"), so their accessible names and the
+  browser tests are unchanged. e2e 14/14 and axe 0 issues locally.
+- **Module panel (replaces the sticky sheet-music bar):** the card and a bar joined to its bottom
+  form `.module-panel`; the bar (`.panel-bar`) holds Again · the big round Pause (unchanged, no
+  word) · `.panel-tools`. Again and the tools are `ui.js` `roundControl(icon, word)` /
+  `setControl`: wide rounded buttons as tall as Pause, sharing the space equally, word inside.
+  A container query turns them into circles with the word underneath when the bar is < 520 px.
+  Modules can return `tools: [button]` in their controller (see `docs/MODULES.md`); the hymn
+  module passes `panel.sheetButton` (Show / Close sheet music), so Close never scrolls away.
+  Sing a Hymn uses the same panel; its All hymns / Another hymn stay in the footer.
+  `start()` loads the music if it was opened before the timing arrived ("open with the sheet
+  music showing" used to give an empty sheet).
+- **Thumbs:** *Enjoyed it* / *Skip next time* (end of a study, and under a hymn in Sing a Hymn)
+  are round 👍 / 👎 buttons (`ui.js` `thumbButtons`); the words are their `aria-label`s, the
+  chosen one is filled (`aria-pressed`). The "For the aide" fine print was removed.
+- **Choose a Study Plan grid:** no more pages (`?page=` and "More plans" are gone). All plans
+  are in one scrolling `.study-grid`, 3 wide (1 on phones ≤ 600 px), rows half the visible
+  height (a third in portrait) with a 170 px minimum, so 2 plans don't stretch down the screen.
+  `studies.mjs` now scrolls to the fixture plan instead of paging.
+- **Sheet music follows the window:** `sheet.js` picks its layout from the width (narrow < 600 px
+  reflows to ~2 bars a line). A `ResizeObserver` on the sheet redraws it when the width changes
+  (debounced 150 ms; skipped while hidden), and the cursor moves onto the new drawing.
+- The `mobile-layout` branch hides `.bottombar` pill labels on phones and hasn't seen this
+  change yet: expect overlap in `web/css/app.css` when it merges.
+
 ## 1. Coordination rules (avoid clashing)
 
 1. **Before you start:** `git fetch && git status && git log --oneline -5` on `dev`. If `dev`

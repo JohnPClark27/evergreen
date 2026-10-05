@@ -85,6 +85,63 @@ button { cursor: pointer; }
 .bottombar .round { margin: 0 auto; }
 .bottombar > .pill:last-child { margin-left: auto; }
 
+/* Study runner: big Back / Next arrows on either side of the card, as tall as the card.
+   Older testers had trouble finding small buttons in the bottom bar. */
+.stage-row { flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 16px; }
+.side-arrow {
+  flex: none; width: 112px; padding: 0; border-radius: 24px;
+  border: 3px solid var(--control-border); background: var(--surface); color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  font-size: 22px; font-weight: 700;
+}
+.side-arrow .icon { width: 72px; height: 72px; }
+.side-arrow.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.side-arrow:disabled { opacity: 0.3; cursor: default; }
+.side-arrow.attention { box-shadow: 0 0 0 6px var(--highlight); }
+/* The module panel: the scrolling card with a control bar joined to its bottom
+   (Again · Pause · the module's tools). Used in a study and in Sing a Hymn. */
+.module-panel {
+  flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 24px;
+}
+.module-panel > .card { border: none; border-radius: 0; }
+.module-panel > .card:focus-visible { outline-offset: -4px; } /* the panel clips outside rings */
+.panel-bar {
+  /* Sing again · Pause · Show sheet music: the two side buttons share the space equally. */
+  container-type: inline-size;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+  gap: 16px; padding: 12px 16px; background: var(--bg); border-top: 1px solid var(--border-strong);
+}
+.panel-bar .round { width: 88px; height: 88px; }
+.panel-bar .round .icon { width: 42px; height: 42px; }
+.panel-tools { display: flex; gap: 16px; min-width: 0; }
+.panel-tools > * { flex: 1; }
+/* Side controls (ui.js roundControl): as tall as Pause, fully rounded ends, icon + word inside,
+   all with the same outlined paper look. */
+.ctl {
+  width: 100%; min-width: 0; height: 88px; border-radius: 44px; padding: 0 18px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  border: 3px solid var(--control-border); background: var(--surface); color: var(--ink);
+  font-size: 22px; font-weight: 700; line-height: 1.1; text-align: center;
+}
+.ctl-circle { display: grid; place-items: center; flex: none; }
+.ctl-circle .icon { width: 34px; height: 34px; }
+.ctl:disabled { opacity: 0.4; cursor: default; }
+/* A narrow bar (portrait phone, small window): each side button becomes a circle the size
+   of Pause with its word underneath. */
+@container (max-width: 520px) {
+  .ctl {
+    height: auto; padding: 0; border: none; background: none; border-radius: 0;
+    flex-direction: column; gap: 4px; font-size: 17px;
+  }
+  .ctl-circle {
+    width: 80px; height: 80px; border-radius: 50%;
+    border: 3px solid var(--control-border); background: var(--surface);
+  }
+  .ctl:focus-visible { outline: none; }
+  .ctl:focus-visible .ctl-circle { outline: 4px solid var(--accent); outline-offset: 3px; }
+}
+
 /* ---------- Hymn ---------- */
 .hymn-panel .title, .reading-panel .title { font-size: 40px; }
 .verse-label { color: var(--muted); font-size: 22px; margin: 4px 0 12px; min-height: 1.4em; }
@@ -107,7 +164,14 @@ button { cursor: pointer; }
 .done-card { flex: none; text-align: center; padding: 36px; }
 .done-card h1 { font-size: 46px; margin-bottom: 12px; }
 .aide-notes { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
-.note-buttons { display: flex; gap: 16px; justify-content: center; }
+.thumbs { display: flex; gap: 20px; justify-content: center; }
+/* Thumbs up / down (ui.js thumbButtons): circles; the chosen one is filled. */
+.thumb {
+  width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  border: 3px solid var(--control-border); background: var(--surface); color: var(--ink);
+}
+.thumb .icon { width: 34px; height: 34px; }
+.thumb[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 .done .tile { min-height: 150px; }
 .done .tiles { max-width: none; }
 
@@ -147,7 +211,14 @@ button { cursor: pointer; }
 .dialog-buttons { display: flex; gap: 16px; justify-content: flex-end; }
 
 /* ---------- Choose a Study ---------- */
-.study-grid { flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr; gap: 16px; min-height: 0; }
+/* 3 wide; each row is half the visible area (so 6 cards fill a screen) and extra rows scroll.
+   A few plans keep that size at the top instead of stretching. */
+.study-grid {
+  flex: 1; min-height: 0; overflow-y: auto; display: grid; align-content: start;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: max(170px, calc((100% - 16px) / 2)); gap: 16px;
+  padding: 4px; margin: -4px; /* room for the focus ring and tile borders inside the scroller */
+}
+.study-grid:focus:not(:focus-visible) { outline: none; }
 .study-tile {
   border-radius: 20px; border: 2px solid var(--control-border); background: var(--surface); color: var(--ink);
   padding: 18px 22px; text-align: left; display: flex; flex-direction: column; gap: 6px; min-height: 150px;
@@ -184,21 +255,28 @@ button { cursor: pointer; }
 
 /* ---------- Small aide controls (kept modest; aides, not residents) ---------- */
 .aide-row { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); }
-.pill.small-pill { min-height: 48px; font-size: 18px; padding: 0 18px; }
 
 /* ---------- Portrait (e.g. 820×1180) and small screens ---------- */
 @media (orientation: portrait), (max-width: 900px) {
   .tiles, .tiles.three { grid-template-columns: 1fr; }
   .tile { min-height: 150px; }
   .hymn-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: auto; overflow: auto; }
-  .study-grid { grid-template-columns: 1fr; grid-auto-rows: auto; overflow: auto; }
+  .study-grid { grid-auto-rows: max(170px, calc((100% - 32px) / 3)); } /* portrait: 3 rows fill the screen */
   .quiz-choices { grid-template-columns: 1fr; }
   .plan-name { display: none; }
   .topbar { flex-wrap: wrap; }
   .steps { order: 3; width: 100%; }
   .card { padding: 22px 24px; }
+  .panel-bar { gap: 10px; padding: 10px 12px; }
   .bottombar { flex-wrap: wrap; gap: 12px; }
   .bottombar .round { width: 92px; height: 92px; }
+  .stage-row { gap: 10px; }
+  .side-arrow { width: 84px; font-size: 19px; }
+  .side-arrow .icon { width: 56px; height: 56px; }
+}
+/* Phones: one card per row. */
+@media (max-width: 600px) {
+  .study-grid { grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(150px, auto); }
 }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }

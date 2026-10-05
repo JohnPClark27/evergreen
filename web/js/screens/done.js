@@ -2,7 +2,7 @@
 // plan, and big next steps. No streaks, scores, or "come back tomorrow" pressure.
 import * as api from '../api.js';
 import { nextStudy } from '../plan-progress.js';
-import { h } from '../ui.js';
+import { h, thumbButtons } from '../ui.js';
 
 export async function render(root, _params, ctx) {
   const { store } = ctx;
@@ -28,10 +28,7 @@ export async function render(root, _params, ctx) {
         ? `Next in “${plan.title}”: Study ${next.position + 1}, ${next.title}.`
         : `That was the last study in “${plan.title}” still to do.`),
       last.planId && h('div', { class: 'aide-notes' },
-        h('p', { class: 'muted small' }, `For the aide (optional): about the plan “${last.title}”`),
-        h('div', { class: 'note-buttons', role: 'group', 'aria-label': `Notes for ${last.title}` },
-          h('button', { class: 'pill', type: 'button', onclick: () => note('enjoyed') }, 'Enjoyed it'),
-          h('button', { class: 'pill', type: 'button', onclick: () => note('skip') }, 'Skip next time')),
+        thumbButtons(store.studyNotes()[last.planId], note, `Notes for ${last.title}`),
         noteStatus)),
     h('div', { class: 'tiles three' },
       next
