@@ -59,8 +59,9 @@ export default {
 
   play(stage, config, kit) {               // tablet: draw into `stage` (the big card)
     // kit.audio, kit.speaker, kit.api (getHymnById, getPassage, getTiming, …), kit.paused()
-    return {                               // a controller for the bottom bar
+    return {                               // a controller for the bar under the card
       againLabel: 'Read again', again() {}, pause() {}, resume() {},
+      tools: [button],                     // optional: extra buttons for that bar (e.g. sheet music)
       stop() {},                           // REQUIRED: stop sound/timers when the aide moves on
       musicUrl,                            // optional: a hymn later modules can keep under them
     };
@@ -74,7 +75,8 @@ export default {
   aloud with the current line highlighted. It returns a ready-made controller.
 
 **The runner** (`web/js/runner.js`) provides the frame and buttons: Home/Close, "Part 2 of 6",
-the progress bar, big Back and Next/Finish arrows beside the card, and Again · Pause below it.
+the progress bar, big Back and Next/Finish arrows beside the card, and a bar joined to the
+bottom of the card with Again · Pause · the module's `tools`.
 A module only draws its own content.
 
 ## Rules every module must follow

@@ -80,11 +80,15 @@ async function player(root, number, ctx) {
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Sing a Hymn'),
       h('p', { class: 'day' }, `Hymn ${hymn.number}`)),
-    h('section', { class: 'card', tabindex: '0', 'aria-label': hymn.title }, panel.el),
+    // Same panel as in a study: the card with Sing again · Pause · Sheet music joined under it.
+    h('div', { class: 'module-panel' },
+      h('section', { class: 'card', tabindex: '0', 'aria-label': hymn.title }, panel.el),
+      h('div', { class: 'panel-bar' },
+        h('button', { class: 'pill', type: 'button', onclick: () => { panel.restart(); setPauseIcon(); } }, icon('again'), h('span', { class: 'label' }, 'Sing again')),
+        pauseBtn,
+        h('div', { class: 'panel-tools' }, panel.sheetButton))),
     h('footer', { class: 'bottombar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/sing') }, icon('back'), h('span', { class: 'label' }, 'All hymns')),
-      h('button', { class: 'pill', type: 'button', onclick: () => { panel.restart(); setPauseIcon(); } }, icon('again'), h('span', { class: 'label' }, 'Sing again')),
-      pauseBtn,
       h('button', { class: 'pill primary', type: 'button', onclick: () => ctx.go('#/sing') }, h('span', { class: 'label' }, 'Another hymn'), icon('next')))));
 
   await panel.start();

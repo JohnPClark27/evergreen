@@ -1,8 +1,8 @@
 // hymn-panel.js - one hymn on screen: title, "Based on …", "Verse X of Y", large sing-along
 // words, and a "Show sheet music" switch. Used by the hymn module and Sing a Hymn.
 //
-// The switch sits in a bar just above the words that sticks to the top of the card while it
-// scrolls, so "Close sheet music" is always in the same place, however far down the music goes.
+// The switch (`sheetButton`) isn't drawn inside the panel: the screen puts it in the bar
+// under the card, next to Sing again and Pause, so "Close sheet music" never scrolls away.
 import * as api from './api.js';
 import { LyricsView } from './lyrics.js';
 import { createSheet } from './sheet.js';
@@ -15,11 +15,11 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
   const words = h('div', { class: 'lyrics' });
   const sheetBox = h('div', { class: 'sheet', hidden: true });
   const sheetStatus = h('p', { class: 'verse-label', hidden: true });
-  const toggle = h('button', { class: 'pill big sheet-toggle', type: 'button', 'aria-pressed': 'false' });
+  const toggle = h('button', { class: 'pill sheet-toggle', type: 'button', 'aria-pressed': 'false' });
   const drawToggle = () => toggle.replaceChildren(
     icon(sheetShown ? 'close' : 'music'),
     h('span', { class: 'label' }, sheetShown ? 'Close sheet music' : 'Show sheet music'));
-  const bar = h('div', { class: 'hymn-bar' }, verseLabel, sheetStatus, toggle);
+  const labels = h('div', { class: 'verse-line' }, verseLabel, sheetStatus);
 
   const lyrics = new LyricsView(words, {
     getTime: () => audio.position,
@@ -32,13 +32,12 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
   let sheetShown = false;
   drawToggle();
 
-  // After switching, if the card is scrolled past the top of the words / music, scroll back
-  // so they start right under the bar (the bar itself never moves out of view).
+  // After switching, if the card is scrolled past the verse label, scroll back up to it so
+  // the words / music are seen from their start.
   function showTop() {
     const card = el.closest('.card');
-    const target = sheetShown ? sheetBox : words;
     if (!card) return;
-    const gap = target.getBoundingClientRect().top - bar.getBoundingClientRect().bottom;
+    const gap = labels.getBoundingClientRect().top - card.getBoundingClientRect().top;
     if (gap < 0) card.scrollTop += gap;
   }
 
@@ -63,7 +62,7 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
   const el = h('div', { class: 'hymn-panel' },
     h('h2', { class: 'title' }, hymn.title),
     basedOn && h('p', { class: 'muted' }, `Based on ${basedOn}`),
-    bar,
+    labels,
     words,
     sheetBox);
 
@@ -92,6 +91,8 @@ export function hymnPanel(ctx, hymn, { basedOn = null } = {}) {
     stop() { lyrics.stop(); sheet.stop(); },
     /** Open the sheet music (the hymn module's "open with the sheet music showing"). */
     showSheet() { if (!sheetShown) toggle.click(); },
+    /** The Show / Close sheet music button, for the screen to place in its control bar. */
+    sheetButton: toggle,
     url,
   };
 }

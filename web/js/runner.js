@@ -1,10 +1,11 @@
 // runner.js - plays a study plan: its modules one after another, each in the big card.
 //
 //   top bar     Home (or Close) · "Part 2 of 6 · Scripture" · progress bar
-//   middle      big Back arrow · card · big Next / Finish arrow (as tall as the card, so
+//   middle      big Back arrow · panel · big Next / Finish arrow (as tall as the panel, so
 //               they're easy to find; older testers missed small buttons at the bottom)
-//   card        whatever the current module draws (web/modules/*.js → play())
-//   bottom bar  Again (the module's label) · round Pause
+//   panel       the card: whatever the current module draws (web/modules/*.js → play())
+//               and, joined under it, a bar: Again (the module's label) · round Pause ·
+//               the module's own tools (e.g. the hymn's "Show sheet music")
 //
 // The aide moves with Back/Next; nothing advances on its own. A hymn sung just before keeps
 // playing softly under modules that allow it (musicBed), and speech lowers it further.
@@ -44,6 +45,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
   // The arrows keep a visible word under them: it names the button for screen readers too.
   const backBtn = h('button', { class: 'side-arrow', type: 'button' }, icon('back'), h('span', { class: 'label' }, 'Back'));
   const nextBtn = h('button', { class: 'side-arrow primary', type: 'button' }, icon('next'), h('span', { class: 'label' }, 'Next'));
+  const tools = h('div', { class: 'panel-tools' }); // the current module's extra buttons
   const voiceBtn = h('button', { class: 'pill voice-toggle', type: 'button', 'aria-pressed': 'false' });
   const drawVoice = () => {
     voiceBtn.textContent = `Read aloud: ${readAloud ? 'On' : 'Off'}`;
@@ -62,8 +64,10 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       h('div', { class: 'where-box' }, where, bar),
       voiceBtn,
       h('p', { class: 'day plan-name' }, plan.subtitle ?? plan.title)),
-    h('div', { class: 'stage-row' }, backBtn, stage, nextBtn),
-    h('footer', { class: 'bottombar study-bar' }, againBtn, pauseBtn)));
+    h('div', { class: 'stage-row' },
+      backBtn,
+      h('div', { class: 'module-panel' }, stage, h('div', { class: 'panel-bar' }, againBtn, pauseBtn, tools)),
+      nextBtn)));
 
   function setPaused(p) {
     paused = p;
@@ -79,6 +83,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
     controller = null;
     speaker.stop();
     nextBtn.classList.remove('attention');
+    tools.replaceChildren();
     index = i;
     opts.onStep?.(index);
 
@@ -117,6 +122,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
     controller = c ?? null;
     if (controller?.musicUrl) musicUrl = controller.musicUrl;
     againBtn.querySelector('.label').textContent = controller?.againLabel ?? 'Again';
+    tools.replaceChildren(...(controller?.tools ?? []));
     refreshAgain();
     stage.focus({ preventScroll: true });
   }

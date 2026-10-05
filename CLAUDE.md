@@ -113,15 +113,16 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 
 - Older testers had trouble finding Back/Next in the bottom bar. In a study, **Back** and
   **Next/Finish** are now big arrows on the left and right of the card, as tall as the card
-  (`.stage-row` → `.side-arrow` in `runner.js` / `app.css`). The bottom bar keeps Again + Pause.
+  (`.stage-row` → `.side-arrow` in `runner.js` / `app.css`).
 - The arrows keep a visible word ("Back", "Next", "Finish"), so their accessible names and the
   browser tests are unchanged. e2e 14/14 and axe 0 issues locally.
-- **Sheet music button:** `hymn-panel.js` puts a sticky `.hymn-bar` (verse or page label + a big
-  **Show sheet music / Close sheet music** button) just above the words. It sticks to the top of
-  the scrolling card, so Close is always in the same place. It reaches into the card's padding
-  through `--pad-y`/`--pad-x` on `.card`. `panel.showSheet()` replaces the old `.row .pill` click,
-  and `start()` now loads the music when it was opened before the timing arrived (before, "open
-  with the sheet music showing" gave an empty sheet).
+- **Module panel (replaces the sticky sheet-music bar):** the card and a bar joined to its bottom
+  form `.module-panel`; the bar (`.panel-bar`) holds Again · round Pause · `.panel-tools`.
+  Modules can return `tools: [button]` in their controller (see `docs/MODULES.md`); the hymn
+  module passes `panel.sheetButton` (Show / Close sheet music), so Close never scrolls away.
+  Sing a Hymn uses the same panel; its All hymns / Another hymn stay in the footer.
+  `start()` loads the music if it was opened before the timing arrived ("open with the sheet
+  music showing" used to give an empty sheet).
 - **Sheet music follows the window:** `sheet.js` picks its layout from the width (narrow < 600 px
   reflows to ~2 bars a line). A `ResizeObserver` on the sheet redraws it when the width changes
   (debounced 150 ms; skipped while hidden), and the cursor moves onto the new drawing.

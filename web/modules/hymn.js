@@ -49,6 +49,7 @@ export default {
     if (!kit.paused()) await panel.start({ loop: false });
     return {
       againLabel: 'Sing again',
+      tools: [panel.sheetButton], // shown in the bar under the card
       musicUrl: panel.url, // later modules can keep this hymn playing softly underneath
       again: () => panel.restart(),
       pause: () => kit.audio.pause(),
