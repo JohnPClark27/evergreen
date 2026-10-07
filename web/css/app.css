@@ -485,7 +485,7 @@ button { cursor: pointer; }
 }
 .ai-mark.used { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 .ai-mark svg { width: 18px; height: 18px; fill: currentColor; }
-.verse-head .ai-mark { margin-left: auto; }
+.verse-head .title .ai-mark { position: relative; top: -3px; margin-left: 6px; }
 .picked-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .game-day { display: inline-flex; align-items: center; gap: 10px; }
 .trivia-source { display: flex; align-items: center; gap: 10px; font-size: 19px; margin: 0 0 8px; }
@@ -500,3 +500,6 @@ button { cursor: pointer; }
 .verse-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .verse-card-foot p { margin: 0; }
 .ws-passage .read-btn { margin-bottom: 10px; }
+/* Prayers: 3 x 2 tiles that fill the screen (like the hymn grid's 3 x 3). */
+.prayer-grid { grid-template-rows: repeat(2, 1fr); }
+@media (orientation: portrait), (max-width: 900px) { .prayer-grid { grid-template-rows: none; } }

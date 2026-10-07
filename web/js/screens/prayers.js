@@ -1,4 +1,5 @@
-// Prayers (#/prayers): the published prayer library as big tiles.
+// Prayers (#/prayers[?page=N]): the published prayer library, 6 big tiles a page (3 x 2) with
+// Previous / More buttons, like Sing a Hymn (no scrolling).
 // One prayer (#/prayers/<id>): just the prayer, in large print, with its source; "Read aloud"
 // (the device voice, only when tapped) and "More prayers". The top-left button goes back to
 // the hub (My Day, or Engage further).
@@ -8,20 +9,31 @@ import { hubButton } from '../nav.js';
 import { h, icon, readAloudButton } from '../ui.js';
 
 export async function render(root, params, ctx) {
-  return params.arg ? one(root, Number(params.arg), ctx) : list(root, ctx);
+  return params.arg ? one(root, Number(params.arg), ctx) : list(root, ctx, Number(params.page ?? 0));
 }
 
-async function list(root, ctx) {
+const PER_PAGE = 6; // 3 x 2 big tiles, with Previous / More buttons (no scrolling)
+
+async function list(root, ctx, page) {
   const prayers = await api.getPrayers();
+  const pages = Math.max(1, Math.ceil(prayers.length / PER_PAGE));
+  page = Math.min(Math.max(0, page), pages - 1);
+  const shown = prayers.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
   root.append(h('div', { class: 'screen sing' },
     h('header', { class: 'topbar' },
       hubButton(ctx),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Prayers'),
-      h('p', { class: 'day' }, '')),
-    h('div', { class: 'study-grid', tabindex: '0', role: 'region', 'aria-label': 'Prayers' },
-      prayers.map((p) => h('button', { class: 'study-tile', type: 'button', onclick: () => ctx.go(`#/prayers/${p.id}`) },
-        h('span', { class: 'study-tile-title' }, p.title),
-        h('span', { class: 'study-tile-meta' }, p.attribution ?? p.source))))));
+      h('p', { class: 'day' }, pages > 1 ? `Page ${page + 1} of ${pages}` : '')),
+    h('div', { class: 'hymn-grid prayer-grid' }, shown.map((p) => h('button', {
+      class: 'hymn-tile', type: 'button', onclick: () => ctx.go(`#/prayers/${p.id}`),
+    },
+    h('span', { class: 'hymn-tile-title' }, p.title),
+    h('span', { class: 'hymn-tile-line' }, p.attribution ?? p.source)))),
+    pages > 1 && h('footer', { class: 'bottombar' },
+      h('button', { class: 'pill', type: 'button', disabled: page === 0, onclick: () => ctx.go(`#/prayers?page=${page - 1}`) },
+        icon('back'), h('span', { class: 'label' }, 'Previous prayers')),
+      h('button', { class: 'pill primary', type: 'button', disabled: page >= pages - 1, onclick: () => ctx.go(`#/prayers?page=${page + 1}`) },
+        h('span', { class: 'label' }, 'More prayers'), icon('next')))));
   return null;
 }
 

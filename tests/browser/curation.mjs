@@ -65,7 +65,9 @@ async function audit(page, name) {
   const label = async () => (await page.locator('.topbar .pill').first().innerText()).trim();
   // From My Day: a prayer pick -> a plain prayer page -> "My Day"
   await page.goto(BASE + '#/today?mood=2'); await page.locator('.pick-tile').first().waitFor({ timeout: 20000 });
-  await page.goto(BASE + '#/prayers'); await page.locator('.study-tile').first().click();
+  await page.goto(BASE + '#/prayers'); await page.locator('.hymn-tile').first().waitFor({ timeout: 20000 });
+  ok((await page.locator('.hymn-tile').count()) <= 6 && (await page.getByRole('button', { name: 'More prayers' }).count()) === 1, 'prayer list: 3 x 2 tiles a page, with More prayers');
+  await page.locator('.hymn-tile').first().click();
   await page.locator('.prayer-screen .read-line').first().waitFor({ timeout: 20000 });
   ok(!(await page.locator('.side-arrow').count()) && (await page.locator('.prayer-screen .attribution').innerText()).length > 0, 'one prayer: a plain page with its source (no Back/Next)');
   ok(await label() === 'My Day', 'prayer opened from My Day: top-left says "My Day"');
@@ -79,7 +81,7 @@ async function audit(page, name) {
   await page.goto(BASE + '#/explore'); await page.getByRole('button', { name: /^Worship/ }).click();
   await page.getByRole('heading', { name: 'Worship' }).waitFor();
   await audit(page, 'worship');
-  await page.getByRole('button', { name: /^Pray/ }).click(); await page.locator('.study-tile').first().waitFor({ timeout: 20000 });
+  await page.getByRole('button', { name: /^Pray/ }).click(); await page.locator('.hymn-tile').first().waitFor({ timeout: 20000 });
   ok(await label() === 'Back to engage', 'opened from Engage further: top-left says "Back to engage"');
   await page.getByRole('button', { name: 'Back to engage' }).click();
   await page.getByRole('heading', { name: 'Engage further' }).waitFor();
@@ -208,7 +210,7 @@ async function audit(page, name) {
   await page.getByRole('button', { name: 'Show the word' }).click();
   ok((await page.locator('.game-status').innerText()).startsWith('The word is'), 'crossword: Show the word');
   await audit(page, 'crossword');
-  await page.goto(BASE + '#/prayers'); await page.locator('.study-tile').first().waitFor({ timeout: 20000 });
+  await page.goto(BASE + '#/prayers'); await page.locator('.hymn-tile').first().waitFor({ timeout: 20000 });
   await audit(page, 'prayers');
   await page.goto(BASE + '#/aide'); await page.getByRole('radiogroup', { name: 'Show AI reasoning' }).waitFor();
   await audit(page, 'aide tools');

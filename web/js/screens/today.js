@@ -77,9 +77,9 @@ export async function render(root, params, ctx) {
     h('section', { class: 'card verse-day', tabindex: '0', 'aria-label': `Verse of the day: ${label}` },
       h('div', { class: 'verse-head' },
         h('p', { class: 'tag added' }, icon('sparkle'), 'Verse of the day'),
-        h('h2', { class: 'title' }, passage?.reference ?? label),
+        // The small AI mark sits right after the reference, in line with it.
+        h('h2', { class: 'title' }, passage?.reference ?? label, ' ', aiMark(choice.source)),
         passage && readAloudButton(ctx.speaker, () => passage.verses, { items: verseEls }),
-        aiMark(choice.source),
         showReasons && h('span', { class: 'reason' }, `${choice.source === 'ai' ? 'Chosen by AI' : 'Example passage (AI unavailable)'}${choice.verseReason ? `: ${choice.verseReason}` : ''}`)),
       passage
         ? h('div', { class: 'read-lines' }, verseEls)

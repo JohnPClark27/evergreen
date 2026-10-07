@@ -90,7 +90,6 @@ async function player(root, number, ctx) {
         pauseBtn,
         h('div', { class: 'panel-tools' }, panel.sheetButton))),
     h('footer', { class: 'bottombar' },
-      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/sing') }, icon('back'), h('span', { class: 'label' }, 'All hymns')),
       h('button', { class: 'pill primary', type: 'button', onclick: () => ctx.go('#/sing') }, h('span', { class: 'label' }, 'Another hymn'), icon('next')))));
 
   await panel.start();
