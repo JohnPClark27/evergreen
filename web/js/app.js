@@ -5,7 +5,6 @@
 //   #/study/12/3  Study 3 of plan 12
 //   #/done        Session finished         #/aide        Aide tools
 //   #/read        Read the Bible
-//   #/myday       My Day (today's study + "Added for you")   #/myday/play  play it
 //   #/games       Games hub    #/game/<type>?book=…  one game    #/prayers[/<id>]  Prayers
 import { AudioPlayer } from './audio.js';
 import { Speaker, localVoices } from './speech.js';
@@ -22,7 +21,6 @@ import * as done from './screens/done.js';
 import * as sing from './screens/sing.js';
 import * as aide from './screens/aide.js';
 import * as read from './screens/read.js';
-import * as myday from './screens/myday.js';
 import * as games from './screens/games.js';
 import * as game from './screens/game.js';
 import * as prayers from './screens/prayers.js';
@@ -72,8 +70,6 @@ const ROUTES = [
   [/^\/sing\/(\d+)$/, sing, true],
   [/^\/aide$/, aide, false],
   [/^\/read$/, read, true],
-  [/^\/myday$/, myday, false],
-  [/^\/myday\/(play)$/, myday, true],
   [/^\/games$/, games, false],
   [/^\/game\/(word-search|crossword|trivia)$/, game, false],
   [/^\/prayers$/, prayers, false],

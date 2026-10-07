@@ -34,7 +34,7 @@ export async function render(root, _params, ctx) {
 
   root.append(h('div', { class: 'screen sing' },
     h('header', { class: 'topbar' },
-      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
+      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/explore') }, icon('back'), h('span', { class: 'label' }, 'Back to engage')),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Choose a Study Plan'),
       h('p', { class: 'day' }, '')),
     plans.length
