@@ -1,15 +1,17 @@
-/* app.css - the public app's screens. Tokens live in core.css.
+/* app.css - the public app's screens. Tokens live in core.css; the rules are in DESIGN.md.
    Primary layout: iPad landscape (1180×820); portrait works too.
-   Touch targets ≥ 64px; session text ≥ 28px. */
+   Touch targets ≥ 64px; session text ≥ 28px; no text under 19px; forest green for all
+   normal-size text. */
 
 html, body { height: 100%; }
-body { font-size: 22px; line-height: 1.4; -webkit-tap-highlight-color: transparent; }
+body { font-size: 22px; line-height: 1.6; -webkit-tap-highlight-color: transparent; }
 #app { height: 100dvh; }
 .screen { height: 100%; display: flex; flex-direction: column; padding: 16px 24px; gap: 14px; }
-.muted { color: var(--muted); }
-.small { font-size: 17px; }
-.big-text { font-size: var(--text-session); font-family: var(--font-read); }
-h1, h2 { font-family: var(--font-read); font-weight: 600; margin: 0; }
+/* Secondary text stays forest green (DESIGN.md): it's set apart by size, not a lighter grey. */
+.muted { color: var(--ink); }
+.small { font-size: 19px; }
+.big-text { font-size: var(--text-session); line-height: 1.65; }
+h1, h2 { font-weight: 700; line-height: 1.3; margin: 0; }
 h1:focus, h2:focus { outline: none; }
 /* The scrolling card is focusable so keyboard users can scroll it; ring only for keyboard focus. */
 .card:focus:not(:focus-visible) { outline: none; }
@@ -28,21 +30,22 @@ button { cursor: pointer; }
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   font-size: 22px; font-weight: 700;
 }
-.pill.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.pill.selected { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.pill.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.pill.selected { background: var(--highlight); border-color: var(--ink); color: var(--ink); }
 .pill.big { min-height: 76px; font-size: 26px; }
 .pill:disabled { opacity: 0.4; cursor: default; }
 .pill.attention { box-shadow: 0 0 0 6px var(--highlight); }
 .round {
   width: 104px; height: 104px; border-radius: 50%; border: none; flex: none;
-  background: var(--accent); color: #fff; display: grid; place-items: center;
+  background: var(--primary); color: var(--on-primary); display: grid; place-items: center;
 }
-.round.is-paused { background: var(--ink); }
-.round:disabled { background: var(--border); color: var(--muted); cursor: default; }
+/* Paused: yellow, so "tap to resume" stands out; the outline keeps its edge visible on cream. */
+.round.is-paused { background: var(--highlight); color: var(--ink); box-shadow: inset 0 0 0 3px var(--ink); }
+.round:disabled { background: var(--tag); color: var(--ink); opacity: 0.6; cursor: default; }
 .icon { display: inline-grid; place-items: center; width: 30px; height: 30px; }
 .icon svg { width: 100%; height: 100%; fill: currentColor; }
 .round .icon { width: 48px; height: 48px; }
-:focus-visible { outline: 4px solid var(--accent); outline-offset: 3px; }
+:focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
 .select {
   min-height: var(--touch); border-radius: 14px; border: 2px solid var(--control-border);
   background: var(--surface); padding: 0 16px; font-size: 22px;
@@ -58,28 +61,28 @@ button { cursor: pointer; }
   background: var(--surface); color: var(--ink); padding: 28px; text-align: left;
   display: flex; flex-direction: column; justify-content: flex-end; gap: 10px;
 }
-.tile.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-.tile-title { font-family: var(--font-read); font-size: 38px; font-weight: 600; line-height: 1.15; }
-.tile-sub { font-size: 21px; opacity: 0.85; }
-.aide-link { color: var(--muted); font-size: 19px; padding: 14px 20px; min-height: 48px; }
+.tile.primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+.tile-title { font-size: 34px; font-weight: 700; line-height: 1.25; }
+.tile-sub { font-size: 21px; line-height: 1.5; }
+.aide-link { color: var(--ink); font-size: 20px; padding: 14px 20px; min-height: 48px; }
 .tap-to-start { justify-content: center; align-items: center; }
 .tap-to-start .tile { min-width: 420px; align-items: center; justify-content: center; text-align: center; }
 
 /* ---------- Top bar / card / bottom bar (session layout) ---------- */
 .topbar { display: flex; align-items: center; gap: 16px; min-height: 76px; }
 .topbar .day, .topbar .screen-title { margin: 0; }
-.topbar .day { margin-left: auto; font-size: 22px; color: var(--muted); white-space: nowrap; }
-.screen-title { font-family: var(--font-read); font-size: 30px; font-weight: 600; flex: 1; text-align: center; }
+.topbar .day { margin-left: auto; font-size: 22px; white-space: nowrap; }
+.screen-title { font-size: 30px; font-weight: 700; line-height: 1.3; flex: 1; text-align: center; }
 .steps { list-style: none; display: flex; gap: 8px; margin: 0 auto; padding: 0; flex-wrap: wrap; justify-content: center; }
-.steps li { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 20px; }
-.steps li + li::before { content: '→'; color: var(--border-strong); }
+.steps li { display: flex; align-items: center; gap: 8px; font-size: 20px; }
+.steps li + li::before { content: '→'; color: var(--ink); }
 .step-pill { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 999px; border: 2px solid transparent; }
-.steps li.current .step-pill { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+.steps li.current .step-pill { color: var(--ink); border-color: var(--ink); background: var(--highlight); font-weight: 700; }
 .steps li.done .step-pill { color: var(--ink); }
-.steps li.done .icon { color: var(--accent); width: 24px; height: 24px; }
+.steps li.done .icon { color: var(--ink); width: 24px; height: 24px; }
 .card {
   flex: 1; min-height: 0; overflow: auto; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 24px; padding: 28px 40px;
+  border: 2px solid var(--line); border-radius: 24px; padding: 28px 40px;
 }
 .bottombar { display: flex; align-items: center; gap: 16px; min-height: 112px; }
 .bottombar .round { margin: 0 auto; }
@@ -95,14 +98,14 @@ button { cursor: pointer; }
   font-size: 22px; font-weight: 700;
 }
 .side-arrow .icon { width: 72px; height: 72px; }
-.side-arrow.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.side-arrow.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 .side-arrow:disabled { opacity: 0.3; cursor: default; }
 .side-arrow.attention { box-shadow: 0 0 0 6px var(--highlight); }
 /* The module panel: the scrolling card with a control bar joined to its bottom
    (Again · Pause · the module's tools). Used in a study and in Sing a Hymn. */
 .module-panel {
   flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 24px;
+  background: var(--surface); border: 2px solid var(--line); border-radius: 24px;
 }
 .module-panel > .card { border: none; border-radius: 0; }
 .module-panel > .card:focus-visible { outline-offset: -4px; } /* the panel clips outside rings */
@@ -110,7 +113,7 @@ button { cursor: pointer; }
   /* Sing again · Pause · Show sheet music: the two side buttons share the space equally. */
   container-type: inline-size;
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
-  gap: 16px; padding: 12px 16px; background: var(--bg); border-top: 1px solid var(--border-strong);
+  gap: 16px; padding: 12px 16px; background: var(--bg); border-top: 2px solid var(--line);
 }
 .panel-bar .round { width: 88px; height: 88px; }
 .panel-bar .round .icon { width: 42px; height: 42px; }
@@ -132,38 +135,38 @@ button { cursor: pointer; }
 @container (max-width: 520px) {
   .ctl {
     height: auto; padding: 0; border: none; background: none; border-radius: 0;
-    flex-direction: column; gap: 4px; font-size: 17px;
+    flex-direction: column; gap: 4px; font-size: 19px;
   }
   .ctl-circle {
     width: 80px; height: 80px; border-radius: 50%;
     border: 3px solid var(--control-border); background: var(--surface);
   }
   .ctl:focus-visible { outline: none; }
-  .ctl:focus-visible .ctl-circle { outline: 4px solid var(--accent); outline-offset: 3px; }
+  .ctl:focus-visible .ctl-circle { outline: 4px solid var(--focus); outline-offset: 3px; }
 }
 
 /* ---------- Hymn ---------- */
 .hymn-panel .title, .reading-panel .title { font-size: 40px; }
-.verse-label { color: var(--muted); font-size: 22px; margin: 4px 0 12px; min-height: 1.4em; }
+.verse-label { font-size: 22px; margin: 4px 0 12px; min-height: 1.4em; }
 .lyrics .lyric-line { font-size: 32px; }
 .row { display: flex; align-items: center; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
 
 /* ---------- Scripture / prayer ---------- */
 .badge {
-  display: inline-block; background: var(--accent-soft); color: var(--accent); border-radius: 999px;
+  display: inline-block; background: var(--tag); color: var(--ink); border-radius: 999px;
   padding: 4px 14px; font-size: 19px; font-weight: 700; margin: 6px 0 12px;
 }
-.read-line { font-family: var(--font-read); font-size: var(--text-session); line-height: 1.5; margin: 0 0 14px; padding: 4px 10px; border-radius: 10px; }
+.read-line { font-size: var(--text-session); line-height: 1.65; margin: 0 0 14px; padding: 4px 10px; border-radius: 10px; }
 .read-line.reading { background: var(--highlight); }
-.vnum { color: var(--muted); font-size: 0.55em; }
+.vnum { font-size: 0.68em; font-weight: 700; } /* 19px: the smallest tablet text */
 .reading-panel.centered { text-align: center; max-width: 900px; margin: 0 auto; }
 .attribution { margin-top: 20px; }
 
 /* ---------- Finished ---------- */
 .done { justify-content: center; }
 .done-card { flex: none; text-align: center; padding: 36px; }
-.done-card h1 { font-size: 46px; margin-bottom: 12px; }
-.aide-notes { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px; }
+.done-card h1 { font-size: 44px; margin-bottom: 12px; }
+.aide-notes { margin-top: 18px; border-top: 2px solid var(--line); padding-top: 14px; }
 .thumbs { display: flex; gap: 20px; justify-content: center; }
 /* Thumbs up / down (ui.js thumbButtons): circles; the chosen one is filled. */
 .thumb {
@@ -171,7 +174,7 @@ button { cursor: pointer; }
   border: 3px solid var(--control-border); background: var(--surface); color: var(--ink);
 }
 .thumb .icon { width: 34px; height: 34px; }
-.thumb[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.thumb[aria-pressed="true"] { background: var(--highlight); border-color: var(--ink); color: var(--ink); }
 .done .tile { min-height: 150px; }
 .done .tiles { max-width: none; }
 
@@ -181,33 +184,34 @@ button { cursor: pointer; }
   border-radius: 20px; border: 2px solid var(--control-border); background: var(--surface); color: var(--ink);
   padding: 16px 20px; text-align: left; display: flex; flex-direction: column; gap: 6px; min-height: 120px;
 }
-.hymn-tile-title { font-family: var(--font-read); font-size: 27px; font-weight: 600; line-height: 1.2; }
-.hymn-tile-line { color: var(--muted); font-size: 19px; }
-.tag { align-self: flex-start; margin-top: auto; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 2px 12px; font-size: 17px; font-weight: 700; }
+.hymn-tile-title { font-size: 25px; font-weight: 700; line-height: 1.3; }
+.hymn-tile-line { font-size: 19px; line-height: 1.5; }
+.tag { align-self: flex-start; margin-top: auto; background: var(--tag); color: var(--ink); border-radius: 999px; padding: 2px 12px; font-size: 19px; font-weight: 700; }
 
 /* ---------- Aide tools ---------- */
-.aide-card section { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.aide-card section { padding: 16px 0; border-bottom: 2px solid var(--line); }
 .aide-card section:last-child { border-bottom: none; }
 .aide-card h2 { font-size: 28px; margin-bottom: 12px; }
 .day-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 10px; margin-bottom: 16px; }
 .day-btn { min-height: var(--touch); border-radius: 14px; border: 2px solid var(--control-border); background: var(--surface); font-size: 24px; font-weight: 700; }
-.day-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+.day-btn.selected { background: var(--highlight); border-color: var(--ink); color: var(--ink); }
 .choice-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-.slider { width: min(520px, 100%); height: var(--touch); accent-color: var(--accent); }
+.slider { width: min(520px, 100%); height: var(--touch); }
 
 /* ---------- Read the Bible ---------- */
 .picker { display: flex; gap: 10px; margin: 0 auto; }
 .read-bar { align-items: center; }
-.music-options { display: flex; flex-direction: column; gap: 4px; font-size: 19px; }
+.music-options { display: flex; flex-direction: column; gap: 4px; font-size: 19px; line-height: 1.4; }
 .switch { display: flex; align-items: center; gap: 10px; min-height: 44px; }
-.switch input { width: 28px; height: 28px; accent-color: var(--accent); }
+.switch input { width: 28px; height: 28px; }
 .read-bar .round { margin: 0 0 0 auto; width: 88px; height: 88px; }
 
 /* ---------- Messages & dialogs ---------- */
 .message { justify-content: center; align-items: center; text-align: center; }
 .dialog { border: none; border-radius: 24px; padding: 32px; max-width: 560px; background: var(--surface); color: var(--ink); }
-.dialog::backdrop { background: rgb(34 30 25 / 0.45); }
-.dialog p { font-size: 24px; margin: 0 0 24px; }
+.dialog::backdrop { background: var(--backdrop); }
+.dialog { border: 2px solid var(--line); }
+.dialog p { font-size: 24px; line-height: 1.6; margin: 0 0 24px; }
 .dialog-buttons { display: flex; gap: 16px; justify-content: flex-end; }
 
 /* ---------- Choose a Study ---------- */
@@ -223,38 +227,38 @@ button { cursor: pointer; }
   border-radius: 20px; border: 2px solid var(--control-border); background: var(--surface); color: var(--ink);
   padding: 18px 22px; text-align: left; display: flex; flex-direction: column; gap: 6px; min-height: 150px;
 }
-.study-tile-title { font-family: var(--font-read); font-size: 28px; font-weight: 600; line-height: 1.2; }
-.study-tile-desc { color: var(--muted); font-size: 19px; }
-.study-tile-meta { font-size: 18px; color: var(--ink); margin-top: auto; }
+.study-tile-title { font-size: 26px; font-weight: 700; line-height: 1.3; }
+.study-tile-desc { font-size: 19px; line-height: 1.5; }
+.study-tile-meta { font-size: 19px; color: var(--ink); margin-top: auto; }
 .tags { display: flex; gap: 8px; }
-.tag.quiet { background: var(--bg); color: var(--muted); border: 1px solid var(--border-strong); }
+.tag.quiet { background: var(--surface); color: var(--ink); border: 2px solid var(--control-border); }
 
 /* ---------- Study runner: "Part 2 of 6" + progress bar ---------- */
 .where-box { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
-.where { margin: 0; font-size: 21px; font-weight: 700; color: var(--accent); }
+.where { margin: 0; font-size: 22px; font-weight: 700; color: var(--ink); }
 .progress { display: flex; gap: 4px; width: min(420px, 100%); }
-.progress span { flex: 1; height: 8px; border-radius: 4px; background: var(--border); }
+.progress span { flex: 1; height: 10px; border-radius: 5px; background: var(--tag); }
 .progress span.done { background: var(--control-border); }
-.progress span.now { background: var(--accent); }
+.progress span.now { background: var(--primary); }
 .plan-name { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- Quiz (gentle: the answer is shown, nothing is scored) ---------- */
 .quiz-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 18px 0; }
 .quiz-choice {
   min-height: 88px; border-radius: 18px; border: 2px solid var(--control-border); background: var(--surface);
-  font-family: var(--font-read); font-size: var(--text-session); padding: 10px 18px; color: var(--ink);
+  font-size: var(--text-session); line-height: 1.4; padding: 10px 18px; color: var(--ink);
 }
 .quiz-choice.picked { border-color: var(--ink); border-width: 3px; }
-.quiz-choice.answer { background: var(--highlight); border-color: var(--accent); }
-.quiz-reveal { font-family: var(--font-read); font-size: var(--text-session); min-height: 1.5em; margin: 0 0 12px; }
+.quiz-choice.answer { background: var(--highlight); border-color: var(--ink); border-width: 3px; }
+.quiz-reveal { font-size: var(--text-session); line-height: 1.6; min-height: 1.6em; margin: 0 0 12px; }
 
 /* ---------- Finish the Line ---------- */
-.finish-line { font-size: 36px; line-height: 1.5; margin: 18px 0; }
-.finish-blank { color: var(--muted); letter-spacing: 4px; }
+.finish-line { font-size: 34px; line-height: 1.6; margin: 18px 0; }
+.finish-blank { color: var(--ink-soft); letter-spacing: 4px; }
 .finish-blank.revealed { color: var(--ink); background: var(--highlight); border-radius: 8px; padding: 0 6px; letter-spacing: normal; }
 
 /* ---------- Small aide controls (kept modest; aides, not residents) ---------- */
-.aide-row { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); }
+.aide-row { margin-top: 24px; padding-top: 12px; border-top: 2px solid var(--line); }
 
 /* ---------- Portrait (e.g. 820×1180) and small screens ---------- */
 @media (orientation: portrait), (max-width: 900px) {
@@ -284,7 +288,7 @@ button { cursor: pointer; }
 
 /* ---------- Study plan page (#/plan/<id>) ---------- */
 .plan-card { display: flex; flex-direction: column; gap: 18px; }
-.plan-desc { font-family: var(--font-read); font-size: 24px; color: var(--muted); margin: 0; }
+.plan-desc { font-size: 24px; line-height: 1.6; margin: 0; }
 .continue { align-self: flex-start; }
 .study-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .study-row {
@@ -292,26 +296,26 @@ button { cursor: pointer; }
   padding: 14px 20px; border-radius: 18px; border: 2px solid var(--control-border);
   background: var(--surface); color: var(--ink);
 }
-.study-row.next { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.study-row.done .study-row-title { color: var(--muted); }
+/* Next up: a forest outline with a yellow ring, the same "press this next" signal as .attention. */
+.study-row.next { border-color: var(--ink); border-width: 3px; box-shadow: 0 0 0 5px var(--highlight); }
 .study-row:disabled { opacity: 0.5; cursor: default; }
 .study-num {
   flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
   background: var(--bg); border: 2px solid var(--control-border); font-size: 22px; font-weight: 700;
 }
-.study-row.done .study-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.study-row.done .study-num { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 .study-row.done .study-num .icon { width: 30px; height: 30px; }
 .study-row-text { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
-.study-row-title { font-family: var(--font-read); font-size: 26px; font-weight: 600; line-height: 1.2; }
-.study-row-meta { color: var(--muted); font-size: 18px; }
+.study-row-title { font-size: 25px; font-weight: 700; line-height: 1.3; }
+.study-row-meta { font-size: 19px; }
 .mini-progress { display: flex; gap: 4px; flex-wrap: wrap; }
-.mini-progress span { width: 14px; height: 6px; border-radius: 3px; background: var(--border-strong); }
-.mini-progress span.done { background: var(--accent); }
+.mini-progress span { width: 14px; height: 8px; border-radius: 4px; background: var(--tag); }
+.mini-progress span.done { background: var(--primary); }
 .link-button {
-  align-self: flex-start; background: none; border: none; color: var(--muted); text-decoration: underline;
-  font-size: 19px; padding: 12px 4px; min-height: 48px;
+  align-self: flex-start; background: none; border: none; color: var(--ink); text-decoration: underline;
+  font-size: 20px; padding: 12px 4px; min-height: 48px;
 }
 
 /* ---------- Read-aloud switch in the study top bar (off by default) ---------- */
 .voice-toggle { white-space: nowrap; font-size: 19px; }
-.voice-toggle.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.voice-toggle.on { background: var(--highlight); border-color: var(--ink); color: var(--ink); }
