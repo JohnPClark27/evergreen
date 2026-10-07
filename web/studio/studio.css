@@ -150,3 +150,13 @@ select.input[size] { min-height: 0; }
 .study-panel { margin-top: 16px; }
 .studio-dialog h2 { margin-top: 0; }
 .studio-dialog select { width: 100%; }
+
+/* ---------- AI prompt page ---------- */
+.ai-moods { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
+.ai-mood legend { font-weight: 700; font-size: 1.1em; padding: 0 6px; }
+.ai-ref { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; }
+.ai-ref select.input { width: auto; min-width: 10em; }
+.ai-ref .input.narrow { width: 5em; }
+.ai-ref-label { margin-left: 6px; }
+.ai-ref .item-errors { flex-basis: 100%; margin: 0; }
+.ai-try-out ol { margin: 8px 0 0; }

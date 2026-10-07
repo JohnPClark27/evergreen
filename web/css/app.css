@@ -477,3 +477,15 @@ button { cursor: pointer; }
   position: sticky; bottom: -22px; margin: 0 -36px -22px; padding: 10px 36px; text-align: center;
   background: var(--highlight); color: var(--ink); font-size: 22px; font-weight: 700;
 }
+
+/* ---------- "Gloo AI used / skipped" badge (ui.js aiMark): small and quiet ---------- */
+.ai-mark {
+  display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; flex: none;
+  border: 2px solid var(--ink); background: var(--surface); color: var(--ink); vertical-align: middle;
+}
+.ai-mark.used { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.ai-mark svg { width: 18px; height: 18px; fill: currentColor; }
+.verse-head .ai-mark { margin-left: auto; }
+.picked-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.game-day { display: inline-flex; align-items: center; gap: 10px; }
+.trivia-source { display: flex; align-items: center; gap: 10px; font-size: 19px; margin: 0 0 8px; }

@@ -144,7 +144,7 @@ from any study part (*Play a game about this*).
 
 | | What the AI does | What it never does |
 |---|---|---|
-| **Verse of the day** | Thinks step by step (a chain-of-thought prompt with example passages per feeling, `supabase/functions/curate/prompt.ts`) and returns a **reference** of 1–3 verses | Write or paraphrase Scripture. The reference is checked (real book and chapter, 1–3 verses, found on YouVersion), else an example passage is used |
+| **Verse of the day** | Thinks step by step (a chain-of-thought prompt with example passages per feeling, edited by admins in the Studio's **AI prompt** page) and returns a **reference** of 1–3 verses | Write or paraphrase Scripture. The reference is checked (real book and chapter, 1–3 verses, found on YouVersion), else an example passage is used |
 | **Four picks** | Chooses published hymns and prayers by id, and games or reading about the verse; a kind may repeat if the items differ | Choose anything unpublished, unknown or marked 👎 (dropped by the server); missing picks are filled at random |
 | **Games** | Picks the game and difficulty; for trivia, writes "what does the passage say" questions **from the verse text sent with the request** | Put an answer in a question that isn't word for word in its verse: the server and the tablet both drop it; fewer than 2 left → fill-in-the-blank built on the tablet. Word search and crossword are built on the tablet with no AI at all |
 
@@ -158,6 +158,14 @@ from any study part (*Play a game about this*).
 - **Provider:** Gloo AI Studio (Completions V2, `auto_routing`), behind one adapter function in
   `supabase/functions/curate/index.ts`. Any OpenAI-compatible API can be swapped in with
   `LLM_API_URL` / `LLM_API_KEY` / `LLM_MODEL`. The key is a Supabase secret, never in the browser.
+- **Studio "AI prompt" page (admins):** edit the guidance (tone, what to prefer or avoid) and, per
+  feeling, the themes and example passages; "Try it" asks the AI as a tablet would. The safety
+  rules stay fixed in the function and are shown read-only. The database checks every save
+  (5 feelings, 1–8 references of 1–3 verses, no text) and the audit log records who changed it
+  (table `ai_prompts`, migration 0010).
+- **A small badge** on each AI-chosen thing (verse of the day, "Picked for you", a game, trivia
+  questions): filled ✦ = chosen with Gloo AI; crossed-out ✦ = Gloo AI was skipped (random pick or
+  questions built on the tablet). Its name says which, for screen readers too.
 - **Show AI reasoning** (Aide tools) shows a one-line "why" for each choice, for aides and judges.
 
 ## Sources and licenses
@@ -215,9 +223,6 @@ Things that are unfinished or limited, listed plainly:
   - making it easier to pick a device's best installed voice
 
 **Future work: AI curation**
-- **Edit the prompt in the Studio (next phase):** a Studio page for admins to change the "Chosen
-  for you" prompt and the example passages and themes per feeling. Today they live in
-  `supabase/functions/curate/prompt.ts`.
 - **Theme-based verse lists from YouVersion:** ask the YouVersion API for passages on a theme
   (comfort, joy, rest…) instead of relying on our own example list.
 - **Pastoral review of the example passages** per feeling (a draft today).

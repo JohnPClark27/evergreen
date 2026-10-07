@@ -29,7 +29,7 @@ await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
 await audit('choose a study plan');
 // The test plan (fixture_all_modules.py) has every module type; else the first plan.
 const planTile = (await page.getByRole('button', { name: /ZZ All modules/ }).count())
-  ? page.getByRole('button', { name: /ZZ All modules/ }) : page.locator('.study-tile').first();
+  ? page.getByRole('button', { name: /ZZ All modules/ }) : page.getByRole('button', { name: /Sample — 12 Days/ }); // stable sample plan (new real plans may sort first)
 await planTile.focus(); await page.keyboard.press('Enter'); // a plan, by keyboard
 await page.locator('.continue').waitFor();
 await audit('plan page');
@@ -63,7 +63,7 @@ await page.goto(BASE + '#/read'); await page.waitForTimeout(400);
 if (await page.getByRole('button', { name: 'Tap to continue' }).count()) await page.getByRole('button', { name: 'Tap to continue' }).click();
 await page.locator('.bible .read-line').first().waitFor({ timeout: 30000 });
 await audit('read the bible');
-await page.goto(BASE + '#/studies'); await page.locator('.study-tile').first().click(); await page.locator('.continue').waitFor();
+await page.goto(BASE + '#/studies'); await page.getByRole('button', { name: /Sample — 12 Days/ }).click(); await page.locator('.continue').waitFor();
 await page.goto(page.url().replace('#/plan/', '#/study/') + '/1'); await page.reload(); await page.getByRole('button', { name: 'Tap to continue' }).waitFor();
 await audit('tap to continue');
 console.log('\nTOTAL by rule:', JSON.stringify(Object.fromEntries(all)));

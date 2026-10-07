@@ -102,6 +102,7 @@ export function blankOut(text, word) {
 // Trivia answers must come from the passage (the server checks; the tablet checks again)
 // ---------------------------------------------------------------------------
 
+const DIVINE = /^(the )?(lord|jehovah|god|lord god|lord jehovah|jehovah god|almighty|the almighty|most high|the most high|christ|jesus|jesus christ|holy spirit|spirit|father|the father|my god|our god)$/;
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[‘’]/g, "'").replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const contains = (text, part) => ` ${norm(text)} `.includes(` ${norm(part)} `);
 
@@ -113,8 +114,11 @@ export function checkQuestions(questions, verses) {
     const q = String(r?.q ?? '').trim().slice(0, 160);
     const answer = String(r?.answer ?? '').trim().slice(0, 60);
     if (!q || norm(answer).length < 2) continue;
+    // A wrong choice that is another name for God when the answer is one ("The Lord" for
+    // "Jehovah") would be a second right answer: drop that choice. (Same rule as the server.)
     const choices = [...new Map((Array.isArray(r?.choices) ? r.choices : []).map((c) => String(c ?? '').trim()).filter(Boolean)
-      .map((c) => [norm(c), c])).values()].slice(0, 4);
+      .map((c) => [norm(c), c])).values()]
+      .filter((c) => norm(c) === norm(answer) || !(DIVINE.test(norm(answer)) && DIVINE.test(norm(c)))).slice(0, 4);
     if (choices.length < 2 || !choices.some((c) => norm(c) === norm(answer))) continue;
     const verse = verses.find((v) => v.num === Number(r?.verse) && contains(v.text, answer)) ?? verses.find((v) => contains(v.text, answer));
     if (!verse) continue;

@@ -91,6 +91,21 @@ export function thumbButtons(current, onPick, groupLabel) {
   return group;
 }
 
+/**
+ * A small, quiet badge: was Gloo AI used for this choice, or skipped (a random pick)?
+ * source: 'ai' -> filled forest circle with a sparkle; anything else -> outlined, crossed out.
+ * The words are its accessible name and hover tip.
+ */
+export function aiMark(source) {
+  const used = source === 'ai';
+  const label = used ? 'Chosen with Gloo AI' : 'Gloo AI skipped: a random pick';
+  const el = h('span', { class: `ai-mark${used ? ' used' : ''}`, role: 'img', 'aria-label': label, title: label });
+  el.innerHTML = used
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8z"/><path d="M4 20 20 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  return el;
+}
+
 /** A full-screen calm spinner with a few words (the spinner stops with Reduce Motion). */
 export function loading(text) {
   return h('div', { class: 'screen message' },

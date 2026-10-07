@@ -8,7 +8,7 @@
 //   3. A hymn with no Scripture reference (config.hymn_id): "Finish the line" from its words.
 // Tapping any answer shows the right one and the verse it comes from. No score, no "wrong".
 import { refLabel } from '../js/books.js';
-import { h } from './kit.js';
+import { aiMark, h } from '../js/ui.js';
 import {
   blankOut, checkQuestions, gameFrame, gameModule, loadPassage, passageWords, seeded, shuffled, verseCard,
 } from './game-common.js';
@@ -116,6 +116,9 @@ export default gameModule('trivia', 'Bible Trivia', '?',
         ref: reference,
         attribution,
         body: h('div', { class: 'quiz', 'data-source': source },
+          // Were these questions written by Gloo AI (checked word for word) or built on the tablet?
+          source !== 'hymn' && h('p', { class: 'trivia-source' }, aiMark(source),
+            source === 'ai' ? 'Questions by Gloo AI, checked against the passage' : 'Fill-in-the-blank from the passage'),
           h('p', { class: 'trivia-q' }, q.q),
           h('div', { class: 'quiz-choices' }, buttons),
           reveal,

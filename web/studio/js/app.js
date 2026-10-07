@@ -5,6 +5,7 @@
 //   #/plan/<id>      Edit / view a plan        #/prayers      Admin: prayer library
 //   #/account        Your name                 #/people       Admin: who can sign in, roles
 //                                              #/audit        Admin: audit log
+//                                              #/ai           Admin: AI prompt (Chosen for you)
 import * as db from './db.js';
 import { h } from '../../js/ui.js';
 import * as plans from './pages/plans.js';
@@ -15,6 +16,7 @@ import * as prayers from './pages/prayers.js';
 import * as people from './pages/people.js';
 import * as audit from './pages/audit.js';
 import * as account from './pages/account.js';
+import * as ai from './pages/ai.js';
 
 const root = document.getElementById('studio');
 const ROUTES = [
@@ -26,6 +28,7 @@ const ROUTES = [
   [/^\/people$/, people, true],
   [/^\/audit$/, audit, true],
   [/^\/account$/, account, false],
+  [/^\/ai$/, ai, true],
 ];
 
 const app = {
@@ -107,6 +110,7 @@ function shell(active) {
       admin && link('#/hymns', 'Hymns', 'hymns'),
       admin && link('#/prayers', 'Prayers', 'prayers'),
       admin && link('#/people', 'People', 'people'),
+      admin && link('#/ai', 'AI prompt', 'ai'),
       admin && link('#/audit', 'Audit log', 'audit'),
       h('span', { class: 'who' },
         h('a', { href: '#/account' }, app.profile?.display_name || 'Your name'),
@@ -146,7 +150,7 @@ async function route() {
   const found = ROUTES.map(([re, page, adminOnly]) => ({ m: re.exec(path || '/'), page, adminOnly })).find((x) => x.m);
   const { page = plans, adminOnly = false, m = null } = found ?? {};
   params.arg = m?.[1];
-  const key = Object.entries({ plans, editor, review, hymns, prayers, people, audit, account })
+  const key = Object.entries({ plans, editor, review, hymns, prayers, people, audit, account, ai })
     .find(([, mod]) => mod === page)?.[0];
   const main = shell(key === 'editor' ? 'plans' : key);
 

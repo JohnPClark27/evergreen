@@ -17,7 +17,7 @@ import { gameHash } from '../game-link.js';
 import { moduleFor } from '../../modules/index.js';
 import { faceSvg, moodFor, MOOD_EXAMPLES, savedMood } from '../mood.js';
 import { seeded } from '../../modules/game-common.js';
-import { h, icon, loading } from '../ui.js';
+import { aiMark, h, icon, loading } from '../ui.js';
 
 /** Fallback verse of the day: one of the mood's examples, the same one all day. */
 function placeholderVerse(level) {
@@ -75,6 +75,7 @@ export async function render(root, params, ctx) {
       h('div', { class: 'verse-head' },
         h('p', { class: 'tag added' }, icon('sparkle'), 'Verse of the day'),
         h('h2', { class: 'title' }, passage?.reference ?? label),
+        aiMark(choice.source),
         showReasons && h('span', { class: 'reason' }, `${choice.source === 'ai' ? 'Chosen by AI' : 'Example passage (AI unavailable)'}${choice.verseReason ? `: ${choice.verseReason}` : ''}`)),
       passage
         ? h('div', { class: 'read-lines' }, passage.verses.map((v) => h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(v.num)), ' ', v.text)))

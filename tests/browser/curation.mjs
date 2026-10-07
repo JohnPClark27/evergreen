@@ -77,7 +77,7 @@ async function audit(page, name) {
 // ---------- 3. Slide -> game -> back to the same part ----------
 {
   const { context, page } = await fresh();
-  await page.goto(BASE + '#/studies'); await page.locator('.study-tile').first().click();
+  await page.goto(BASE + '#/studies'); await page.getByRole('button', { name: /Sample — 12 Days/ }).click();
   await page.locator('.continue').click();
   await page.locator('.where').waitFor({ timeout: 30000 });
   await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.waitForTimeout(800);

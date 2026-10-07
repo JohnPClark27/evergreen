@@ -32,7 +32,7 @@
 
 import { allowedOrigin, limitKey } from "../youversion/lib.ts";
 import {
-  type Catalog, checkVerseRef, cleanCatalog, cleanHistory, cleanVerses, curatePrompt, exampleVerse, fallback, fillPicks,
+  type Catalog, checkVerseRef, cleanCatalog, cleanPrompt, cleanHistory, cleanVerses, curatePrompt, exampleVerse, fallback, fillPicks,
   intersect, parseJson, stripThinking, todayPrompt, triviaPrompt, validate, validatePicks, validateQuestions,
 } from "./lib.ts";
 
@@ -204,11 +204,13 @@ async function today(input: Record<string, unknown>) {
   const asked = cleanCatalog(input.catalog);
   const cat = asked.hymns.length + asked.prayers.length ? intersect(asked, live) : live;
 
+  // The Studio-edited guidance and examples (table ai_prompts); defaults if unreadable.
+  const prompt = cleanPrompt((await rest("ai_prompts?id=eq.today&select=guidance,examples").catch(() => []))[0]);
   let verse: { ref: string; reason: string } | null = null;
   let picks: ReturnType<typeof validatePicks> = [];
   let source: "ai" | "fallback" = "fallback";
   try {
-    const { system, user } = todayPrompt(level, cat, titles, history);
+    const { system, user } = todayPrompt(level, cat, titles, history, prompt);
     const reply = parseJson(stripThinking(await complete(system, user, TODAY_TIMEOUT, 1200))) as Record<string, any> | null;
     const ref = checkVerseRef(reply?.verse?.ref);
     if (ref && await passageExists(ref)) {
@@ -219,7 +221,7 @@ async function today(input: Record<string, unknown>) {
   } catch (e) {
     console.error("today: using fallback", String(e));
   }
-  verse ??= { ref: exampleVerse(level), reason: "One of the example passages for this feeling" };
+  verse ??= { ref: exampleVerse(level, Math.random, prompt.examples), reason: "One of the example passages for this feeling" };
   return { verse, picks: fillPicks(picks, cat, history, verse.ref), source };
 }
 

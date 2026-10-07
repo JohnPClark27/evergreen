@@ -66,3 +66,25 @@ const full = fillPicks(picks, cat2, [], "PSA.46.1-1");
 ok2(full.length === 4 && new Set(full.map((p) => `${p.module_type}:${p.id_or_ref}`)).size === 4, "filled to 4 distinct picks");
 console.log(`today: ${p2} passed, ${f2} failed`);
 if (f2) process.exitCode = 1;
+
+// ---------- Studio-edited prompt ----------
+import { cleanPrompt, todayPrompt } from "./lib.ts";
+let p3 = 0, f3 = 0;
+const ok3 = (c: unknown, m: string) => { if (c) p3++; else { f3++; console.log("FAIL", m); } };
+const edited = cleanPrompt({ guidance: "Be extra gentle and prefer the Psalms.", examples: [1, 2, 3, 4, 5].map((level) => ({ level, themes: ["hope"], refs: ["PSA.23.1-2", "BAD", "PSA.23.1-9"] })) });
+ok3(edited.examples.every((e) => e.refs.length === 1), "bad example refs are dropped (malformed, too long)");
+const tp = todayPrompt(5, cat2, { hymns: {}, prayers: {} }, [], edited);
+ok3(tp.system.startsWith("Be extra gentle") && tp.system.includes("Never write out verse text"), "edited guidance first, fixed rules always appended");
+ok3(cleanPrompt(null).examples.length === 5 && cleanPrompt({ examples: [] }).examples.length === 5, "missing prompt -> defaults");
+console.log(`prompt: ${p3} passed, ${f3} failed`);
+if (f3) process.exitCode = 1;
+
+// ---------- trivia: no second right answer ----------
+{
+  const qs2 = validateQuestions({ questions: [
+    { q: "Who is my shepherd?", answer: "Jehovah", choices: ["Jehovah", "The Lord", "A king", "A friend"], verse: 1 },
+  ] }, [{ num: 1, text: "Jehovah is my shepherd; I shall not want." }]);
+  const c = qs2[0]?.choices ?? [];
+  console.log(c.length === 3 && !c.includes("The Lord") ? "PASS" : "FAIL", "another name for God is not offered as a wrong choice", JSON.stringify(c));
+  if (!(c.length === 3 && !c.includes("The Lord"))) process.exitCode = 1;
+}

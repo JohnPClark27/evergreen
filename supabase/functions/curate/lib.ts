@@ -7,7 +7,7 @@
 // appear word for word in the verse text that was sent.
 
 import { BOOKS } from "../youversion/lib.ts";
-import { examplesText, MOOD_EXAMPLES, TODAY_SYSTEM } from "./prompt.ts";
+import { DEFAULT_GUIDANCE, examplesText, FIXED_RULES, MOOD_EXAMPLES, MOOD_LABELS, type MoodExample } from "./prompt.ts";
 
 export const MODULE_TYPES = ["hymn", "scripture", "prayer"] as const;
 export const GAME_TYPES = ["word-search", "crossword", "trivia"] as const;
@@ -157,6 +157,9 @@ export function curatePrompt(context: string, cat: Catalog, titles: { hymns: Rec
 export type Verse = { num: number; text: string };
 export type Question = { q: string; answer: string; choices: string[]; verse: number };
 
+/** Names for God: a question whose answer is one must not offer another as a wrong choice. */
+const DIVINE = /^(the )?(lord|jehovah|god|lord god|lord jehovah|jehovah god|almighty|the almighty|most high|the most high|christ|jesus|jesus christ|holy spirit|spirit|father|the father|my god|our god)$/;
+
 const norm = (s: string) => s.toLowerCase().replace(/[‘’]/g, "'").replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
 
 /** Verses as sent: at most 12, numbers and plain text only. */
@@ -182,7 +185,10 @@ export function validateQuestions(raw: unknown, verses: Verse[]): Question[] {
     if (!q || !answer || norm(answer).length < 2) continue;
     const choices = [...new Set((Array.isArray(r?.choices) ? r.choices : []).map((c) => str(c, 60)).filter(Boolean))];
     if (!choices.some((c) => norm(c) === norm(answer))) choices.unshift(answer);
-    const distinct = [...new Map(choices.map((c) => [norm(c), c])).values()].slice(0, 4);
+    // A wrong choice that is another name for God when the answer is one ("The Lord" for
+    // "Jehovah") would be a second right answer: drop that choice.
+    const distinct = [...new Map(choices.map((c) => [norm(c), c])).values()]
+      .filter((c) => norm(c) === norm(answer) || !(DIVINE.test(norm(answer)) && DIVINE.test(norm(c)))).slice(0, 4);
     if (distinct.length < 2 || !distinct.some((c) => norm(c) === norm(answer))) continue;
     const inVerse = (v: Verse) => ` ${norm(v.text)} `.includes(` ${norm(answer)} `);
     const verse = verses.find((v) => v.num === Number(r?.verse) && inVerse(v)) ?? verses.find(inVerse);
@@ -201,6 +207,7 @@ export function triviaPrompt(reference: string, verses: Verse[]): { system: stri
       "You write gentle, factual 'what does the passage say' questions for older adults, from the passage text given ONLY.",
       "Each answer must be copied word for word from the passage (one to four words). No interpretation, no theology, no outside facts.",
       "Give 3 questions, each with the correct answer and 2 or 3 short wrong choices that do NOT appear in that verse.",
+      "Wrong choices must be clearly wrong: never a synonym or another name for the right answer (e.g. not 'the Lord' when the answer is 'Jehovah').",
       "Reply with JSON only.",
     ].join(" "),
     user: `Passage: ${reference}\n${verses.map((v) => `${v.num} ${v.text}`).join("\n")}\n\n` +
@@ -231,8 +238,8 @@ export function checkVerseRef(raw: unknown): string | null {
 export const stripThinking = (text: string) => text.replace(/<thinking>[\s\S]*?(<\/thinking>|$)/gi, "");
 
 /** A random example passage for a feeling (the fallback verse). */
-export function exampleVerse(level: number, rnd = Math.random): string {
-  const refs = MOOD_EXAMPLES.find((e) => e.level === level)?.refs ?? MOOD_EXAMPLES[2].refs;
+export function exampleVerse(level: number, rnd = Math.random, examples: MoodExample[] = MOOD_EXAMPLES): string {
+  const refs = examples.find((e) => e.level === level)?.refs ?? MOOD_EXAMPLES[2].refs;
   return pick(refs, rnd)!;
 }
 
@@ -274,17 +281,32 @@ export function fillPicks(picks: Pick[], cat: Catalog, history: HistoryRow[], ve
   return out;
 }
 
+/** The editable prompt (from the ai_prompts table), checked: guidance text and examples with
+ * valid references only; anything missing or malformed falls back to the defaults. */
+export function cleanPrompt(row: unknown): { guidance: string; examples: MoodExample[] } {
+  const r = (row ?? {}) as Record<string, unknown>;
+  const guidance = str(r.guidance, 4000) || DEFAULT_GUIDANCE;
+  const examples = (Array.isArray(r.examples) ? r.examples : []).flatMap((e) => {
+    const level = Number(e?.level);
+    if (!MOOD_LABELS[level]) return [];
+    const themes = (Array.isArray(e?.themes) ? e.themes : []).map((t: unknown) => str(t, 40)).filter(Boolean).slice(0, 6);
+    const refs = (Array.isArray(e?.refs) ? e.refs : []).map((x: unknown) => checkVerseRef(x)).filter(Boolean).slice(0, 8) as string[];
+    return refs.length ? [{ level, label: MOOD_LABELS[level], themes, refs }] : [];
+  });
+  return { guidance, examples: examples.length === 5 ? examples.sort((a, b) => a.level - b.level) : MOOD_EXAMPLES };
+}
+
 export function todayPrompt(level: number, cat: Catalog, titles: { hymns: Record<string, string>; prayers: Record<string, string> },
-  history: HistoryRow[]): { system: string; user: string } {
-  const mood = MOOD_EXAMPLES.find((e) => e.level === level) ?? MOOD_EXAMPLES[2];
+  history: HistoryRow[], prompt = cleanPrompt(null)): { system: string; user: string } {
   const user = [
-    `They said they are feeling: "${mood.label}" (${level} on a scale where 1 is wonderful and 5 is having a hard day).`,
-    `Example passages by feeling (a guide, not a limit):\n${examplesText()}`,
+    `They said they are feeling: "${MOOD_LABELS[level] ?? "Okay"}" (${level} on a scale where 1 is wonderful and 5 is having a hard day).`,
+    `Example passages by feeling (a guide, not a limit):\n${examplesText(prompt.examples)}`,
     `Hymns (id: title): ${cat.hymns.slice(0, 80).map((id) => `${id}: ${titles.hymns[id] ?? "hymn"}`).join("; ")}`,
     `Prayers (id: title): ${cat.prayers.slice(0, 40).map((id) => `${id}: ${titles.prayers[id] ?? "prayer"}`).join("; ")}`,
     `Activity kinds: hymn (a hymn id), prayer (a prayer id), read (read the verse's chapter; use the verse ref), word-search / crossword / trivia (a game on the verse; use the verse ref).`,
     `What they enjoyed before (type, id, thumbs): ${history.length ? history.map((h) => `${h.type} ${h.id_or_ref} ${h.thumbs ?? "-"}`).join("; ") : "nothing yet"}. Never choose thumbs-down items.`,
     `After your <thinking>, reply exactly: {"verse":{"ref":"BOOK.chapter.start-end","reason":"one short plain sentence for the caregiver, no quotes from Scripture"},"picks":[{"module_type":"...","id_or_ref":"...","reason":"..."}]}  (exactly 4 picks)`,
   ].join("\n\n");
-  return { system: TODAY_SYSTEM, user };
+  // The admin's guidance first, then the fixed rules (always last, so they win).
+  return { system: `${prompt.guidance}\n\n${FIXED_RULES}`, user };
 }

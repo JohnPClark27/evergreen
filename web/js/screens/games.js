@@ -6,7 +6,7 @@ import { refLabel } from '../books.js';
 import { curate, fallback } from '../curate.js';
 import { gameHash } from '../game-link.js';
 import { moduleFor } from '../../modules/index.js';
-import { h, icon } from '../ui.js';
+import { aiMark, h, icon } from '../ui.js';
 
 const CARDS = [
   ['word-search', 'Find words from a passage in a grid of big letters.'],
@@ -39,15 +39,15 @@ export async function render(root, _params, ctx) {
         h('span', { class: 'game-tile-sub' }, sub))))));
 
   // Fill "Picked for you" when the suggestion arrives (or the fallback, if the AI is slow).
-  const { game } = await curate('games');
+  const { game, source } = await curate('games');
   if (!game) { picked.remove(); return null; }
   const mod = moduleFor(game.type);
   picked.replaceChildren(...[
-    h('span', { class: 'tag added' }, icon('sparkle'), 'Picked for you'),
+    h('span', { class: 'picked-head' }, h('span', { class: 'tag added' }, icon('sparkle'), 'Picked for you'), aiMark(source)),
     h('span', { class: 'game-tile-title' }, `${mod.name}: ${refLabel(game.ref.book, game.ref.chapter, game.ref.start, game.ref.end)}`),
     showReasons && game.reason && h('span', { class: 'reason' }, `Why: ${game.reason}`),
   ].filter(Boolean));
   picked.disabled = false;
-  picked.addEventListener('click', () => ctx.go(gameHash(game.type, game, '#/games')));
+  picked.addEventListener('click', () => ctx.go(gameHash(game.type, { ...game, src: source }, '#/games')));
   return null;
 }

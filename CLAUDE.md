@@ -147,8 +147,12 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   while a mood is set this visit (`sessionStorage` `hr.mood`); "Start over" is `#/?ask=1`.
   My Day was archived (`archive/myday.js`).
 - **Edge Function `curate`** (`--no-verify-jwt`, secret `GLOO_AI_API_KEY`): actions `today`,
-  `curate` (games hub / slide game), `trivia`. Prompt + example verses: `curate/prompt.ts`
-  (a Studio editor is the next phase). Pure logic + tests: `curate/lib.ts`,
+  `curate` (games hub / slide game), `trivia`. Guidance + example verses: table `ai_prompts`
+  (migration 0010; admins edit them on the Studio's `#/ai` page; anyone reads); the FIXED rules
+  and the defaults are in `curate/prompt.ts`. `ai_prompt.mjs` tests the page (restore
+  `updated_by` afterwards, see its header).
+- **Badge:** `ui.js aiMark(source)`: filled = Gloo AI chose it, crossed out = skipped.
+- **Tests pick "Sample — 12 Days"** by name: real plans are being published and may sort first. Pure logic + tests: `curate/lib.ts`,
   `node supabase/functions/curate/test.ts`. Rate limit reuses `youversion_rate_hit` ("curate:" keys).
 - **Rules:** the AI returns ids and references only; the server validates against the live
   published catalog and YouVersion; trivia answers must be word for word in the verse (checked

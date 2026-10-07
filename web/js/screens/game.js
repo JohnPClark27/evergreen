@@ -7,7 +7,7 @@ import { fallback } from '../curate.js';
 import { engagement } from '../engagement.js';
 import { safeFrom } from '../game-link.js';
 import { moduleFor } from '../../modules/index.js';
-import { h, icon } from '../ui.js';
+import { aiMark, h, icon } from '../ui.js';
 
 export async function render(root, params, ctx) {
   const mod = moduleFor(params.arg);
@@ -35,7 +35,7 @@ export async function render(root, params, ctx) {
     h('header', { class: 'topbar' },
       h('button', { class: 'pill', type: 'button', onclick: back }, icon('back'), h('span', { class: 'label' }, backLabel)),
       h('h1', { class: 'screen-title', tabindex: '-1' }, mod?.name ?? 'Game'),
-      h('p', { class: 'day' }, label)),
+      h('p', { class: 'day game-day' }, label, params.src && aiMark(params.src))),
     params.why && ctx.store.settings().showReasons === true && h('p', { class: 'reason' }, `Why this game: ${params.why}`),
     stage,
     from && from !== '#/games' && h('footer', { class: 'bottombar' },

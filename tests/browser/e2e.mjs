@@ -22,7 +22,7 @@ await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
 ok((await page.locator('.study-tile').count()) >= 1, 'plan list: ' + await page.locator('.study-tile').count() + ' cards');
 // Prefer the test plan from fixture_all_modules.py when it's there; else the first plan.
 const planBtn = (await page.getByRole('button', { name: /ZZ All modules/ }).count())
-  ? page.getByRole('button', { name: /ZZ All modules/ }) : page.locator('.study-tile').first();
+  ? page.getByRole('button', { name: /ZZ All modules/ }) : page.getByRole('button', { name: /Sample — 12 Days/ }); // stable sample plan (new real plans may sort first)
 const first = (await planBtn.locator('.study-tile-title').innerText());
 await planBtn.click();
 await page.locator('.continue').waitFor();
@@ -63,7 +63,7 @@ ok((await page.locator('.hymn-tile').count()) === 9, 'sing: 3x3 grid');
 await page.locator('.hymn-tile').nth(1).click();
 await page.locator('.lyric-word').first().waitFor({ timeout: 30000 }); await page.waitForTimeout(9000);
 ok((await text('.lyric-word.now')).length > 0, 'singing: ' + await text('.hymn-panel .title'));
-await page.goto(BASE + '#/studies'); await page.locator('.study-tile').first().click();
+await page.goto(BASE + '#/studies'); await page.getByRole('button', { name: /Sample — 12 Days/ }).click();
 await page.locator('.continue').click();
 await page.locator('.where').waitFor({ timeout: 30000 });
 await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.waitForTimeout(800);

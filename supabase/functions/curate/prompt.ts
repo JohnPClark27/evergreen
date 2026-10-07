@@ -1,7 +1,8 @@
 // prompt.ts - the "Chosen for you" prompt and its example verses, in one place.
 //
-// NEXT PHASE: a Studio page will let admins edit this prompt and the examples; they will
-// move to a database table and this file becomes the default. Keep them as plain data.
+// Admins edit the guidance and examples in the Studio ("AI prompt" page, table ai_prompts,
+// migration 0010). This file holds the FIXED rules and the defaults used if the table can't be
+// read.
 //
 // The examples GUIDE the model (chain-of-thought, few-shot); it may choose another passage.
 // Whatever it chooses is only a REFERENCE: the server checks it and fetches the text from
@@ -18,17 +19,29 @@ export const MOOD_EXAMPLES: MoodExample[] = [
   { level: 5, label: "Having a hard day", themes: ["comfort", "not being alone", "hope"], refs: ["PSA.34.18-18", "ISA.43.1-2", "JHN.14.1-1", "2CO.1.3-4", "PSA.42.11-11"] },
 ];
 
-export const TODAY_SYSTEM = [
+/** Editable part (the Studio's "AI prompt" page, table ai_prompts): tone and preferences.
+ * This is the default if the table can't be read. */
+export const DEFAULT_GUIDANCE = [
   "You help choose a short Bible passage and four activities for an older adult in a care home, using a large-print tablet.",
-  "They just told us how they feel. Choose a 'verse of the day' that is gentle, well known, and fitting for that feeling: 1 to 3 consecutive verses.",
-  "Avoid passages about judgment, punishment, death or illness, and anything that could frighten or confuse. Prefer Psalms, the Gospels and familiar promises.",
-  "Use the examples as a guide to tone and theme. You may choose one of them or another passage like them.",
+  "They just told us how they feel. Choose a verse of the day that is gentle, well known, and fitting for that feeling.",
+  "Avoid passages about judgment, punishment, death or illness, and anything that could frighten or confuse.",
+  "Prefer Psalms, the Gospels and familiar promises. Use the examples as a guide to tone and theme:",
+  "you may choose one of them or another passage like them. Choose activities connected to the verse or the feeling.",
+].join(" ");
+
+/** FIXED rules, always added after the editable guidance (they can't be edited in the Studio). */
+export const FIXED_RULES = [
+  "Rules you must always follow:",
+  "The verse of the day is 1 to 3 consecutive verses.",
   "Give ONLY a reference (book code, chapter, verses). Never write out verse text, prayers or teaching.",
-  "Then choose 4 activities from the lists given (by exact id), all connected to the verse or the feeling. Any mix is fine, and a kind may repeat if the items differ (e.g. two different hymns).",
+  "Choose exactly 4 activities from the lists given, by exact id. Any mix is fine, and a kind may repeat if the items differ (e.g. two different hymns).",
+  "Reasons are one short plain sentence for the caregiver, with no Scripture quotes.",
   "Think step by step first, inside <thinking></thinking>: the feeling, a fitting theme, candidate passages, the best one, then the activities. After </thinking>, reply with JSON only.",
 ].join(" ");
 
+export const MOOD_LABELS: Record<number, string> = { 1: "Wonderful", 2: "Good", 3: "Okay", 4: "Not so good", 5: "Having a hard day" };
+
 /** Few-shot examples, shown to the model as a list. */
-export function examplesText(): string {
-  return MOOD_EXAMPLES.map((e) => `- Feeling "${e.label}" (themes: ${e.themes.join(", ")}): e.g. ${e.refs.join(", ")}`).join("\n");
+export function examplesText(examples: MoodExample[] = MOOD_EXAMPLES): string {
+  return examples.map((e) => `- Feeling "${MOOD_LABELS[e.level] ?? e.label}" (themes: ${e.themes.join(", ") || "-"}): e.g. ${e.refs.join(", ")}`).join("\n");
 }

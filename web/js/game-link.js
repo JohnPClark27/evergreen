@@ -25,11 +25,12 @@ export function gameTarget(item, items = []) {
 const refOf = (c) => ({ book: c.book, chapter: c.chapter, start: c.start, end: c.end });
 
 /** The hash for a game screen. `from` is where "Back to study" returns (a "#/…" hash). */
-export function gameHash(type, { ref = null, hymn_id = null, difficulty = 'easy', why = null } = {}, from = null) {
+export function gameHash(type, { ref = null, hymn_id = null, difficulty = 'easy', why = null, src = null } = {}, from = null) {
   const q = new URLSearchParams();
   if (ref) { q.set('book', ref.book); q.set('chapter', ref.chapter); q.set('start', ref.start); q.set('end', ref.end); }
   if (hymn_id) q.set('hymn', hymn_id);
   q.set('difficulty', difficulty);
+  if (src) q.set('src', src === 'ai' ? 'ai' : 'skip'); // who chose the game: shown as a small badge
   if (why) q.set('why', String(why).slice(0, 160)); // shown only with "Show AI reasoning"
   if (from) q.set('from', from);
   return `#/game/${type}?${q}`;
@@ -59,9 +60,9 @@ export async function openGameFor(ctx, item, items, from, button = null) {
       ctx.go(target.hymn_id ? gameHash('trivia', target, from) : '#/games');
       return;
     }
-    const { game } = await curate('slide_game', { current: { ref: target.ref, hymn_id: target.hymn_id } });
+    const { game, source } = await curate('slide_game', { current: { ref: target.ref, hymn_id: target.hymn_id } });
     const type = GAME_TYPES.includes(game?.type) ? game.type : 'trivia';
-    ctx.go(gameHash(type, { ref: target.ref, difficulty: game?.difficulty ?? 'easy', why: game?.reason }, from));
+    ctx.go(gameHash(type, { ref: target.ref, difficulty: game?.difficulty ?? 'easy', why: game?.reason, src: source }, from));
   } finally {
     if (button?.isConnected) { button.disabled = false; if (label) label.textContent = before; }
   }
