@@ -56,6 +56,7 @@ async function player(root, number, ctx) {
     const p = audio.paused;
     pauseBtn.replaceChildren(icon(p ? 'play' : 'pause'));
     pauseBtn.setAttribute('aria-label', p ? 'Play' : 'Pause');
+    pauseBtn.classList.toggle('is-paused', p);
   };
   const againBtn = roundControl('again', 'Sing again');
   againBtn.addEventListener('click', () => { panel.restart(); setPauseIcon(); });

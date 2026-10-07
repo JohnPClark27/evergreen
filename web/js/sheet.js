@@ -77,11 +77,24 @@ const fieldRe = (f) => new RegExp(`^${f}:[ \\t]*(.*)\\r?\\n?`, 'gm');
 const takeField = (abc, f) => [...abc.matchAll(fieldRe(f))].map((m) => m[1].trim()).filter(Boolean);
 const dropField = (abc, f) => abc.replace(fieldRe(f), '');
 
-// - drop the file's print layout (%%pagewidth 21.6cm, %%scale 0.75, ...): we size it ourselves
+// Every abcjs text font: the app's sans-serif family, upright, 16px or more (DESIGN.md: no
+// serif, no italics, nothing under 12pt). abcjs's own defaults are Times New Roman, several
+// of them italic. The quotes let the whole fallback list through: abcjs strips them and uses
+// it as the SVG font-family.
+const FACE = '"Verdana, Helvetica, Calibri, sans-serif"';
+const SHEET_FONTS = Object.fromEntries(Object.entries({
+  titlefont: 24, subtitlefont: 18, composerfont: 16, vocalfont: 16, wordsfont: 16, textfont: 16,
+  annotationfont: 16, gchordfont: 16, historyfont: 16, infofont: 16, measurefont: 16,
+  partsfont: 16, repeatfont: 16, tempofont: 16, voicefont: 16, tripletfont: 16,
+  footerfont: 16, headerfont: 16,
+}).map(([key, size]) => [key, `${FACE} ${size}`]));
+
+// - drop the file's print layout (%%pagewidth 21.6cm, %%scale 0.75, ...) and fonts
+//   (%%vocalfont ...): we size and style it ourselves
 // - text blocks use a literal "\t" for indentation, which abcjs would print
 function cleanAbc(abc) {
   return abc
-    .replace(/^%%(pagewidth|pageheight|scale|staffsep|leftmargin|rightmargin|topmargin|botmargin)\b.*\r?\n?/gm, '')
+    .replace(/^%%(pagewidth|pageheight|scale|staffsep|leftmargin|rightmargin|topmargin|botmargin|\w*font)\b.*\r?\n?/gm, '')
     .replace(/^(%%.*|W:.*)$/gm, (line) => line.replace(/\\t/g, ' '));
 }
 
@@ -98,13 +111,13 @@ function renderPage(abcjs, abc, { label, into }) {
   into.append(wrap);
 
   // Long one-line fields would be drawn as unbreakable SVG text that runs off the page, so
-  // they go into wrapping HTML instead: the source note (S:) always, and on narrow screens
-  // the title (T:) and credits (C:) too.
+  // they go into wrapping HTML instead (which also gives them the app's readable text size):
+  // the credits (C:) and source note (S:) always, and on narrow screens the title (T:) too.
   const narrow = page.clientWidth < 600;
   let text = cleanAbc(abc);
   const titles = narrow ? takeField(text, 'T') : [];
-  const credits = takeField(text, narrow ? '[CS]' : 'S');
-  text = dropField(dropField(text, 'S'), narrow ? '[CT]' : 'S');
+  const credits = takeField(text, '[CS]');
+  text = dropField(text, narrow ? '[CST]' : '[CS]');
   if (titles.length) {
     const head = el('header', 'sheet-head');
     head.append(el('h3', '', titles[0]), ...titles.slice(1).map((t) => el('p', '', t)));
@@ -119,11 +132,7 @@ function renderPage(abcjs, abc, { label, into }) {
     add_classes: true,
     paddingleft: 0,
     paddingright: 0,
-    format: {
-      titlefont: 'Literata 22', subtitlefont: 'Literata 15', composerfont: 'Literata Italic 11',
-      vocalfont: 'Literata 13', wordsfont: 'Literata 13', textfont: 'Literata 13',
-      annotationfont: 'Literata Italic 11',
-    },
+    format: SHEET_FONTS,
   });
   if (credits.length) {
     const box = el('div', 'sheet-credits');
@@ -136,9 +145,9 @@ function renderPage(abcjs, abc, { label, into }) {
 // ---------- The cursor ----------
 //
 // Three layers, so "where are we" is obvious at a glance:
-//   1. a tinted column over the whole system (both staves + words) at the current note
-//   2. the note itself in solid accent colour
-//   3. a highlighter-style marker behind the current syllable
+//   1. a yellow column behind the whole system (both staves + words) at the current note
+//   2. the current syllable in bold
+//   3. a highlighter-style marker behind the current syllable (colours: core.css)
 function createCursor() {
   let column = null, marker = null, svg = null, lit = [], lineKey = null;
 

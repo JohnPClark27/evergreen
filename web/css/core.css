@@ -1,19 +1,30 @@
-/* core.css - design tokens (docs/PLAN_PROMPT.md section 4) + styles for the shared
-   components in web/js (lyrics.js, sheet.js). Screens (Phase 7) build on this. */
+/* core.css - design tokens (DESIGN.md, from the team style guide) + styles for the shared
+   components in web/js (lyrics.js, sheet.js). Screens (app.css, studio.css) build on this. */
 
 :root {
-  --bg: #F7F3EA;            /* sepia paper */
-  --surface: #FFFDF8;
-  --border: #E4DACA;
-  --border-strong: #CFC3AE;
-  --control-border: #958873; /* button/tile/input outlines: 3.1:1 on paper (WCAG 1.4.11 non-text contrast) */
-  --ink: #221E19;
-  --muted: #5A5248;
-  --accent: #7A2533;        /* burgundy */
-  --accent-soft: #F1E3E2;
-  --highlight: #F6E1A6;     /* current word / verse */
-  --font-read: 'Literata', Georgia, serif;
-  --font-ui: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  /* The five style-guide colours. Use no others (DESIGN.md "Colors"). */
+  --forest: #1B3A2A;
+  --cream: #FFF9ED;
+  --yellow: #FFE57A;
+  --green: #4F9B60;
+  --sage: #B9C8A2;
+
+  /* Roles: screens use these, never the hex values. */
+  --bg: var(--cream);              /* the page */
+  --surface: var(--cream);         /* cards, buttons, inputs */
+  --ink: var(--forest);            /* ALL normal-size text (11.9:1 on cream) */
+  --ink-soft: var(--green);        /* de-emphasised text, 24px+ only (3.2:1): sung lyric words */
+  --primary: var(--forest);        /* primary buttons and tiles */
+  --on-primary: var(--cream);      /* text and icons on --primary */
+  --highlight: var(--yellow);      /* accent: current word/verse, selected, "press this next" */
+  --tag: var(--sage);              /* tags, badges, empty progress track (forest text on it) */
+  --line: var(--sage);             /* card edges and dividers (decorative, not a control's edge) */
+  --control-border: var(--green);  /* outlines of buttons/tiles/inputs: 3.2:1 (WCAG 1.4.11) */
+  --focus: var(--forest);          /* keyboard focus ring */
+  --backdrop: rgb(27 58 42 / 0.45); /* forest green behind dialogs */
+
+  /* One sans-serif family everywhere; system fonts, nothing downloaded. */
+  --font: Verdana, Helvetica, Calibri, sans-serif;
   --touch: 64px;            /* minimum touch target */
   --text-session: 28px;     /* minimum session text */
 }
@@ -21,31 +32,61 @@
 * { box-sizing: border-box; }
 /* `hidden` always hides, even on elements whose class sets a display (e.g. .badge). */
 [hidden] { display: none !important; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-ui); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); }
+
+/* ---- Form controls: drawn in the palette instead of the browser's grey and white ---- */
+input[type=checkbox], input[type=radio] {
+  appearance: none; -webkit-appearance: none; margin: 0; flex: none; cursor: pointer;
+  width: 24px; height: 24px; display: inline-grid; place-content: center;
+  border: 2px solid var(--control-border); border-radius: 6px; background: var(--surface);
+}
+input[type=radio] { border-radius: 50%; }
+input[type=checkbox]:checked { background: var(--primary); border-color: var(--primary); }
+input[type=checkbox]:checked::before {  /* the tick */
+  content: ''; width: 14px; height: 14px; background: var(--on-primary);
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+input[type=radio]:checked { border-color: var(--primary); }
+input[type=radio]:checked::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
+input[type=checkbox]:disabled, input[type=radio]:disabled { opacity: 0.45; cursor: default; }
+/* Range (volume): a green track and a big forest thumb. */
+input[type=range] { appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { height: 10px; border-radius: 5px; background: var(--control-border); }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 36px; height: 36px; margin-top: -13px; border-radius: 50%;
+  background: var(--primary); border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--primary);
+}
+input[type=range]::-moz-range-track { height: 10px; border-radius: 5px; background: var(--control-border); }
+input[type=range]::-moz-range-thumb {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--primary); border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--primary);
+}
 
 /* ---- Lyrics (lyrics.js) ---- */
 .lyric-stanza { margin: 0 0 1.2em; }
-.lyric-line { font-family: var(--font-read); font-size: var(--text-session); line-height: 1.45; margin: 0.1em 0; }
+.lyric-line { font-size: var(--text-session); line-height: 1.6; margin: 0.1em 0; }
 .lyric-word { border-radius: 6px; padding: 0 2px; transition: background-color 120ms; }
-.lyric-word.sung { color: var(--muted); }
+.lyric-word.sung { color: var(--ink-soft); }
 .lyric-word.now { background: var(--highlight); color: var(--ink); }
-.lyric-intro .lyric-word { color: var(--muted); }
-.lyric-note { color: var(--muted); font-size: 20px; }
+.lyric-intro .lyric-word { color: var(--ink-soft); }
+.lyric-note { font-size: 20px; }
 
 /* ---- Sheet music (sheet.js) ---- */
 .sheet-page { margin: 0 0 24px; }
-.sheet-page-label { color: var(--muted); margin: 0 0 6px; }
-.sheet-paper { background: #fff; color: #000; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
-.sheet-head h3 { margin: 0; font-family: var(--font-read); }
-.sheet-credits { color: #444; font-size: 13px; }
-.sheet-message { color: var(--muted); }
-.sheet-cursor { fill: var(--accent); opacity: 0.12; transition: transform 180ms ease-out; }
+.sheet-page-label { margin: 0 0 6px; }
+/* abcjs draws in currentColor, so the notes come out forest green on cream. */
+.sheet-paper { background: var(--surface); color: var(--ink); border: 2px solid var(--line); border-radius: 8px; padding: 16px; }
+/* Safety net: any text abcjs draws (lyrics, tempo, bar numbers) uses our font, upright. */
+.sheet-paper svg text { font-family: var(--font); font-style: normal; }
+.sheet-head h3 { margin: 0; }
+.sheet-credits { font-size: 19px; line-height: 1.5; }
+/* Both rects sit behind the music: a yellow column at the current note, and a forest marker
+   behind the current syllable, which turns cream (the strongest pair in the palette). */
+.sheet-cursor { fill: var(--highlight); transition: transform 180ms ease-out; }
 .sheet-cursor.jump { transition: none; }
-.sheet-marker { fill: var(--highlight); }
-/* Only the note's own shapes and the CURRENT syllable: colouring the whole note group would
-   also colour every other stanza's syllable under that note (the group contains the lyrics). */
-g.sheet-now path { fill: var(--accent); }
-tspan.sheet-now { fill: var(--accent); font-weight: 600; }
+.sheet-marker { fill: var(--primary); }
+/* Only the CURRENT syllable: the note group also holds every other stanza's syllable. */
+tspan.sheet-now { fill: var(--on-primary); font-weight: 700; }
 
 /* ---- Read-aloud highlight (screens add .reading to the current verse/line) ---- */
 .reading { background: var(--highlight); border-radius: 6px; }

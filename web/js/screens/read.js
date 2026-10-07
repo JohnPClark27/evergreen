@@ -49,6 +49,7 @@ export async function render(root, params, ctx) {
     pauseBtn.disabled = e.detail === 'idle';
     pauseBtn.replaceChildren(icon(e.detail === 'paused' ? 'play' : 'pause'));
     pauseBtn.setAttribute('aria-label', e.detail === 'paused' ? 'Continue reading' : 'Pause');
+    pauseBtn.classList.toggle('is-paused', e.detail === 'paused');
   };
   speaker.addEventListener('segment', onSegment);
   speaker.addEventListener('end', onEnd);
