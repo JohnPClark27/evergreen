@@ -9,7 +9,7 @@
 // Today's list is kept in sessionStorage so the list and the player show the same parts.
 import * as api from '../api.js';
 import { nextStudy } from '../plan-progress.js';
-import { curate } from '../curate.js';
+import { clearCurateCache, curate } from '../curate.js';
 import { engagement } from '../engagement.js';
 import { gameHash, gameTarget } from '../game-link.js';
 import { runStudy } from '../runner.js';
@@ -56,7 +56,7 @@ async function buildDay(ctx, fresh = false) {
   let day = readDay();
   if (fresh || !day || day.key !== key) {
     const isNew = engagement.isNew();
-    const { suggestions, source } = await curate('my_day', { current: studyContext(study) });
+    const { suggestions, source } = await curate('my_day', { current: studyContext(study), fresh });
     day = { key, suggestions, source, isNew };
     writeDay(day);
   }
@@ -74,12 +74,12 @@ function studyContext(study) {
 }
 
 export async function render(root, params, ctx) {
-  return params.arg === 'play' ? play(root, ctx) : list(root, ctx);
+  return params.arg === 'play' ? play(root, ctx) : list(root, ctx, params.fresh === '1');
 }
 
-async function list(root, ctx) {
+async function list(root, ctx, fresh) {
   const showReasons = ctx.store.settings().showReasons === true;
-  const [{ plan, study, day, items }, catalog] = await Promise.all([buildDay(ctx), api.getCatalog()]);
+  const [{ plan, study, day, items }, catalog] = await Promise.all([buildDay(ctx, fresh), api.getCatalog()]);
   const lib = {
     hymns: catalog.hymns, prayers: catalog.prayers,
     hymn: (id) => catalog.hymns.find((x) => x.id === Number(id)),
@@ -125,7 +125,7 @@ async function list(root, ctx) {
         : h('p', { class: 'big-text' }, 'Nothing is ready yet.'),
       h('ol', { class: 'study-list' }, rows),
       h('div', { class: 'row' },
-        h('button', { class: 'pill', type: 'button', onclick: async () => { clearDay(); ctx.go(`#/myday?r=${Date.now()}`); } },
+        h('button', { class: 'pill', type: 'button', onclick: () => ctx.go(`#/myday?fresh=1&r=${Date.now()}`) },
           icon('again'), h('span', { class: 'label' }, 'New suggestions')),
         h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/studies') },
           h('span', { class: 'label' }, 'Choose a study plan'))))));
@@ -146,6 +146,7 @@ async function play(root, ctx) {
     onFinish: () => {
       for (const it of items) engagement.record(it.module_type, it.config, 'finished');
       clearDay();
+      clearCurateCache(); // the next My Day asks again, with what was just done
       if (plan && study) ctx.store.finishStudy(plan.id, plan.title, study.key, study.title);
       else ctx.store.clearStudyStep();
       ctx.go('#/done');

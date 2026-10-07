@@ -148,6 +148,23 @@ export const getCatalog = () => memo(cache.queries, 'catalog', async () => {
   return { hymns: hymns.filter((x) => x.audio_path), prayers, refs: [...refs.values()] };
 });
 
+// ---------- AI curation (Edge Function `curate`) ----------
+
+/** POST to the curate function with a time limit. Throws on any failure: callers fall back. */
+export async function callCurate(body, timeoutMs = 5000) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/curate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal,
+    });
+    if (!res.ok) throw new Error(`curate ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ---------- Storage ----------
 
 export function storageUrl(bucket, key) {

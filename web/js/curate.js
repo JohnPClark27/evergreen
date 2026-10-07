@@ -49,11 +49,70 @@ export function fallback(context, catalog, current = {}, reason = NEW_REASON) {
   return { suggestions: shown, game, source: 'fallback' };
 }
 
-/** Get suggestions for a context. Never throws; falls back quietly. */
-export async function curate(context, { current = {} } = {}) {
+const CACHE = 'hr.curate'; // sessionStorage: { [context + current]: result }, so navigating back doesn't re-ask
+
+function cached(key) { try { return JSON.parse(sessionStorage.getItem(CACHE))?.[key] ?? null; } catch { return null; } }
+function cache(key, value) {
+  try {
+    const all = JSON.parse(sessionStorage.getItem(CACHE) ?? '{}');
+    all[key] = value;
+    sessionStorage.setItem(CACHE, JSON.stringify(all));
+  } catch { /* fine without a cache */ }
+}
+export function clearCurateCache() { try { sessionStorage.removeItem(CACHE); } catch { /* fine */ } }
+
+/** The function's answer -> playable items, re-checked against this tablet's catalog. */
+function fromServer(res, catalog, context) {
+  const has = {
+    hymn: new Set(catalog.hymns.map((x) => String(x.id))),
+    prayer: new Set(catalog.prayers.map((x) => String(x.id))),
+    ref: new Set(catalog.refs.map(refKey)),
+  };
+  const known = (type, id) => (type === 'hymn' ? has.hymn.has(id) : type === 'prayer' ? has.prayer.has(id)
+    : (type === 'scripture' || GAME_TYPES.includes(type)) && has.ref.has(id));
+  const suggestions = (res.suggestions ?? [])
+    .filter((s) => known(s.module_type, String(s.id_or_ref)))
+    .map((s) => ({ module_type: s.module_type, config: configFor(s.module_type, String(s.id_or_ref)), reason: String(s.reason ?? '') }))
+    .filter((s) => s.config && !engagement.skipped(s.module_type, s.config));
+  const g = res.game;
+  const gameRef = g && parseRefKey(g.ref);
+  const game = g && GAME_TYPES.includes(g.type) && gameRef
+    ? { type: g.type, difficulty: g.difficulty === 'normal' ? 'normal' : 'easy', ref: gameRef, reason: String(g.reason ?? '') } : null;
+  if (context === 'my_day' ? !suggestions.length : !game) return null;
+  return { suggestions, game, source: res.source === 'ai' ? 'ai' : 'fallback' };
+}
+
+/**
+ * Get suggestions for a context. Never throws and never waits more than ~5 s: on a slow or
+ * failed call it quietly uses the random fallback.
+ * current: { ref?: {book, chapter, start, end}, hymn_id? }   fresh: skip the session cache.
+ */
+export async function curate(context, { current = {}, fresh = false } = {}) {
   let catalog;
   try { catalog = await api.getCatalog(); } catch { return { suggestions: [], game: null, source: 'none' }; }
-  return fallback(context, catalog, current);
+  const currentRef = current.ref ? refKey(current.ref) : null;
+  const key = `${context}|${currentRef ?? ''}|${current.hymn_id ?? ''}`;
+  if (!fresh) {
+    const hit = cached(key);
+    if (hit) return hit;
+  }
+  let result = null;
+  try {
+    const res = await api.callCurate({
+      action: 'curate',
+      context,
+      history: engagement.summary(catalog.hymns),
+      current: { ref: currentRef ?? undefined, hymn_id: current.hymn_id ?? undefined },
+      catalog: { hymns: catalog.hymns.map((x) => x.id), prayers: catalog.prayers.map((x) => x.id), refs: catalog.refs.map(refKey) },
+    });
+    result = fromServer(res, catalog, context);
+  } catch (err) {
+    console.info('curate: using the fallback', err.message); // info, not error: this is expected when offline
+  }
+  result ??= fallback(context, catalog, current);
+  if (context === 'slide_game' && result.game && current.ref) result.game.ref = current.ref; // stay on the slide's passage
+  cache(key, result);
+  return result;
 }
 
 /** A suggestion's "what is it about" string for the history (hymn id or ref key). */
