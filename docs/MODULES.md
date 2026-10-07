@@ -17,7 +17,14 @@ Each module is **one file** in `web/modules/`. The same file serves both apps:
 | `prayer` | Prayer | a library prayer, read line by line, with its source | `{ prayer_id }` (library only) |
 | `note` | Note | the author's own words in large print, read aloud if chosen | `{ title, text, read_aloud }` |
 | `quiz` | Quiz | one question at a time with big answers. The answer is **revealed gently**; nothing is scored | `{ title, read_aloud, questions: [{ q, choices[4], answer }] }` |
+| `word-search` | Word Search | a 6×6 (easy: across/down) or 8×8 (normal: + diagonal) grid of words from a passage; tap first then last letter; word bank always shown | `{ book, chapter, start, end, difficulty }` (a **reference only**) |
+| `crossword` | Crossword | 4–6 words from a passage; each clue is the verse with that word left out; "Show a letter" / "Show the word" | same |
+| `trivia` | Bible Trivia | 3 questions about what the passage says (AI-written from the fetched text, every answer checked word for word; else fill-in-the-blank built on the tablet); the verse is shown after each answer | same |
 | `finish-line` | Finish the Line | a hymn line with the last words hidden. "Play the line" plays just that line; "Show the words" reveals them | `{ hymn_id, stanza, lines }` |
+
+The three games share `game-common.js` (editor, passage loading, word picking, a seeded
+random generator so the same passage gives the same puzzle, and the trivia answer check).
+The database refuses anything but a reference + difficulty in their config (migration 0009).
 
 ## Add a module in 3 steps
 
