@@ -49,6 +49,7 @@ export const ICON = {
   thumbsDown: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 14h-4V3h4zM16 3H6.8a2 2 0 0 0-1.96 1.6l-1.4 7A2 2 0 0 0 5.4 14H10l-.9 4.3a1.6 1.6 0 0 0 1.6 1.9L16 14z"/></svg>',
   game: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4v3a2 2 0 1 0 4 0V3h3v18h-6v-3a2 2 0 1 0-4 0v3H3V10h3a2 2 0 1 0 0-4H3V3z"/></svg>',
   sparkle: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.2 6.3L21 10l-6.8 1.7L12 18l-2.2-6.3L3 10l6.8-1.7z"/></svg>',
+  book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5C5.8 4.3 8.8 4.4 11 6v14c-2.2-1.5-5.2-1.6-8-.5zM21 5.5C18.2 4.3 15.2 4.4 13 6v14c2.2-1.5 5.2-1.6 8-.5z"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>',
 };
 

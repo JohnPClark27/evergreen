@@ -13,13 +13,15 @@ export const MOODS = [
   { level: 5, label: 'Having a hard day', mouth: 'M18 49 Q32 36 46 49' },
 ];
 
-/** Draft example passages per mood (book, chapter, first and last verse). Pastor to review. */
+/** Draft example passages per mood (book, chapter, first and last verse). Pastor to review.
+ * Kept to 1–3 verses: a verse of the day must fit on screen in large print without
+ * scrolling (older readers may not notice text below the fold). "Read" opens the chapter. */
 export const MOOD_EXAMPLES = {
-  1: [['PSA', 100, 1, 5], ['PHP', 4, 4, 7], ['PSA', 103, 1, 5], ['PSA', 150, 1, 6]],
-  2: [['PSA', 23, 1, 6], ['LAM', 3, 22, 24], ['PSA', 136, 1, 4], ['PSA', 121, 1, 8]],
-  3: [['PSA', 121, 1, 8], ['ISA', 40, 28, 31], ['MAT', 6, 25, 27], ['PSA', 46, 1, 3]],
-  4: [['PSA', 46, 1, 3], ['MAT', 11, 28, 30], ['ISA', 41, 10, 13], ['PSA', 62, 5, 8]],
-  5: [['PSA', 34, 17, 18], ['ISA', 43, 1, 2], ['JHN', 14, 1, 3], ['2CO', 1, 3, 4], ['PSA', 42, 11, 11]],
+  1: [['PSA', 100, 1, 2], ['PHP', 4, 4, 5], ['PSA', 118, 24, 24], ['PSA', 103, 1, 2]],
+  2: [['PSA', 23, 1, 3], ['LAM', 3, 22, 23], ['PSA', 136, 1, 1], ['PSA', 121, 1, 2]],
+  3: [['PSA', 121, 7, 8], ['ISA', 40, 29, 31], ['PSA', 46, 10, 10], ['MAT', 6, 34, 34]],
+  4: [['PSA', 46, 1, 1], ['MAT', 11, 28, 29], ['ISA', 41, 10, 10], ['PSA', 62, 5, 6]],
+  5: [['PSA', 34, 18, 18], ['ISA', 43, 1, 2], ['JHN', 14, 1, 1], ['2CO', 1, 3, 4], ['PSA', 42, 11, 11]],
 };
 
 export const moodFor = (level) => MOODS.find((m) => m.level === Number(level)) ?? null;
