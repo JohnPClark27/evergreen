@@ -19,6 +19,17 @@ export async function render(root, _params, ctx) {
     }, label)));
   }
 
+  // ---- Show AI reasoning (for the aide, and for judges): why each suggestion was picked ----
+  const reasons = h('div', { class: 'choice-row', role: 'radiogroup', 'aria-label': 'Show AI reasoning' });
+  function drawReasons() {
+    const on = store.settings().showReasons === true;
+    reasons.replaceChildren(...[[false, 'Off'], [true, 'On']].map(([value, label]) => h('button', {
+      class: `pill${on === value ? ' selected' : ''}`, type: 'button', role: 'radio',
+      'aria-checked': String(on === value),
+      onclick: () => { store.setSettings({ showReasons: value }); drawReasons(); },
+    }, label)));
+  }
+
   // ---- Reading speed ----
   const speed = h('div', { class: 'choice-row', role: 'radiogroup', 'aria-label': 'Reading speed' });
   function drawSpeed() {
@@ -55,7 +66,7 @@ export async function render(root, _params, ctx) {
   const resetBtn = h('button', {
     class: 'pill', type: 'button',
     onclick: async () => {
-      if (await confirmDialog('Reset all notes on this tablet? “Enjoyed” and “Skip” marks on hymns and studies will be cleared.', { yes: 'Reset notes' })) {
+      if (await confirmDialog('Reset all notes on this tablet? “Enjoyed” and “Skip” marks on hymns, studies, suggestions and games will be cleared, with what My Day has learned.', { yes: 'Reset notes' })) {
         store.resetNotes();
         notesStatus.textContent = 'Notes were reset.';
       }
@@ -82,9 +93,14 @@ export async function render(root, _params, ctx) {
         h('div', { class: 'choice-row' }, voiceSelect, testVoice),
         voices.length ? null : h('p', { class: 'muted' }, 'This browser has no voices installed for reading aloud.')),
       h('section', {},
+        h('h2', {}, 'Show AI reasoning'), reasons,
+        h('p', { class: 'muted' }, 'Shows why each “Added for you” part and “Picked for you” game was chosen. '
+          + 'The AI only picks from published hymns, prayers and Bible passages; it never writes them.')),
+      h('section', {},
         h('h2', {}, 'Notes'), resetBtn, notesStatus,
         h('p', { class: 'muted' }, 'Notes stay on this tablet. No names are saved.')))));
   drawAloud();
+  drawReasons();
   drawSpeed();
   return () => speaker.stop();
 }

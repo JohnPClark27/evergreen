@@ -5,6 +5,8 @@
 //   #/study/12/3  Study 3 of plan 12
 //   #/done        Session finished         #/aide        Aide tools
 //   #/read        Read the Bible
+//   #/myday       My Day (today's study + "Added for you")   #/myday/play  play it
+//   #/games       Games hub    #/game/<type>?book=…  one game    #/prayers[/<id>]  Prayers
 import { AudioPlayer } from './audio.js';
 import { Speaker, localVoices } from './speech.js';
 import { store } from './store.js';
@@ -18,6 +20,10 @@ import * as done from './screens/done.js';
 import * as sing from './screens/sing.js';
 import * as aide from './screens/aide.js';
 import * as read from './screens/read.js';
+import * as myday from './screens/myday.js';
+import * as games from './screens/games.js';
+import * as game from './screens/game.js';
+import * as prayers from './screens/prayers.js';
 
 const settings = store.settings();
 const audio = new AudioPlayer({ volume: settings.volume });
@@ -62,6 +68,12 @@ const ROUTES = [
   [/^\/sing\/(\d+)$/, sing, true],
   [/^\/aide$/, aide, false],
   [/^\/read$/, read, true],
+  [/^\/myday$/, myday, false],
+  [/^\/myday\/(play)$/, myday, true],
+  [/^\/games$/, games, false],
+  [/^\/game\/(word-search|crossword|trivia)$/, game, false],
+  [/^\/prayers$/, prayers, false],
+  [/^\/prayers\/(\d+)$/, prayers, true],
 ];
 
 const root = document.getElementById('app');
@@ -96,9 +108,12 @@ async function route() {
     return;
   }
 
-  root.replaceChildren();
+  // Each render gets its own slot: a slow screen that finishes after the aide has already
+  // moved on draws into its detached slot, never on top of the new screen.
+  const slot = h('div', { class: 'route-slot' });
+  root.replaceChildren(slot);
   try {
-    const result = await screen.render(root, params, ctx);
+    const result = await screen.render(slot, params, ctx);
     if (id === renderId) cleanup = result ?? null;
     else result?.();
   } catch (err) {

@@ -23,7 +23,9 @@ async function grid(root, page, ctx) {
     h('header', { class: 'topbar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Sing a Hymn'),
-      h('p', { class: 'day' }, pages > 1 ? `Page ${page + 1} of ${pages}` : '')),
+      h('p', { class: 'day' }, pages > 1 ? `Page ${page + 1} of ${pages}` : ''),
+      // Worship's second section: the prayer library.
+      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/prayers') }, h('span', { class: 'label' }, 'Prayers'), icon('next'))),
     shown.length
       ? h('div', { class: 'hymn-grid' }, shown.map((x) => h('button', {
         class: 'hymn-tile', type: 'button',

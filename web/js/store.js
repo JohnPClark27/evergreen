@@ -9,6 +9,8 @@ const KEYS = {
   studyNotes: 'hr.studyNotes', // { [planId]: 'enjoyed' | 'skip' }      (Choose a Study)
   settings: 'hr.settings',   // { rate, volume, voiceName }
   last: 'hr.lastStudy',      // { planId, title, studyKey, studyTitle } for the "finished" screen
+  itemNotes: 'hr.itemNotes', // { [itemKey]: 'enjoyed' | 'skip' }  (My Day suggestions, games; see engagement.js)
+  activity: 'hr.activity',   // { [itemKey]: { type, opened, finished, played } }  counts only, no dates or names
 };
 
 function read(key, fallback) {
@@ -74,10 +76,34 @@ export const store = {
     write(KEYS.studyNotes, notes);
   },
 
-  /** Aide tools "Reset notes": clears hymn AND study notes. */
-  resetNotes() { remove(KEYS.notes); remove(KEYS.studyNotes); },
+  /** Notes on any item by its key (e.g. "hymn:12", "scripture:PSA.23.1-4", "trivia:PSA.23.1-4"). */
+  itemNotes: () => read(KEYS.itemNotes, {}),
+  setItemNote(key, note) {
+    const notes = store.itemNotes();
+    if (note) notes[key] = note; else delete notes[key];
+    write(KEYS.itemNotes, notes);
+  },
+
+  /** How often each item was opened / finished / played on this tablet (counts only). */
+  activity: () => read(KEYS.activity, {}),
+  countActivity(key, type, what) {
+    const all = store.activity();
+    const a = all[key] ?? { type, opened: 0, finished: 0, played: 0 };
+    a[what] = (a[what] ?? 0) + 1;
+    all[key] = a;
+    // Keep it small: only the 60 most recently touched items (insertion order = recency).
+    delete all[key];
+    all[key] = a;
+    const keys = Object.keys(all);
+    for (const k of keys.slice(0, Math.max(0, keys.length - 60))) delete all[k];
+    write(KEYS.activity, all);
+  },
+
+  /** Aide tools "Reset notes": clears hymn, study and item notes, and the activity counts. */
+  resetNotes() { remove(KEYS.notes); remove(KEYS.studyNotes); remove(KEYS.itemNotes); remove(KEYS.activity); },
 
   // readAloud: off by default in studies (built-in voices still sound robotic); the aide can turn it on.
-  settings: () => read(KEYS.settings, { rate: 'slow', volume: 0.8, voiceName: null, readAloud: false }),
+  // showReasons: Aide tools' "Show AI reasoning" (why each suggestion was picked), off by default.
+  settings: () => read(KEYS.settings, { rate: 'slow', volume: 0.8, voiceName: null, readAloud: false, showReasons: false }),
   setSettings: (changes) => write(KEYS.settings, { ...store.settings(), ...changes }),
 };

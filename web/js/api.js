@@ -123,6 +123,31 @@ export const getPrayerById = async (id) => (await getPrayers()).find((x) => x.id
 export const getPrayers = () =>
   memo(cache.queries, 'prayers', () => rows(db.from('prayers').select(PRAYER_FIELDS).order('title')));
 
+// ---------- Catalog (for AI curation and games) ----------
+
+/**
+ * Everything a suggestion may point at, all published: { hymns, prayers, refs }.
+ * refs: [{ book, chapter, start, end }] from published study plans' Scripture modules, then
+ * published hymns' Scripture references (passages of 2–12 verses). References only, no text.
+ */
+export const getCatalog = () => memo(cache.queries, 'catalog', async () => {
+  const [hymns, prayers, planItems, hymnRefs] = await Promise.all([
+    getHymns(),
+    getPrayers(),
+    rows(db.from('study_plan_items').select('config').eq('module_type', 'scripture')).catch(() => []),
+    rows(db.from('hymn_scripture_refs').select('book,chapter,verse_start,verse_end')
+      .not('verse_start', 'is', null).not('verse_end', 'is', null).limit(2000)).catch(() => []),
+  ]);
+  const refs = new Map();
+  const add = (book, chapter, start, end) => {
+    if (!book || !chapter || !start || !end || end < start || end - start > 11) return;
+    refs.set(`${book}.${chapter}.${start}-${end}`, { book, chapter, start, end });
+  };
+  for (const { config: c } of planItems) add(c?.book, c?.chapter, c?.start, c?.end);
+  for (const r of hymnRefs) if (r.verse_end > r.verse_start) add(r.book, r.chapter, r.verse_start, r.verse_end);
+  return { hymns: hymns.filter((x) => x.audio_path), prayers, refs: [...refs.values()] };
+});
+
 // ---------- Storage ----------
 
 export function storageUrl(bucket, key) {

@@ -13,8 +13,9 @@ const text = (sel) => page.locator(sel).first().innerText().catch(() => '');
 
 await page.goto(BASE);
 await page.getByRole('heading', { name: 'Welcome.' }).waitFor(); await page.waitForTimeout(800);
-ok((await page.locator('.tile').count()) === 3, 'home: 3 tiles');
-await page.getByRole('button', { name: /Choose a Study Plan/ }).click();
+ok((await page.locator('.tile').count()) === 4, 'home: 4 tiles (My Day, Read Scripture, Worship, Games)');
+await page.getByRole('button', { name: /My Day/ }).click(); // Home → My Day → Choose a study plan
+await page.getByRole('button', { name: 'Choose a study plan' }).click();
 await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
 ok((await page.locator('.study-tile').count()) >= 1, 'plan list: ' + await page.locator('.study-tile').count() + ' cards');
 // Prefer the test plan from fixture_all_modules.py when it's there; else the first plan.
@@ -54,7 +55,7 @@ await page.locator('.study-tile').first().waitFor();
 ok((await page.locator('.study-tile').first().innerText()).includes('Enjoyed before'), `enjoyed plan listed first (${first})`);
 await page.getByRole('button', { name: 'Home' }).click();
 await page.getByRole('heading', { name: 'Welcome.' }).waitFor();
-await page.getByRole('button', { name: /Sing a Hymn/ }).click();
+await page.getByRole('button', { name: /Worship/ }).click();
 await page.locator('.hymn-tile').first().waitFor();
 ok((await page.locator('.hymn-tile').count()) === 9, 'sing: 3x3 grid');
 await page.locator('.hymn-tile').nth(1).click();

@@ -23,7 +23,8 @@ for (let i = 0; i < 6; i++) {
 }
 console.log('\nkeyboard tab order (home):\n  ' + stops.join('\n  '));
 console.log('Enter on:', await page.evaluate(() => document.activeElement.textContent.trim().slice(0, 25)));
-await page.keyboard.press('Enter'); // activates "Choose a Study Plan" by keyboard
+await page.keyboard.press('Enter'); // activates the first stop by keyboard
+await page.goto(BASE + '#/studies');
 await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
 await audit('choose a study plan');
 // The test plan (fixture_all_modules.py) has every module type; else the first plan.

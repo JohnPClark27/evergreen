@@ -12,12 +12,16 @@
 // Used by the tablet (#/study/<id>) and the Studio's preview, so authors see the real thing.
 import * as api from './api.js';
 import { moduleFor } from '../modules/index.js';
+import { GAME_TYPES } from './curate.js';
+import { engagement } from './engagement.js';
 import { h, icon, roundControl } from './ui.js';
 
 /**
  * plan: { id, title, subtitle?, items: [{ module_type, config }] }  (one study: its modules in order)
  * ctx:  { audio, speaker } (+ store, for resuming)
- * opts: { onExit(), onFinish(), exitLabel, startAt, onStep(index) }
+ * opts: { onExit(), onFinish(), exitLabel, startAt, onStep(index), onGame(item, items) }
+ *   onGame: if given, every non-game part gets a "Play a game about this" button.
+ *   Items may carry { suggested: true, reason } (My Day's "Added for you" parts).
  * Returns a cleanup function.
  */
 export async function runStudy(root, plan, ctx, opts = {}) {
@@ -89,7 +93,8 @@ export async function runStudy(root, plan, ctx, opts = {}) {
 
     const item = items[index];
     const mod = item && moduleFor(item.module_type);
-    where.textContent = items.length ? `Part ${index + 1} of ${items.length} · ${mod?.name ?? 'Part'}` : '';
+    where.textContent = items.length
+      ? `Part ${index + 1} of ${items.length} · ${mod?.name ?? 'Part'}${item?.suggested ? ' · Added for you' : ''}` : '';
     bar.replaceChildren(...items.map((_, k) => h('span', { class: k < index ? 'done' : k === index ? 'now' : '' })));
     backBtn.disabled = index === 0;
     nextBtn.querySelector('.label').textContent = index >= items.length - 1 ? 'Finish' : 'Next';
@@ -122,7 +127,12 @@ export async function runStudy(root, plan, ctx, opts = {}) {
     controller = c ?? null;
     if (controller?.musicUrl) musicUrl = controller.musicUrl;
     againBtn.querySelector('.label').textContent = controller?.againLabel ?? 'Again';
-    tools.replaceChildren(...(controller?.tools ?? []));
+    engagement.record(item.module_type, item.config, GAME_TYPES.includes(item.module_type) ? 'played' : 'opened');
+    // A quiet extra: a game about this part (not on a part that is already a game).
+    const gameBtn = opts.onGame && !GAME_TYPES.includes(item.module_type) && roundControl('game', 'Play a game about this');
+    gameBtn?.classList.add('game-ctl');
+    gameBtn?.addEventListener('click', () => opts.onGame(item, items));
+    tools.replaceChildren(...(controller?.tools ?? []), ...(gameBtn ? [gameBtn] : []));
     refreshAgain();
     stage.focus({ preventScroll: true });
   }
@@ -173,6 +183,6 @@ export async function runStudy(root, plan, ctx, opts = {}) {
 
 /** Rough minutes for a plan (shown on the tablet's study cards). */
 export function estimateMinutes(types) {
-  const per = { hymn: 3, scripture: 1.5, prayer: 1, note: 1, quiz: 2, 'finish-line': 3 };
+  const per = { hymn: 3, scripture: 1.5, prayer: 1, note: 1, quiz: 2, 'finish-line': 3, 'word-search': 4, crossword: 4, trivia: 3 };
   return Math.max(1, Math.round(types.reduce((sum, t) => sum + (per[t] ?? 1.5), 0)));
 }

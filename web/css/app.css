@@ -319,3 +319,63 @@ button { cursor: pointer; }
 /* ---------- Read-aloud switch in the study top bar (off by default) ---------- */
 .voice-toggle { white-space: nowrap; font-size: 19px; }
 .voice-toggle.on { background: var(--highlight); border-color: var(--ink); color: var(--ink); }
+
+/* ---------- Home: four tiles + Aide tools in the corner ---------- */
+.home { position: relative; }
+.tiles.four { grid-template-columns: repeat(2, 1fr); max-width: 980px; }
+.tiles.four .tile { min-height: 200px; }
+.aide-link.corner { position: absolute; top: 12px; right: 16px; }
+
+/* ---------- AI: "Added for you" / "Picked for you" (soft yellow), reasons ---------- */
+.tag.added {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 0;
+  background: var(--highlight); color: var(--ink); border: 2px solid var(--ink);
+}
+.tag.added .icon { width: 20px; height: 20px; }
+.reason { font-size: 19px; line-height: 1.5; border-left: 4px solid var(--highlight); padding-left: 10px; }
+
+/* ---------- My Day ---------- */
+.day-row {
+  display: flex; align-items: center; gap: 18px; min-height: 88px; padding: 14px 20px;
+  border-radius: 18px; border: 2px solid var(--line); background: var(--surface);
+}
+.day-row.suggested { border: 3px dashed var(--ink); }
+.day-row-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: none; }
+.day-row .thumbs { justify-content: flex-end; }
+
+/* ---------- Games ---------- */
+.game-grid {
+  flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 16px; align-content: start;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px; margin: -4px;
+}
+.game-tile {
+  min-height: 200px; border-radius: 24px; border: 2px solid var(--control-border); background: var(--surface);
+  color: var(--ink); padding: 22px 26px; text-align: left; display: flex; flex-direction: column; gap: 8px;
+}
+.game-tile.picked { grid-column: 1 / -1; min-height: 150px; border: 3px solid var(--ink); box-shadow: 0 0 0 5px var(--highlight); }
+.game-tile:disabled { cursor: default; }
+.game-tile-icon { font-size: 44px; line-height: 1; font-weight: 700; }
+.game-tile-title { font-size: 30px; font-weight: 700; line-height: 1.3; margin-top: auto; }
+.game-tile-sub { font-size: 20px; line-height: 1.5; }
+.game .title { font-size: 34px; margin-bottom: 12px; }
+.game-ref { border-top: 2px solid var(--line); padding-top: 12px; }
+.game-screen .bottombar { min-height: 96px; }
+.ctl.game-ctl { font-size: 19px; }
+
+/* Word search */
+.ws-wrap { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+.ws-grid { display: grid; gap: 6px; width: min(560px, 100%); }
+.ws-cell {
+  aspect-ratio: 1; min-width: 56px; min-height: 56px; border-radius: 12px; border: 2px solid var(--control-border);
+  background: var(--surface); color: var(--ink); font-size: 30px; font-weight: 700; padding: 0;
+}
+.ws-bank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: var(--text-session); font-weight: 700; }
+
+@media (orientation: portrait), (max-width: 900px) {
+  .tiles.four { grid-template-columns: 1fr; }
+  .tiles.four .tile { min-height: 130px; }
+  .game-grid { grid-template-columns: minmax(0, 1fr); }
+  .day-row { flex-wrap: wrap; }
+  .day-row-side { flex-direction: row; align-items: center; width: 100%; justify-content: flex-start; }
+}
+.route-slot { display: contents; }
