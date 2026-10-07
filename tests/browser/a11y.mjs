@@ -13,7 +13,7 @@ async function audit(name) {
   console.log(`\n[${name}] ${v.length ? v.length + ' issue type(s)' : 'clean'}`);
   for (const x of v) { console.log(`  ${x.impact} ${x.id} (${x.n}): ${x.help}\n     e.g. ${x.eg.slice(0, 220)}`); all.set(x.id, (all.get(x.id) ?? 0) + x.n); }
 }
-await page.goto(BASE); await page.getByRole('heading', { name: 'Welcome.' }).waitFor(); await page.waitForTimeout(600); 
+await page.goto(BASE); await page.getByRole('heading', { name: /^Good (morning|afternoon|evening)\.$/ }).waitFor(); await page.waitForTimeout(600); 
 await audit('home');
 // keyboard: tab through home; every stop must show a visible focus outline
 const stops = [];

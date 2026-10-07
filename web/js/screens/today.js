@@ -3,16 +3,23 @@
 // and "Engage further" for everything else (#/explore). Laid out for older eyes: the verse
 // in large print across the top, then four big one-word buttons, then Engage further.
 //
-// UI STEP: the verse is a placeholder pick from the draft list in mood.js (same pick all
-// day); the AI's choice comes next. Verse text is fetched live and never saved.
+// The curate function ("today") chooses the verse (step-by-step prompt, guided by example
+// passages) and four activities: any mix of hymns, prayers, reading and games, a kind may
+// repeat if the items differ. Only the mood number goes with it (no names). If the AI is
+// slow (10 s) or down, a random example verse and a varied mix are used instead.
+// The answer is kept for this visit only (sessionStorage). Verse text is fetched live and
+// never saved.
 import * as api from '../api.js';
 import { refLabel } from '../books.js';
+import { GAME_TYPES } from '../curate.js';
+import { engagement, parseRefKey, refKey } from '../engagement.js';
 import { gameHash } from '../game-link.js';
+import { moduleFor } from '../../modules/index.js';
 import { faceSvg, moodFor, MOOD_EXAMPLES, savedMood } from '../mood.js';
 import { seeded } from '../../modules/game-common.js';
 import { h, icon, loading } from '../ui.js';
 
-/** Placeholder verse of the day: one of the mood's examples, the same one all day. */
+/** Fallback verse of the day: one of the mood's examples, the same one all day. */
 function placeholderVerse(level) {
   const list = MOOD_EXAMPLES[level] ?? MOOD_EXAMPLES[3];
   const rnd = seeded(`${new Date().toLocaleDateString('en-CA')}|${level}`);
@@ -40,27 +47,21 @@ export async function render(root, params, ctx) {
   if (!mood) { ctx.go('#/'); return null; }
   root.append(loading('Choosing something for you…'));
 
-  const ref = placeholderVerse(mood.level);
+  const catalog = await api.getCatalog().catch(() => ({ hymns: [], prayers: [], refs: [] }));
+  const choice = await chooseForYou(mood.level, catalog);
+  const ref = choice.verse;
   const label = refLabel(ref.book, ref.chapter, ref.start, ref.end);
   const here = `#/today?mood=${mood.level}`;
-  const [passage, chapterHymns, catalog] = await Promise.all([
-    api.getPassage(ref.book, ref.chapter, ref.start, ref.end).catch(() => null),
-    api.getChapterHymns(ref.book, ref.chapter).catch(() => []),
-    api.getCatalog().catch(() => ({ hymns: [], prayers: [] })),
-  ]);
-  const rnd = seeded(`${label}|picks`);
-  const hymn = chapterHymns[0]?.hymn ?? catalog.hymns[Math.floor(rnd() * catalog.hymns.length)];
-  const prayer = catalog.prayers[Math.floor(rnd() * catalog.prayers.length)];
+  const passage = await api.getPassage(ref.book, ref.chapter, ref.start, ref.end).catch(() => null);
+  const showReasons = ctx.store.settings().showReasons === true;
 
-  // Four recommendations, all around the verse (placeholder mix; the AI picks these next).
   // Each button leads with ONE big word (Hymn, Game, Prayer, Read); the detail is smaller.
-  const picks = [
-    hymn && { word: 'Hymn', icon: 'music', detail: `Sing “${hymn.title}”`, go: `#/sing/${hymn.number}` },
-    { word: 'Game', icon: 'game', detail: `${mood.level <= 2 ? 'Word Search' : 'Bible Trivia'} on ${label}`, go: gameHash(mood.level <= 2 ? 'word-search' : 'trivia', { ref }, here) },
-    prayer && { word: 'Prayer', icon: 'sparkle', detail: prayer.title, go: `#/prayers/${prayer.id}` },
-    { word: 'Read', icon: 'book', detail: `All of ${refLabel(ref.book, ref.chapter)}, in large print`, go: `#/read?book=${ref.book}&chapter=${ref.chapter}` },
-  ].filter(Boolean);
-  const open = (hash) => async () => { await ctx.unlock(); ctx.go(hash); };
+  const picks = choice.picks.map((p) => button(p, catalog, ref, here)).filter(Boolean);
+  const open = (p) => async () => {
+    engagement.record(p.type, p.config, 'opened');
+    await ctx.unlock();
+    ctx.go(p.go);
+  };
 
   const face = h('span', { class: 'mood-face small', 'aria-hidden': 'true' });
   face.innerHTML = faceSvg(mood);
@@ -73,17 +74,85 @@ export async function render(root, params, ctx) {
     h('section', { class: 'card verse-day', tabindex: '0', 'aria-label': `Verse of the day: ${label}` },
       h('div', { class: 'verse-head' },
         h('p', { class: 'tag added' }, icon('sparkle'), 'Verse of the day'),
-        h('h2', { class: 'title' }, passage?.reference ?? label)),
+        h('h2', { class: 'title' }, passage?.reference ?? label),
+        showReasons && h('span', { class: 'reason' }, `${choice.source === 'ai' ? 'Chosen by AI' : 'Example passage (AI unavailable)'}${choice.verseReason ? `: ${choice.verseReason}` : ''}`)),
       passage
         ? h('div', { class: 'read-lines' }, passage.verses.map((v) => h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(v.num)), ' ', v.text)))
         : h('p', { class: 'big-text' }, 'The verse could not be loaded right now.'),
       passage && h('p', { class: 'muted small attribution' }, passage.attribution)),
     h('div', { class: 'today-picks', role: 'group', 'aria-label': 'Four things for you' },
-      picks.map((p) => h('button', { class: 'pick-tile', type: 'button', onclick: open(p.go) },
+      picks.map((p) => h('button', { class: 'pick-tile', type: 'button', onclick: open(p) },
         h('span', { class: 'pick-word' }, icon(p.icon), p.word),
-        h('span', { class: 'pick-detail' }, p.detail)))),
+        h('span', { class: 'pick-detail' }, p.detail),
+        showReasons && p.reason && h('span', { class: 'reason' }, `Why: ${p.reason}`)))),
     h('button', { class: 'pill primary big engage', type: 'button', onclick: () => ctx.go('#/explore') },
       h('span', { class: 'label' }, 'Engage further'), icon('next'))));
   fitVerse(root.querySelector('.verse-day'));
+  return null;
+}
+
+/**
+ * Ask the curate function for today's verse and four picks (once per mood per visit).
+ * -> { verse: {book, chapter, start, end}, verseReason, picks: [{ module_type, id_or_ref, reason }], source }
+ */
+async function chooseForYou(level, catalog) {
+  const key = `hr.today.${level}`;
+  try { const hit = JSON.parse(sessionStorage.getItem(key)); if (hit?.verse) return hit; } catch { /* ask */ }
+  let result = null;
+  try {
+    const res = await api.callCurate({
+      action: 'today', mood: level,
+      history: engagement.summary(catalog.hymns),
+      catalog: { hymns: catalog.hymns.map((x) => x.id), prayers: catalog.prayers.map((x) => x.id), refs: catalog.refs.map(refKey) },
+    }, 10000); // step-by-step thinking takes a few seconds; the spinner shows meanwhile
+    const verse = parseRefKey(res?.verse?.ref);
+    if (verse) result = { verse, verseReason: res.verse.reason ?? '', picks: res.picks ?? [], source: res.source };
+  } catch (err) {
+    console.info('today: using the fallback', err.message);
+  }
+  result ??= fallbackChoice(level, catalog);
+  try { sessionStorage.setItem(key, JSON.stringify(result)); } catch { /* fine */ }
+  return result;
+}
+
+/** No AI: an example verse for the feeling, and a hymn, a game, a prayer and the chapter. */
+function fallbackChoice(level, catalog) {
+  const verse = placeholderVerse(level);
+  const rnd = seeded(`${refKey(verse)}|picks`);
+  const any = (list) => list[Math.floor(rnd() * list.length)];
+  const game = any(GAME_TYPES);
+  return {
+    verse, verseReason: '', source: 'fallback',
+    picks: [
+      catalog.hymns.length && { module_type: 'hymn', id_or_ref: String(any(catalog.hymns).id) },
+      { module_type: game, id_or_ref: refKey(verse) },
+      catalog.prayers.length && { module_type: 'prayer', id_or_ref: String(any(catalog.prayers).id) },
+      { module_type: 'read', id_or_ref: refKey(verse) },
+    ].filter(Boolean),
+  };
+}
+
+/** One pick -> a big button's word, icon, detail and destination (null if it can't be shown). */
+function button(p, catalog, verse, here) {
+  const id = String(p.id_or_ref);
+  if (p.module_type === 'hymn') {
+    const hymn = catalog.hymns.find((x) => String(x.id) === id);
+    return hymn && { word: 'Hymn', icon: 'music', detail: `Sing “${hymn.title}”`, go: `#/sing/${hymn.number}`,
+      type: 'hymn', config: { hymn_id: hymn.id }, reason: p.reason };
+  }
+  if (p.module_type === 'prayer') {
+    const prayer = catalog.prayers.find((x) => String(x.id) === id);
+    return prayer && { word: 'Prayer', icon: 'sparkle', detail: prayer.title, go: `#/prayers/${prayer.id}`,
+      type: 'prayer', config: { prayer_id: prayer.id }, reason: p.reason };
+  }
+  const ref = parseRefKey(id) ?? verse;
+  if (p.module_type === 'read') {
+    return { word: 'Read', icon: 'book', detail: `All of ${refLabel(ref.book, ref.chapter)}, in large print`,
+      go: `#/read?book=${ref.book}&chapter=${ref.chapter}`, type: 'scripture', config: ref, reason: p.reason };
+  }
+  if (GAME_TYPES.includes(p.module_type)) {
+    return { word: 'Game', icon: 'game', detail: `${moduleFor(p.module_type).name} on ${refLabel(ref.book, ref.chapter, ref.start, ref.end)}`,
+      go: gameHash(p.module_type, { ref }, here), type: p.module_type, config: ref, reason: p.reason };
+  }
   return null;
 }

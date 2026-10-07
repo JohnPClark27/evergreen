@@ -1,5 +1,5 @@
-// curation.mjs - AI curation + games at iPad size: Home -> each tile, cold start, thumbs feed
-// the next curate call, slide -> game -> back, AI down (500) -> silent fallback, trivia
+// curation.mjs - AI curation + games at iPad size: Welcome -> feeling -> Chosen for you ->
+// Engage further -> each tile, thumbs feed the next curate call, slide -> game -> back, AI down (500) -> silent fallback, trivia
 // validator drops a fabricated answer, and axe on every new screen.
 // Usage: node curation.mjs [baseUrl]
 // No Scripture is written here: mocked trivia answers are taken from the verse text the app
@@ -23,46 +23,54 @@ async function audit(page, name) {
   if (found.length) issues.push(`${name}: ${found.join('; ')}`);
 }
 
-// ---------- 1. Home -> each tile ----------
+// ---------- 1. Welcome -> a feeling -> Chosen for you -> Engage further -> each tile ----------
 {
   const { context, page } = await fresh();
-  await page.goto(BASE); await page.getByRole('heading', { name: 'Welcome.' }).waitFor();
-  ok((await page.locator('.tile').count()) === 4, 'home: 4 tiles');
-  await audit(page, 'home');
-  for (const [tile, heading] of [['My Day', 'My Day'], ['Read Scripture', null], ['Worship', 'Sing a Hymn'], ['Games', 'Games']]) {
-    await page.goto(BASE); await page.getByRole('heading', { name: 'Welcome.' }).waitFor();
+  const bodies = [];
+  await page.route('**/functions/v1/curate', async (route) => { bodies.push(JSON.parse(route.request().postData() || '{}')); await route.continue(); });
+  await page.goto(BASE); await page.getByRole('heading', { name: /^Good (morning|afternoon|evening)\.$/ }).waitFor();
+  ok((await page.locator('.mood-tile').count()) === 5, 'welcome: greeting + 5 feelings');
+  await audit(page, 'welcome');
+  await page.getByRole('button', { name: 'Having a hard day' }).click();
+  await page.locator('.pick-tile').first().waitFor({ timeout: 20000 });
+  ok((await page.locator('.pick-tile').count()) === 4, 'chosen for you: 4 picks');
+  ok((await page.locator('.verse-day .attribution').innerText()).includes('YouVersion'), 'verse of the day with YouVersion attribution');
+  const today = bodies.find((b) => b.action === 'today');
+  ok(today?.mood === 5 && !/"text"|verses|name/i.test(JSON.stringify(today)), 'today call sends the mood number, ids and refs only');
+  const words = await page.locator('.pick-word').allInnerTexts();
+  ok(words.every((w) => ['Hymn', 'Prayer', 'Read', 'Game'].includes(w.trim())), `each pick leads with one word (${words.join(', ')})`);
+  await audit(page, 'chosen for you');
+  await page.getByRole('button', { name: /Engage further/ }).click();
+  await page.getByRole('heading', { name: 'Engage further' }).waitFor();
+  ok((await page.locator('.tile').count()) === 4, 'engage further: 4 tiles');
+  await audit(page, 'engage further');
+  for (const [tile, heading] of [['Read Scripture', null], ['Worship', 'Sing a Hymn'], ['Games', 'Games'], ['Start a Bible Study', 'Choose a Study Plan']]) {
+    await page.goto(BASE + '#/explore'); await page.getByRole('heading', { name: 'Engage further' }).waitFor();
     await page.getByRole('button', { name: new RegExp(`^${tile}`) }).click();
     if (heading) await page.getByRole('heading', { name: heading, exact: true }).waitFor({ timeout: 20000 });
     else await page.locator('.read-line').first().waitFor({ timeout: 30000 });
     ok(true, `tile "${tile}" opens its screen`);
   }
-  await page.getByRole('button', { name: /Prayers/ }).count(); // (Worship's second section, checked below)
+  await page.getByRole('button', { name: 'Back to engage' }).click();
+  await page.getByRole('heading', { name: 'Engage further' }).waitFor();
+  await page.getByRole('button', { name: 'Home' }).click();
+  await page.locator('.pick-tile').first().waitFor({ timeout: 20000 });
+  ok(true, 'Home returns to Chosen for you during the visit');
   await context.close();
 }
 
-// ---------- 2. Cold start, thumbs, re-curate with history ----------
+// ---------- 2. A thumbs-up in Sing a Hymn is in the next curate history ----------
 {
   const { context, page } = await fresh();
   const bodies = [];
   await page.route('**/functions/v1/curate', async (route) => { bodies.push(JSON.parse(route.request().postData() || '{}')); await route.continue(); });
-  await page.goto(BASE + '#/aide'); await page.getByRole('radiogroup', { name: 'Show AI reasoning' }).getByRole('radio', { name: 'On' }).click();
-  await page.goto(BASE + '#/myday'); await page.locator('.day-row').first().waitFor({ timeout: 20000 });
-  const added = await page.locator('.day-row.suggested').count();
-  ok(added >= 3, `cold start: one of each kind added (${added})`);
-  ok((await page.locator('.day-row.suggested .reason').first().innerText()).includes('Trying something new'), 'cold start reason shown with "Show AI reasoning"');
-  ok(bodies[0]?.history?.length === 0, 'first curate call has an empty history');
-  const sent = JSON.stringify(bodies[0] ?? {});
-  ok(!/"text"|verses/.test(sent), 'curate call carries ids and references only');
-  await audit(page, 'my day');
-  const hymnRow = page.locator('.day-row.suggested').filter({ hasText: 'Hymn' }).first();
-  await hymnRow.getByRole('button', { name: 'Enjoyed it' }).click();
-  const notes = await page.evaluate(() => JSON.parse(localStorage.getItem('hr.itemNotes')));
-  ok(Object.entries(notes).some(([k, v]) => k.startsWith('hymn:') && v === 'enjoyed'), 'thumbs up saved on the tablet');
-  await page.getByRole('button', { name: 'New suggestions' }).click();
-  await page.locator('.day-row').first().waitFor({ timeout: 20000 });
-  const last = bodies.at(-1);
-  ok(last?.history?.some((r) => r.type === 'hymn' && r.thumbs === 'up'), 're-curate sends the thumbs up in the history');
-  ok(!JSON.stringify(last).match(/@|name/i), 'no personal data in the history');
+  await page.goto(BASE + '#/sing'); await page.locator('.hymn-tile').first().click();
+  await page.getByRole('button', { name: 'Enjoyed it' }).click();
+  await page.goto(BASE + '#/?ask=1'); await page.getByRole('button', { name: 'Okay' }).click();
+  await page.locator('.pick-tile').first().waitFor({ timeout: 20000 });
+  const sent = bodies.find((b) => b.action === 'today');
+  ok(sent?.history?.some((r) => r.type === 'hymn' && r.thumbs === 'up'), 'the thumbs-up hymn is in the history sent');
+  ok(!JSON.stringify(sent).match(/@|"name"/i), 'no personal data in the history');
   await context.close();
 }
 
@@ -90,9 +98,10 @@ async function audit(page, name) {
 {
   const { context, page } = await fresh();
   await page.route('**/functions/v1/curate', (route) => route.fulfill({ status: 500, body: '{"error":"down"}', contentType: 'application/json' }));
-  await page.goto(BASE + '#/myday');
-  await page.locator('.day-row').first().waitFor({ timeout: 15000 });
-  ok((await page.locator('.day-row.suggested').count()) >= 1, 'AI down: My Day still has "Added for you" parts (fallback)');
+  await page.goto(BASE + '#/today?mood=3');
+  await page.locator('.pick-tile').first().waitFor({ timeout: 15000 });
+  ok((await page.locator('.pick-tile').count()) === 4, 'AI down: Chosen for you still has a verse and 4 picks (fallback)');
+  ok((await page.locator('.verse-day .read-line').count()) >= 1, 'AI down: the example verse is shown');
   await page.goto(BASE + '#/games');
   await page.locator('.game-tile.picked:not([disabled])').waitFor({ timeout: 15000 });
   ok((await page.locator('.game-tile.picked').innerText()).includes('Picked for you'), 'AI down: Games still has "Picked for you"');

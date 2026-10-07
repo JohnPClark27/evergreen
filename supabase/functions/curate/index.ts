@@ -11,6 +11,12 @@
 //   -> 200 { suggestions: [{ module_type, id_or_ref, reason }], game: { type, difficulty, ref, reason } | null,
 //            source: "ai" | "fallback" }
 //
+//   POST { action: "today", mood: 1-5, history, catalog }      ("Chosen for you")
+//   -> 200 { verse: { ref: "PSA.46.1-1", reason }, picks: [{ module_type, id_or_ref, reason }] (4), source }
+//   The model reasons step by step (prompt.ts), then gives a REFERENCE only; it is checked
+//   (real book/chapter, 1-3 verses, found on YouVersion) or replaced by an example verse.
+//   Only the mood number is sent: no names, and nothing about the mood is stored or logged.
+//
 //   POST { action: "trivia", reference: "Psalm 23:1-4", verses: [{ num, text }] }
 //   -> 200 { questions: [{ q, answer, choices, verse }], source }   (fewer than 2 valid: [])
 //
@@ -26,8 +32,8 @@
 
 import { allowedOrigin, limitKey } from "../youversion/lib.ts";
 import {
-  type Catalog, cleanCatalog, cleanHistory, cleanVerses, curatePrompt, fallback, intersect,
-  parseJson, triviaPrompt, validate, validateQuestions,
+  type Catalog, checkVerseRef, cleanCatalog, cleanHistory, cleanVerses, curatePrompt, exampleVerse, fallback, fillPicks,
+  intersect, parseJson, stripThinking, todayPrompt, triviaPrompt, validate, validatePicks, validateQuestions,
 } from "./lib.ts";
 
 const env = (k: string, d = "") => Deno.env.get(k) ?? d;
@@ -65,17 +71,17 @@ async function glooAuth(): Promise<string | null> {
 export const provider = () =>
   env("GLOO_AI_API_KEY") || env("GLOO_CLIENT_ID") ? "gloo" : env("LLM_API_KEY") ? "openai-compatible" : "none";
 
-async function complete(system: string, user: string): Promise<string> {
+async function complete(system: string, user: string, timeoutMs = TIMEOUT, maxTokens = 700): Promise<string> {
   const messages = [{ role: "system", content: system }, { role: "user", content: user }];
   let url: string, key: string | null, body: Record<string, unknown>;
   if (provider() === "gloo") {
     url = GLOO_URL;
     key = await glooAuth();
-    body = { messages, auto_routing: true, temperature: 0.3, max_tokens: 700 };
+    body = { messages, auto_routing: true, temperature: 0.3, max_tokens: maxTokens };
   } else if (provider() === "openai-compatible") {
     url = env("LLM_API_URL", "https://api.openai.com/v1/chat/completions");
     key = env("LLM_API_KEY");
-    body = { model: env("LLM_MODEL", "gpt-4o-mini"), messages, temperature: 0.3, max_tokens: 700 };
+    body = { model: env("LLM_MODEL", "gpt-4o-mini"), messages, temperature: 0.3, max_tokens: maxTokens };
   } else {
     throw new Error("no AI provider configured");
   }
@@ -83,7 +89,7 @@ async function complete(system: string, user: string): Promise<string> {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(TIMEOUT),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`provider ${res.status}`);
   const data = await res.json();
@@ -174,6 +180,49 @@ async function curate(input: Record<string, unknown>) {
   return fb;
 }
 
+/** Does YouVersion have this passage? (asks our own youversion function; false on any error) */
+async function passageExists(key: string): Promise<boolean> {
+  const [book, chapter, range] = key.split(".");
+  const [start, end] = range.split("-");
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/youversion?book=${book}&chapter=${chapter}&start=${start}&end=${end}`,
+      { signal: AbortSignal.timeout(TODAY_CHECK_MS) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+const TODAY_TIMEOUT = Number(env("CURATE_TODAY_TIMEOUT_MS", "7000")); // step-by-step thinking takes longer
+const TODAY_CHECK_MS = 2500;
+
+async function today(input: Record<string, unknown>) {
+  const level = Math.round(Number(input.mood));
+  if (!(level >= 1 && level <= 5)) return null;
+  const history = cleanHistory(input.history);
+  const { catalog: live, titles } = await published();
+  const asked = cleanCatalog(input.catalog);
+  const cat = asked.hymns.length + asked.prayers.length ? intersect(asked, live) : live;
+
+  let verse: { ref: string; reason: string } | null = null;
+  let picks: ReturnType<typeof validatePicks> = [];
+  let source: "ai" | "fallback" = "fallback";
+  try {
+    const { system, user } = todayPrompt(level, cat, titles, history);
+    const reply = parseJson(stripThinking(await complete(system, user, TODAY_TIMEOUT, 1200))) as Record<string, any> | null;
+    const ref = checkVerseRef(reply?.verse?.ref);
+    if (ref && await passageExists(ref)) {
+      verse = { ref, reason: String(reply?.verse?.reason ?? "").slice(0, 160) };
+      picks = validatePicks(reply?.picks, cat, history, ref);
+      source = "ai";
+    }
+  } catch (e) {
+    console.error("today: using fallback", String(e));
+  }
+  verse ??= { ref: exampleVerse(level), reason: "One of the example passages for this feeling" };
+  return { verse, picks: fillPicks(picks, cat, history, verse.ref), source };
+}
+
 async function trivia(input: Record<string, unknown>) {
   const verses = cleanVerses(input.verses);
   const reference = String(input.reference ?? "").slice(0, 60);
@@ -213,6 +262,10 @@ Deno.serve(async (req) => {
 
   try {
     if (input.action === "trivia") return json(await trivia(input), 200, cors);
+    if (input.action === "today") {
+      const result = await today(input);
+      return result ? json({ ...result, provider: provider() }, 200, cors) : json({ error: "mood must be 1-5" }, 400, cors);
+    }
     return json({ ...(await curate(input)), provider: provider() }, 200, cors);
   } catch (e) {
     console.error(e);

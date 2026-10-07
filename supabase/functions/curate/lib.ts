@@ -6,6 +6,9 @@
 // is dropped, and if nothing valid remains the caller uses fallback(). Trivia answers must
 // appear word for word in the verse text that was sent.
 
+import { BOOKS } from "../youversion/lib.ts";
+import { examplesText, MOOD_EXAMPLES, TODAY_SYSTEM } from "./prompt.ts";
+
 export const MODULE_TYPES = ["hymn", "scripture", "prayer"] as const;
 export const GAME_TYPES = ["word-search", "crossword", "trivia"] as const;
 export const NEW_REASON = "Trying something new";
@@ -203,4 +206,85 @@ export function triviaPrompt(reference: string, verses: Verse[]): { system: stri
     user: `Passage: ${reference}\n${verses.map((v) => `${v.num} ${v.text}`).join("\n")}\n\n` +
       'Reply exactly: {"questions":[{"q":"...","answer":"<words from the verse>","choices":["...","...","..."],"verse":<verse number>}]}',
   };
+}
+
+// ---------------------------------------------------------------------------
+// "Chosen for you": a verse of the day for a feeling, and four activities around it.
+// ---------------------------------------------------------------------------
+
+
+export const PICK_TYPES = ["hymn", "prayer", "read", ...GAME_TYPES] as const;
+export type Pick = { module_type: string; id_or_ref: string; reason: string };
+export type TodayResult = { verse: { ref: string; reason: string }; picks: Pick[]; source: "ai" | "fallback" };
+
+/** A verse-of-the-day reference the model gave: a real book and chapter, 1–3 verses.
+ * Accepts "PSA.23.1-3" or "PSA.23.1". Returns the normalised key, or null. */
+export function checkVerseRef(raw: unknown): string | null {
+  const m = /^([1-3A-Z]{3})\.(\d{1,3})\.(\d{1,3})(?:-(\d{1,3}))?$/.exec(str(raw, 20).toUpperCase());
+  if (!m || !BOOKS[m[1]]) return null;
+  const chapter = Number(m[2]), start = Number(m[3]), end = Number(m[4] ?? m[3]);
+  if (chapter < 1 || chapter > BOOKS[m[1]][1] || start < 1 || end < start || end - start > 2) return null;
+  return `${m[1]}.${chapter}.${start}-${end}`;
+}
+
+/** Drop the model's step-by-step reasoning; only the JSON after it is used. */
+export const stripThinking = (text: string) => text.replace(/<thinking>[\s\S]*?(<\/thinking>|$)/gi, "");
+
+/** A random example passage for a feeling (the fallback verse). */
+export function exampleVerse(level: number, rnd = Math.random): string {
+  const refs = MOOD_EXAMPLES.find((e) => e.level === level)?.refs ?? MOOD_EXAMPLES[2].refs;
+  return pick(refs, rnd)!;
+}
+
+/** Keep picks that are known, published, distinct and not skipped; games and "read" must be
+ * about the verse of the day or a catalog passage. At most 4. */
+export function validatePicks(raw: unknown, cat: Catalog, history: HistoryRow[], verseRef: string): Pick[] {
+  const skipped = skippedSet(history);
+  const seen = new Set<string>();
+  const out: Pick[] = [];
+  for (const p of Array.isArray(raw) ? raw : []) {
+    const type = str(p?.module_type, 20);
+    let id = str(p?.id_or_ref, 20);
+    if (!(PICK_TYPES as readonly string[]).includes(type)) continue;
+    if (type === "hymn" ? !cat.hymns.includes(id) : type === "prayer" ? !cat.prayers.includes(id)
+      : !(id === verseRef || cat.refs.includes(id) || (id = checkVerseRef(id) ?? "") === verseRef)) continue;
+    const key = `${type}:${id}`;
+    if (seen.has(key) || skipped.has(key)) continue;
+    seen.add(key);
+    out.push({ module_type: type, id_or_ref: id, reason: str(p?.reason, 160) });
+    if (out.length >= 4) break;
+  }
+  return out;
+}
+
+/** Fill up to 4 picks with a varied random mix around the verse: hymn, game, prayer, read. */
+export function fillPicks(picks: Pick[], cat: Catalog, history: HistoryRow[], verseRef: string, rnd = Math.random): Pick[] {
+  const skipped = skippedSet(history);
+  const out = [...picks];
+  const has = (type: string, id: string) => out.some((p) => p.module_type === type && p.id_or_ref === id);
+  const add = (type: string, id: string | undefined) => {
+    if (out.length < 4 && id && !has(type, id) && !skipped.has(`${type}:${id}`)) out.push({ module_type: type, id_or_ref: id, reason: NEW_REASON });
+  };
+  const kinds = (t: string) => out.filter((p) => (t === "game" ? (GAME_TYPES as readonly string[]).includes(p.module_type) : p.module_type === t)).length;
+  if (!kinds("hymn")) add("hymn", pick(cat.hymns, rnd));
+  if (!kinds("game")) add(pick([...GAME_TYPES], rnd)!, verseRef);
+  if (!kinds("prayer")) add("prayer", pick(cat.prayers, rnd));
+  if (!kinds("read")) add("read", verseRef);
+  for (let i = 0; out.length < 4 && i < 20; i++) add("hymn", pick(cat.hymns, rnd));
+  return out;
+}
+
+export function todayPrompt(level: number, cat: Catalog, titles: { hymns: Record<string, string>; prayers: Record<string, string> },
+  history: HistoryRow[]): { system: string; user: string } {
+  const mood = MOOD_EXAMPLES.find((e) => e.level === level) ?? MOOD_EXAMPLES[2];
+  const user = [
+    `They said they are feeling: "${mood.label}" (${level} on a scale where 1 is wonderful and 5 is having a hard day).`,
+    `Example passages by feeling (a guide, not a limit):\n${examplesText()}`,
+    `Hymns (id: title): ${cat.hymns.slice(0, 80).map((id) => `${id}: ${titles.hymns[id] ?? "hymn"}`).join("; ")}`,
+    `Prayers (id: title): ${cat.prayers.slice(0, 40).map((id) => `${id}: ${titles.prayers[id] ?? "prayer"}`).join("; ")}`,
+    `Activity kinds: hymn (a hymn id), prayer (a prayer id), read (read the verse's chapter; use the verse ref), word-search / crossword / trivia (a game on the verse; use the verse ref).`,
+    `What they enjoyed before (type, id, thumbs): ${history.length ? history.map((h) => `${h.type} ${h.id_or_ref} ${h.thumbs ?? "-"}`).join("; ") : "nothing yet"}. Never choose thumbs-down items.`,
+    `After your <thinking>, reply exactly: {"verse":{"ref":"BOOK.chapter.start-end","reason":"one short plain sentence for the caregiver, no quotes from Scripture"},"picks":[{"module_type":"...","id_or_ref":"...","reason":"..."}]}  (exactly 4 picks)`,
+  ].join("\n\n");
+  return { system: TODAY_SYSTEM, user };
 }

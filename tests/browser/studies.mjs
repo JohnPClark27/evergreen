@@ -16,7 +16,7 @@ const shot = (name) => (process.env.SHOTS ? page.screenshot({ path: `${process.e
 const next = () => page.getByRole('button', { name: /^(Next|Finish)$/ }).click();
 
 await page.goto(BASE);
-await page.getByRole('button', { name: /My Day/ }).click(); await page.getByRole('button', { name: 'Choose a study plan' }).click();
+await page.goto(BASE + '#/explore'); await page.getByRole('button', { name: /Start a Bible Study/ }).click();
 await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
 await page.getByRole('heading', { name: 'Choose a Study Plan' }).waitFor();
 // every plan is in one scrolling grid (no pages)

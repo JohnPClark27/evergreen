@@ -139,6 +139,26 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 - The `mobile-layout` branch hides `.bottombar` pill labels on phones and hasn't seen this
   change yet: expect overlap in `web/css/app.css` when it merges.
 
+## 0d. AI curation + mood check-in (2026-10-07, branch `ai-curation`, hackathon)
+
+- **Flow:** `#/` greeting + "How are you feeling today?" (5 faces, `mood.js`) → `#/today?mood=N`
+  "Chosen for you" (verse of the day on top, 4 one-word buttons, Engage further) →
+  `#/explore` (Read Scripture, Worship, Games, Start a Bible Study). Home returns to `#/today`
+  while a mood is set this visit (`sessionStorage` `hr.mood`); "Start over" is `#/?ask=1`.
+  My Day was archived (`archive/myday.js`).
+- **Edge Function `curate`** (`--no-verify-jwt`, secret `GLOO_AI_API_KEY`): actions `today`,
+  `curate` (games hub / slide game), `trivia`. Prompt + example verses: `curate/prompt.ts`
+  (a Studio editor is the next phase). Pure logic + tests: `curate/lib.ts`,
+  `node supabase/functions/curate/test.ts`. Rate limit reuses `youversion_rate_hit` ("curate:" keys).
+- **Rules:** the AI returns ids and references only; the server validates against the live
+  published catalog and YouVersion; trivia answers must be word for word in the verse (checked
+  on server AND tablet). Every call has a random fallback (client timeouts: 10 s today, 5 s
+  otherwise). Only the mood number, ids, refs and 👍/👎 counts are sent.
+- **Games** are modules (`word-search`, `crossword`, `trivia`, shared `game-common.js`);
+  migration 0009 limits their config to a reference + difficulty.
+- **Tests:** `tests/browser/curation.mjs` (welcome → today → explore, thumbs → history, slide
+  game, AI-down 500 fallback, trivia drops a fabricated answer, axe on new screens).
+
 ## 1. Coordination rules (avoid clashing)
 
 1. **Before you start:** `git fetch && git status && git log --oneline -5` on `dev`. If `dev`

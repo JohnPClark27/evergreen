@@ -41,3 +41,28 @@ ok(qs[1].verse === 2, "trivia keeps the verse number");
 
 console.log(`${pass} passed, ${fail} failed`);
 if (fail) process.exitCode = 1;
+
+// ---------- Chosen for you ----------
+import { checkVerseRef, fillPicks, stripThinking, validatePicks } from "./lib.ts";
+let p2 = 0, f2 = 0;
+const ok2 = (c: unknown, m: string) => { if (c) p2++; else { f2++; console.log("FAIL", m); } };
+ok2(checkVerseRef("psa.23.1-3") === "PSA.23.1-3", "verse ref normalised");
+ok2(checkVerseRef("PSA.23.4") === "PSA.23.4-4", "single verse ok");
+ok2(checkVerseRef("PSA.151.1") === null, "no Psalm 151");
+ok2(checkVerseRef("PSA.23.1-6") === null, "at most 3 verses");
+ok2(checkVerseRef("XYZ.1.1") === null, "unknown book");
+ok2(stripThinking('<thinking>{"bad":1} feeling...</thinking>\n{"verse":{}}').trim() === '{"verse":{}}', "reasoning dropped before parsing");
+const cat2 = cleanCatalog({ hymns: ["1", "2", "3"], prayers: ["5", "6"], refs: ["PSA.23.1-4"] });
+const picks = validatePicks([
+  { module_type: "hymn", id_or_ref: "1" }, { module_type: "hymn", id_or_ref: "2" },   // two different hymns: fine
+  { module_type: "hymn", id_or_ref: "1" },                                            // duplicate: dropped
+  { module_type: "trivia", id_or_ref: "PSA.46.1-1" },                                 // the verse of the day: ok
+  { module_type: "crossword", id_or_ref: "GEN.1.1-3" },                               // unrelated passage: dropped
+  { module_type: "sermon", id_or_ref: "1" },                                          // unknown kind: dropped
+  { module_type: "prayer", id_or_ref: "99" },                                         // unpublished: dropped
+], cat2, [], "PSA.46.1-1");
+ok2(picks.length === 3 && picks.filter((p) => p.module_type === "hymn").length === 2, `picks validated (${JSON.stringify(picks.map((p) => p.module_type))})`);
+const full = fillPicks(picks, cat2, [], "PSA.46.1-1");
+ok2(full.length === 4 && new Set(full.map((p) => `${p.module_type}:${p.id_or_ref}`)).size === 4, "filled to 4 distinct picks");
+console.log(`today: ${p2} passed, ${f2} failed`);
+if (f2) process.exitCode = 1;
