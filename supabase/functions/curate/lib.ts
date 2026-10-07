@@ -296,11 +296,17 @@ export function cleanPrompt(row: unknown): { guidance: string; examples: MoodExa
   return { guidance, examples: examples.length === 5 ? examples.sort((a, b) => a.level - b.level) : MOOD_EXAMPLES };
 }
 
+/** A few examples per feeling (3, at random): enough to show the tone without becoming a
+ * menu the model just picks from. The full list is still the fallback. */
+export function sampleExamples(examples: MoodExample[], n = 3, rnd = Math.random): MoodExample[] {
+  return examples.map((e) => ({ ...e, refs: e.refs.map((r) => [rnd(), r] as const).sort((a, b) => a[0] - b[0]).slice(0, n).map((x) => x[1]) }));
+}
+
 export function todayPrompt(level: number, cat: Catalog, titles: { hymns: Record<string, string>; prayers: Record<string, string> },
   history: HistoryRow[], prompt = cleanPrompt(null)): { system: string; user: string } {
   const user = [
     `They said they are feeling: "${MOOD_LABELS[level] ?? "Okay"}" (${level} on a scale where 1 is wonderful and 5 is having a hard day).`,
-    `Example passages by feeling (a guide, not a limit):\n${examplesText(prompt.examples)}`,
+    `Example passages by feeling (only a guide to tone and themes; choose freely from the whole Bible):\n${examplesText(sampleExamples(prompt.examples))}`,
     `Hymns (id: title): ${cat.hymns.slice(0, 80).map((id) => `${id}: ${titles.hymns[id] ?? "hymn"}`).join("; ")}`,
     `Prayers (id: title): ${cat.prayers.slice(0, 40).map((id) => `${id}: ${titles.prayers[id] ?? "prayer"}`).join("; ")}`,
     `Activity kinds: hymn (a hymn id), prayer (a prayer id), read (read the verse's chapter; use the verse ref), word-search / crossword / trivia (a game on the verse; use the verse ref).`,

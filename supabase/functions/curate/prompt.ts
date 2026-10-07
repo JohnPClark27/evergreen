@@ -25,18 +25,19 @@ export const DEFAULT_GUIDANCE = [
   "You help choose a short Bible passage and four activities for an older adult in a care home, using a large-print tablet.",
   "They just told us how they feel. Choose a verse of the day that is gentle, well known, and fitting for that feeling.",
   "Avoid passages about judgment, punishment, death or illness, and anything that could frighten or confuse.",
-  "Prefer Psalms, the Gospels and familiar promises. Use the examples as a guide to tone and theme:",
-  "you may choose one of them or another passage like them. Choose activities connected to the verse or the feeling.",
+  "Prefer gentle, familiar passages (for example from the Psalms, the Gospels and God's promises).",
+  "Use the examples as a guide to tone and theme only. Choose activities connected to the verse or the feeling.",
 ].join(" ");
 
 /** FIXED rules, always added after the editable guidance (they can't be edited in the Studio). */
 export const FIXED_RULES = [
   "Rules you must always follow:",
+  "Choose freely from the WHOLE Bible: any passage that fits the feeling and its themes. The examples only show the tone and themes; they are NOT a list to pick from. Use an example only if it is clearly the best fit, and otherwise prefer a fitting passage that is not in the examples.",
   "The verse of the day is 1 to 3 consecutive verses.",
   "Give ONLY a reference (book code, chapter, verses). Never write out verse text, prayers or teaching.",
   "Choose exactly 4 activities from the lists given, by exact id. Any mix is fine, and a kind may repeat if the items differ (e.g. two different hymns).",
   "Reasons are one short plain sentence for the caregiver, with no Scripture quotes.",
-  "Think step by step first, inside <thinking></thinking>: the feeling, a fitting theme, candidate passages, the best one, then the activities. After </thinking>, reply with JSON only.",
+  "Think step by step first, briefly (under 100 words), inside <thinking></thinking>: the feeling, a fitting theme, two or three candidate passages, the best one, then the activities. After </thinking>, reply with JSON only.",
 ].join(" ");
 
 export const MOOD_LABELS: Record<number, string> = { 1: "Wonderful", 2: "Good", 3: "Okay", 4: "Not so good", 5: "Having a hard day" };

@@ -71,17 +71,17 @@ async function glooAuth(): Promise<string | null> {
 export const provider = () =>
   env("GLOO_AI_API_KEY") || env("GLOO_CLIENT_ID") ? "gloo" : env("LLM_API_KEY") ? "openai-compatible" : "none";
 
-async function complete(system: string, user: string, timeoutMs = TIMEOUT, maxTokens = 700): Promise<string> {
+async function complete(system: string, user: string, timeoutMs = TIMEOUT, maxTokens = 700, temperature = 0.3): Promise<string> {
   const messages = [{ role: "system", content: system }, { role: "user", content: user }];
   let url: string, key: string | null, body: Record<string, unknown>;
   if (provider() === "gloo") {
     url = GLOO_URL;
     key = await glooAuth();
-    body = { messages, auto_routing: true, temperature: 0.3, max_tokens: maxTokens };
+    body = { messages, auto_routing: true, temperature, max_tokens: maxTokens };
   } else if (provider() === "openai-compatible") {
     url = env("LLM_API_URL", "https://api.openai.com/v1/chat/completions");
     key = env("LLM_API_KEY");
-    body = { model: env("LLM_MODEL", "gpt-4o-mini"), messages, temperature: 0.3, max_tokens: maxTokens };
+    body = { model: env("LLM_MODEL", "gpt-4o-mini"), messages, temperature, max_tokens: maxTokens };
   } else {
     throw new Error("no AI provider configured");
   }
@@ -193,7 +193,7 @@ async function passageExists(key: string): Promise<boolean> {
   }
 }
 
-const TODAY_TIMEOUT = Number(env("CURATE_TODAY_TIMEOUT_MS", "7000")); // step-by-step thinking takes longer
+const TODAY_TIMEOUT = Number(env("CURATE_TODAY_TIMEOUT_MS", "9000")); // step-by-step thinking takes longer
 const TODAY_CHECK_MS = 2500;
 
 async function today(input: Record<string, unknown>) {
@@ -211,7 +211,7 @@ async function today(input: Record<string, unknown>) {
   let source: "ai" | "fallback" = "fallback";
   try {
     const { system, user } = todayPrompt(level, cat, titles, history, prompt);
-    const reply = parseJson(stripThinking(await complete(system, user, TODAY_TIMEOUT, 1200))) as Record<string, any> | null;
+    const reply = parseJson(stripThinking(await complete(system, user, TODAY_TIMEOUT, 900, 0.8) /* more variety: a different fitting verse on different days */)) as Record<string, any> | null;
     const ref = checkVerseRef(reply?.verse?.ref);
     // Saves a YouVersion call (they're rate-limited): the vetted examples are known to exist.
     const known = ref ? prompt.examples.some((e) => e.refs.includes(ref)) : false;

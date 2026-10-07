@@ -6,7 +6,7 @@
 // The curate function ("today") chooses the verse (step-by-step prompt, guided by example
 // passages) and four activities: any mix of hymns, prayers, reading and games, a kind may
 // repeat if the items differ. Only the mood number goes with it (no names). If the AI is
-// slow (10 s) or down, a random example verse and a varied mix are used instead.
+// slow (13 s) or down, a random example verse and a varied mix are used instead.
 // The answer is kept for this visit only (sessionStorage). Verse text is fetched live and
 // never saved.
 import * as api from '../api.js';
@@ -109,7 +109,7 @@ async function chooseForYou(level, catalog) {
       action: 'today', mood: level,
       history: engagement.summary(catalog.hymns),
       catalog: { hymns: catalog.hymns.map((x) => x.id), prayers: catalog.prayers.map((x) => x.id), refs: catalog.refs.map(refKey) },
-    }, 10000); // step-by-step thinking takes a few seconds; the spinner shows meanwhile
+    }, 13000); // step-by-step thinking (up to 9 s) + the verse check; the spinner shows meanwhile
     const verse = parseRefKey(res?.verse?.ref);
     if (verse) result = { verse, verseReason: res.verse.reason ?? '', picks: res.picks ?? [], source: res.source };
   } catch (err) {

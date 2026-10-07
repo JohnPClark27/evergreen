@@ -12,6 +12,7 @@ import { MOODS } from '../../../js/mood.js';
 import { flash, h, when } from '../ui.js';
 
 const FIXED = [
+  'The AI chooses freely from the whole Bible: the examples show tone and themes only, and it uses one only when it is clearly the best fit.',
   'The verse of the day is 1 to 3 consecutive verses.',
   'The AI gives only a reference; it never writes verse text, prayers or teaching. The text always comes from YouVersion.',
   'It chooses 4 activities from published hymns, prayers and games, by id; anything else is dropped.',
@@ -138,7 +139,7 @@ export async function render(main, _params, app) {
     h('div', { class: 'toolbar' }, h('h1', {}, 'AI prompt: Chosen for you'),
       h('button', { class: 'btn primary', type: 'button', onclick: save }, 'Save')),
     h('p', {}, 'After a resident answers “How are you feeling today?”, the AI chooses a verse of the day and four activities. ',
-      'This page sets how it chooses. The examples guide it; it may pick other passages like them.'),
+      'This page sets how it chooses. The examples show the tone and themes; the AI is free to choose any fitting passage.'),
     saved, status,
     h('section', { class: 'panel' },
       h('h2', {}, 'Guidance'),
