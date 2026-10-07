@@ -1,5 +1,5 @@
 // app.js - starts the public app: shared audio/speech, settings, and a tiny hash router.
-//   #/            Home (simple mode)       #/sing        Sing a Hymn (grid)
+//   #/            Welcome + mood        #/today?mood=N  Chosen for you    #/explore  the four tiles       #/sing        Sing a Hymn (grid)
 //   #/studies     Choose a Study (list)    #/sing/19     Sing one hymn
 //   #/plan/12     One study plan (its studies)
 //   #/study/12/3  Study 3 of plan 12
@@ -12,6 +12,8 @@ import { Speaker, localVoices } from './speech.js';
 import { store } from './store.js';
 import { h } from './ui.js';
 import * as home from './screens/home.js';
+import * as welcome from './screens/welcome.js';
+import * as today from './screens/today.js';
 import * as studies from './screens/studies.js';
 import * as plan from './screens/plan.js';
 import * as study from './screens/study.js';
@@ -56,7 +58,9 @@ const ctx = {
 document.addEventListener('pointerdown', () => { if (unlocked) audio.unlock(); }, { capture: true });
 
 const ROUTES = [
-  [/^\/?$/, home, false],
+  [/^\/?$/, welcome, false],          // greeting + "How are you feeling today?"
+  [/^\/today$/, today, false],        // chosen for you (after a mood)
+  [/^\/explore$/, home, false],       // Engage further: My Day, Read Scripture, Worship, Games
   [/^\/studies$/, studies, false],
   [/^\/plan\/(\d+)$/, plan, false],
   [/^\/study\/(\d+)\/(\d+)$/, study, true],
@@ -84,7 +88,7 @@ async function route() {
   const id = ++renderId;
   const [path, query = ''] = location.hash.replace(/^#/, '').split('?');
   const params = Object.fromEntries(new URLSearchParams(query));
-  let match = null, screen = home, needsSound = false;
+  let match = null, screen = welcome, needsSound = false;
   for (const [re, mod, sound] of ROUTES) {
     match = re.exec(path || '/');
     if (match) { screen = mod; needsSound = sound; break; }

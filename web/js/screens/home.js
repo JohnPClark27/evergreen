@@ -1,6 +1,6 @@
 // Home (simple mode): "Welcome." and four big tiles (My Day, Read Scripture, Worship, Games),
 // plus a small Aide tools link in the corner.
-import { h } from '../ui.js';
+import { h, icon } from '../ui.js';
 
 export async function render(root, _params, ctx) {
   // Each tile unlocks sound inside the tap itself, then opens its screen.
@@ -9,8 +9,9 @@ export async function render(root, _params, ctx) {
     h('span', { class: 'tile-title' }, title), h('span', { class: 'tile-sub' }, sub));
 
   root.append(h('div', { class: 'screen home' },
+    h('button', { class: 'pill corner-left', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
     h('a', { class: 'aide-link corner', href: '#/aide' }, 'Aide tools'),
-    h('h1', { class: 'welcome', tabindex: '-1' }, 'Welcome.'),
+    h('h1', { class: 'welcome', tabindex: '-1' }, 'Engage further'),
     h('div', { class: 'tiles four' },
       tile('#/myday', 'My Day', 'Today’s study, with a little extra for you', true),
       tile('#/read', 'Read Scripture', 'Large print, read aloud'),
