@@ -50,6 +50,8 @@ If the CLI can't do something, paste the SQL from `supabase/migrations/` into th
 ### A4. Scripture function
 ```sh
 npx supabase secrets set YOUVERSION_API_KEY=…     # paste your YouVersion Platform App Key
+npx supabase secrets set YOUVERSION_API_KEY_BACKUP=…   # optional: a second App Key, used only when
+                                                  # YouVersion refuses the main one (rate limit/quota)
 npx supabase functions deploy youversion --use-api --no-verify-jwt
 curl "https://<ref>.supabase.co/functions/v1/youversion?book=PSA&chapter=23&start=1&end=3"   # verses + attribution
 ```

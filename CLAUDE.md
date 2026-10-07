@@ -158,7 +158,10 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 - **Read aloud everywhere:** `ui.js readAloudButton(speaker, lines, {items})` on My Day's verse,
   prayers, trivia verses and passages; in studies the bar's Again button says "Read aloud"
   while automatic read-aloud is off (one tap reads once).
-- **YouVersion rate limits:** heavy test runs get 503s ("busy"). Don't loop the suites.
+- **YouVersion rate limits:** heavy test runs used up the key's quota (503 "busy") on 2026-10-07.
+  Don't loop the browser suites. Optional secret `YOUVERSION_API_KEY_BACKUP` is tried when
+  YouVersion refuses the main key (401/403/429). The curate function skips the YouVersion
+  existence check for verses that are in the vetted examples.
 - **Badge:** `ui.js aiMark(source)`: filled = Gloo AI chose it, crossed out = skipped.
 - **Tests pick "Sample — 12 Days"** by name: real plans are being published and may sort first. Pure logic + tests: `curate/lib.ts`,
   `node supabase/functions/curate/test.ts`. Rate limit reuses `youversion_rate_hit` ("curate:" keys).

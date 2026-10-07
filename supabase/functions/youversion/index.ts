@@ -11,6 +11,8 @@
 //
 // Settings (Supabase secrets / env):
 //   YOUVERSION_API_KEY               required
+//   YOUVERSION_API_KEY_BACKUP        optional: used when YouVersion refuses the main key
+//                                    (429 rate limit / quota, 401, 403), e.g. a second app key
 //   YOUVERSION_BIBLE_ID              default 12 (ASV)
 //   YOUVERSION_CACHE_TTL_SECONDS     chapter text cache, default 86400 (1 day)
 //   YOUVERSION_META_TTL_SECONDS      version + attribution cache, default 3600 (kept short so
@@ -24,6 +26,10 @@ import { allowedOrigin, label, limitKey, parseRef, parseVerses, TtlCache } from 
 const API = "https://api.youversion.com/v1";
 const env = (k: string, d = "") => Deno.env.get(k) ?? d;
 const KEY = env("YOUVERSION_API_KEY");
+// Keys to try, in order: the main one, then the backup (if set).
+const KEYS = [KEY, env("YOUVERSION_API_KEY_BACKUP")].filter(Boolean);
+// Answers that mean "this key can't be used right now": try the next key.
+const KEY_REFUSED = new Set([401, 403, 429]);
 const BIBLE_ID = env("YOUVERSION_BIBLE_ID", "12");
 const PAGES_HOSTS = env("ALLOWED_PAGES_HOSTS", "hymnal-reader-v2.pages.dev").split(",").map((s) => s.trim()).filter(Boolean);
 
@@ -68,13 +74,16 @@ class Upstream extends Error {
 }
 
 async function yv(path: string) {
-  const res = await fetch(`${API}${path}`, { headers: { "X-YVP-App-Key": KEY }, signal: AbortSignal.timeout(10_000) });
-  if (!res.ok) {
+  let last: Upstream | null = null;
+  for (const [i, key] of KEYS.entries()) {
+    const res = await fetch(`${API}${path}`, { headers: { "X-YVP-App-Key": key }, signal: AbortSignal.timeout(10_000) });
+    if (res.ok) return res.json();
     // Error bodies may be plain text (429 is), so don't parse them.
-    console.error("YouVersion error", res.status, path);
-    throw new Upstream(res.status, res.headers.get("Retry-After"));
+    console.error("YouVersion error", res.status, path, i === 0 ? "(main key)" : "(backup key)");
+    last = new Upstream(res.status, res.headers.get("Retry-After"));
+    if (!KEY_REFUSED.has(res.status)) break; // e.g. 404: the backup key wouldn't help
   }
-  return res.json();
+  throw last ?? new Upstream(-1);
 }
 
 async function version() {

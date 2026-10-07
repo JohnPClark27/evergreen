@@ -213,7 +213,9 @@ async function today(input: Record<string, unknown>) {
     const { system, user } = todayPrompt(level, cat, titles, history, prompt);
     const reply = parseJson(stripThinking(await complete(system, user, TODAY_TIMEOUT, 1200))) as Record<string, any> | null;
     const ref = checkVerseRef(reply?.verse?.ref);
-    if (ref && await passageExists(ref)) {
+    // Saves a YouVersion call (they're rate-limited): the vetted examples are known to exist.
+    const known = ref ? prompt.examples.some((e) => e.refs.includes(ref)) : false;
+    if (ref && (known || await passageExists(ref))) {
       verse = { ref, reason: String(reply?.verse?.reason ?? "").slice(0, 160) };
       picks = validatePicks(reply?.picks, cat, history, ref);
       source = "ai";
