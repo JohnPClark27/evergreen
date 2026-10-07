@@ -11,10 +11,10 @@ import * as api from '../api.js';
 import { nextStudy } from '../plan-progress.js';
 import { clearCurateCache, curate } from '../curate.js';
 import { engagement } from '../engagement.js';
-import { gameHash, gameTarget } from '../game-link.js';
+import { gameTarget, openGameFor } from '../game-link.js';
 import { runStudy } from '../runner.js';
 import { moduleFor } from '../../modules/index.js';
-import { h, icon, thumbButtons } from '../ui.js';
+import { h, icon, loading, thumbButtons } from '../ui.js';
 
 const DAY_KEY = 'hr.myDay'; // sessionStorage: { key, suggestions }
 
@@ -79,7 +79,10 @@ export async function render(root, params, ctx) {
 
 async function list(root, ctx, fresh) {
   const showReasons = ctx.store.settings().showReasons === true;
+  // A calm spinner while today is put together (the AI gets at most 5 s, then the fallback).
+  root.append(loading('Getting your day ready…'));
   const [{ plan, study, day, items }, catalog] = await Promise.all([buildDay(ctx, fresh), api.getCatalog()]);
+  root.replaceChildren();
   const lib = {
     hymns: catalog.hymns, prayers: catalog.prayers,
     hymn: (id) => catalog.hymns.find((x) => x.id === Number(id)),
@@ -142,7 +145,7 @@ async function play(root, ctx) {
     exitLabel: 'My Day',
     onStep: (index) => ctx.store.setStudyStep({ planId: 'myday', studyKey: study?.key ?? null, index }),
     onExit: () => { ctx.store.clearStudyStep(); ctx.go('#/myday'); },
-    onGame: (item, all) => ctx.go(gameHash('trivia', gameTarget(item, all), '#/myday/play')),
+    onGame: (item, all, btn) => openGameFor(ctx, item, all, '#/myday/play', btn),
     onFinish: () => {
       for (const it of items) engagement.record(it.module_type, it.config, 'finished');
       clearDay();

@@ -18,7 +18,7 @@ export async function render(root, _params, ctx) {
   const showReasons = ctx.store.settings().showReasons === true;
   const picked = h('button', { class: 'game-tile picked', type: 'button', disabled: true },
     h('span', { class: 'tag added' }, icon('sparkle'), 'Picked for you'),
-    h('span', { class: 'game-tile-title' }, 'Choosing a game…'));
+    h('span', { class: 'calm-loading', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), 'Choosing a game…'));
 
   const openRandom = (type) => async () => {
     let ref = null;

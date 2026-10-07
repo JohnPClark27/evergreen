@@ -90,6 +90,13 @@ export function thumbButtons(current, onPick, groupLabel) {
   return group;
 }
 
+/** A full-screen calm spinner with a few words (the spinner stops with Reduce Motion). */
+export function loading(text) {
+  return h('div', { class: 'screen message' },
+    h('h1', { class: 'sr-only', tabindex: '-1' }, text),
+    h('div', { class: 'calm-loading', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), text));
+}
+
 /** <span> with an icon from ICON (SVG markup is a fixed constant, not user data). */
 export function icon(name) {
   const span = h('span', { class: 'icon' });

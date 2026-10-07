@@ -19,7 +19,7 @@ import { h, icon, roundControl } from './ui.js';
 /**
  * plan: { id, title, subtitle?, items: [{ module_type, config }] }  (one study: its modules in order)
  * ctx:  { audio, speaker } (+ store, for resuming)
- * opts: { onExit(), onFinish(), exitLabel, startAt, onStep(index), onGame(item, items) }
+ * opts: { onExit(), onFinish(), exitLabel, startAt, onStep(index), onGame(item, items, button) }
  *   onGame: if given, every non-game part gets a "Play a game about this" button.
  *   Items may carry { suggested: true, reason } (My Day's "Added for you" parts).
  * Returns a cleanup function.
@@ -131,7 +131,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
     // A quiet extra: a game about this part (not on a part that is already a game).
     const gameBtn = opts.onGame && !GAME_TYPES.includes(item.module_type) && roundControl('game', 'Play a game about this');
     gameBtn?.classList.add('game-ctl');
-    gameBtn?.addEventListener('click', () => opts.onGame(item, items));
+    gameBtn?.addEventListener('click', () => opts.onGame(item, items, gameBtn));
     tools.replaceChildren(...(controller?.tools ?? []), ...(gameBtn ? [gameBtn] : []));
     refreshAgain();
     stage.focus({ preventScroll: true });

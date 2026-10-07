@@ -36,6 +36,7 @@ export async function render(root, params, ctx) {
       h('button', { class: 'pill', type: 'button', onclick: back }, icon('back'), h('span', { class: 'label' }, backLabel)),
       h('h1', { class: 'screen-title', tabindex: '-1' }, mod?.name ?? 'Game'),
       h('p', { class: 'day' }, label)),
+    params.why && ctx.store.settings().showReasons === true && h('p', { class: 'reason' }, `Why this game: ${params.why}`),
     stage,
     from && from !== '#/games' && h('footer', { class: 'bottombar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/games') }, h('span', { class: 'label' }, 'More games')),
