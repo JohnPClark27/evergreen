@@ -10,6 +10,7 @@
 // The answer is kept for this visit only (sessionStorage). Verse text is fetched live and
 // never saved.
 import * as api from '../api.js';
+import { setHub } from '../nav.js';
 import { refLabel } from '../books.js';
 import { GAME_TYPES } from '../curate.js';
 import { engagement, parseRefKey, refKey } from '../engagement.js';
@@ -17,7 +18,7 @@ import { gameHash } from '../game-link.js';
 import { moduleFor } from '../../modules/index.js';
 import { faceSvg, moodFor, MOOD_EXAMPLES, savedMood } from '../mood.js';
 import { seeded } from '../../modules/game-common.js';
-import { aiMark, h, icon, loading } from '../ui.js';
+import { aiMark, h, icon, loading, readAloudButton } from '../ui.js';
 
 /** Fallback verse of the day: one of the mood's examples, the same one all day. */
 function placeholderVerse(level) {
@@ -45,6 +46,7 @@ function fitVerse(box) {
 export async function render(root, params, ctx) {
   const mood = moodFor(params.mood) ?? savedMood();
   if (!mood) { ctx.go('#/'); return null; }
+  setHub('myday'); // screens opened from here come back with "My Day"
   root.append(loading('Choosing something for you…'));
 
   const catalog = await api.getCatalog().catch(() => ({ hymns: [], prayers: [], refs: [] }));
@@ -54,6 +56,7 @@ export async function render(root, params, ctx) {
   const here = `#/today?mood=${mood.level}`;
   const passage = await api.getPassage(ref.book, ref.chapter, ref.start, ref.end).catch(() => null);
   const showReasons = ctx.store.settings().showReasons === true;
+  const verseEls = (passage?.verses ?? []).map((v) => h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(v.num)), ' ', v.text));
 
   // Each button leads with ONE big word (Hymn, Game, Prayer, Read); the detail is smaller.
   const picks = choice.picks.map((p) => button(p, catalog, ref, here)).filter(Boolean);
@@ -68,17 +71,18 @@ export async function render(root, params, ctx) {
   root.replaceChildren(h('div', { class: 'screen today' },
     h('header', { class: 'topbar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/?ask=1') }, icon('back'), h('span', { class: 'label' }, 'Start over')),
-      h('h1', { class: 'screen-title', tabindex: '-1' }, 'Chosen for you'),
+      h('h1', { class: 'screen-title', tabindex: '-1' }, 'My Day'),
       h('p', { class: 'day mood-chip' }, face, mood.label)),
     // Top: the verse of the day across the screen. Bottom: four big buttons, then Engage further.
     h('section', { class: 'card verse-day', tabindex: '0', 'aria-label': `Verse of the day: ${label}` },
       h('div', { class: 'verse-head' },
         h('p', { class: 'tag added' }, icon('sparkle'), 'Verse of the day'),
         h('h2', { class: 'title' }, passage?.reference ?? label),
+        passage && readAloudButton(ctx.speaker, () => passage.verses, { items: verseEls }),
         aiMark(choice.source),
         showReasons && h('span', { class: 'reason' }, `${choice.source === 'ai' ? 'Chosen by AI' : 'Example passage (AI unavailable)'}${choice.verseReason ? `: ${choice.verseReason}` : ''}`)),
       passage
-        ? h('div', { class: 'read-lines' }, passage.verses.map((v) => h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(v.num)), ' ', v.text)))
+        ? h('div', { class: 'read-lines' }, verseEls)
         : h('p', { class: 'big-text' }, 'The verse could not be loaded right now.'),
       passage && h('p', { class: 'muted small attribution' }, passage.attribution)),
     h('div', { class: 'today-picks', role: 'group', 'aria-label': 'Four things for you' },
@@ -89,7 +93,7 @@ export async function render(root, params, ctx) {
     h('button', { class: 'pill primary big engage', type: 'button', onclick: () => ctx.go('#/explore') },
       h('span', { class: 'label' }, 'Engage further'), icon('next'))));
   fitVerse(root.querySelector('.verse-day'));
-  return null;
+  return () => ctx.speaker.stop();
 }
 
 /**

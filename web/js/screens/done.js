@@ -40,6 +40,6 @@ export async function render(root, _params, ctx) {
       plan && h('button', { class: 'tile', type: 'button', onclick: () => ctx.go(`#/plan/${plan.id}`) },
         h('span', { class: 'tile-title' }, 'Back to the plan')),
       h('button', { class: 'tile primary', type: 'button', onclick: () => ctx.go('#/') },
-        h('span', { class: 'tile-title' }, 'Home')))));
+        h('span', { class: 'tile-title' }, 'My Day')))));
   return null;
 }

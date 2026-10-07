@@ -1,6 +1,7 @@
 // Sing a Hymn: a 3×3 grid of familiar hymns (enjoyed ones first, skipped ones hidden),
 // and a simple player for one hymn (#/sing/<number>).
 import * as api from '../api.js';
+import { hubButton } from '../nav.js';
 import { hymnPanel } from '../hymn-panel.js';
 import { h, icon, roundControl, thumbButtons } from '../ui.js';
 
@@ -21,11 +22,9 @@ async function grid(root, page, ctx) {
 
   root.append(h('div', { class: 'screen sing' },
     h('header', { class: 'topbar' },
-      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
+      hubButton(ctx),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Sing a Hymn'),
-      h('p', { class: 'day' }, pages > 1 ? `Page ${page + 1} of ${pages}` : ''),
-      // Worship's second section: the prayer library.
-      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/prayers') }, h('span', { class: 'label' }, 'Prayers'), icon('next'))),
+      h('p', { class: 'day' }, pages > 1 ? `Page ${page + 1} of ${pages}` : '')),
     shown.length
       ? h('div', { class: 'hymn-grid' }, shown.map((x) => h('button', {
         class: 'hymn-tile', type: 'button',
@@ -80,7 +79,7 @@ async function player(root, number, ctx) {
 
   root.append(h('div', { class: 'screen session' },
     h('header', { class: 'topbar' },
-      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
+      hubButton(ctx),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Sing a Hymn'),
       h('p', { class: 'day' }, `Hymn ${hymn.number}`)),
     // Same panel as in a study: the card with Sing again · Pause · Sheet music joined under it.

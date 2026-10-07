@@ -3,6 +3,7 @@
 // Tapping a card opens the plan's page (#/plan/<id>). The cards sit in a grid 3 wide with
 // fixed-size rows (2 fill the screen), so a few plans don't stretch; more plans scroll down.
 import * as api from '../api.js';
+import { hubButton } from '../nav.js';
 import { doneCount, nextStudy } from '../plan-progress.js';
 import { h, icon } from '../ui.js';
 
@@ -34,7 +35,7 @@ export async function render(root, _params, ctx) {
 
   root.append(h('div', { class: 'screen sing' },
     h('header', { class: 'topbar' },
-      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/explore') }, icon('back'), h('span', { class: 'label' }, 'Back to engage')),
+      hubButton(ctx),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Choose a Study Plan'),
       h('p', { class: 'day' }, '')),
     plans.length

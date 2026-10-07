@@ -489,3 +489,14 @@ button { cursor: pointer; }
 .picked-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .game-day { display: inline-flex; align-items: center; gap: 10px; }
 .trivia-source { display: flex; align-items: center; gap: 10px; font-size: 19px; margin: 0 0 8px; }
+.tiles.two { grid-template-columns: repeat(2, 1fr); max-width: 980px; margin: auto; }
+.worship .tiles.two .tile { min-height: 260px; }
+.prayer-screen .card { display: flex; flex-direction: column; justify-content: center; }
+.prayer-screen .bottombar { justify-content: space-between; }
+/* "Read aloud" buttons next to every passage and prayer (ui.js readAloudButton) */
+.read-btn .icon { width: 28px; height: 28px; }
+.read-btn[aria-pressed="true"] { background: var(--highlight); border-color: var(--ink); }
+.verse-head .read-btn { margin-left: 8px; }
+.verse-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.verse-card-foot p { margin: 0; }
+.ws-passage .read-btn { margin-bottom: 10px; }

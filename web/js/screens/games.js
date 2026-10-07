@@ -2,6 +2,7 @@
 // Every game is built on the tablet from a short passage fetched live from YouVersion; the AI
 // only picks WHICH passage and game (with a random fallback). Nothing is scored.
 import * as api from '../api.js';
+import { hubButton } from '../nav.js';
 import { refLabel } from '../books.js';
 import { curate, fallback } from '../curate.js';
 import { gameHash } from '../game-link.js';
@@ -28,7 +29,7 @@ export async function render(root, _params, ctx) {
 
   root.append(h('div', { class: 'screen sing games' },
     h('header', { class: 'topbar' },
-      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
+      hubButton(ctx),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Games'),
       h('p', { class: 'day' }, 'Nothing is scored')),
     h('div', { class: 'game-grid' },

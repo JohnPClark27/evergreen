@@ -12,8 +12,11 @@ import { aiMark, h, icon } from '../ui.js';
 export async function render(root, params, ctx) {
   const mod = moduleFor(params.arg);
   const from = safeFrom(params.from);
+  // Back to where the game was opened: a study part, My Day, or the Games list.
+  const fromStudy = from && /^#\/(study|myday|preview)/.test(from);
+  const fromMyDay = from && /^#\/(today|\?|$)/.test(from);
   const back = () => ctx.go(from ?? '#/games');
-  const backLabel = from && from !== '#/games' ? 'Back to study' : 'Games';
+  const backLabel = fromStudy ? 'Back to study' : fromMyDay ? 'My Day' : 'Games';
 
   let config = { difficulty: params.difficulty === 'normal' ? 'normal' : 'easy' };
   if (params.book) {
@@ -38,7 +41,7 @@ export async function render(root, params, ctx) {
       h('p', { class: 'day game-day' }, label, params.src && aiMark(params.src))),
     params.why && ctx.store.settings().showReasons === true && h('p', { class: 'reason' }, `Why this game: ${params.why}`),
     stage,
-    from && from !== '#/games' && h('footer', { class: 'bottombar' },
+    fromStudy && h('footer', { class: 'bottombar' },
       h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/games') }, h('span', { class: 'label' }, 'More games')),
       h('button', { class: 'pill primary big', type: 'button', onclick: back }, icon('back'), h('span', { class: 'label' }, 'Back to study')))));
 

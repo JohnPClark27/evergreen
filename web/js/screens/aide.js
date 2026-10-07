@@ -1,5 +1,6 @@
 // Aide tools: read aloud (off by default), reading speed, music volume, voice; reset notes.
 // Everything is saved on this tablet only (localStorage). No names are saved.
+import { hubButton } from '../nav.js';
 import { RATES } from '../speech.js';
 import { confirmDialog, h, icon } from '../ui.js';
 
@@ -75,7 +76,7 @@ export async function render(root, _params, ctx) {
 
   root.append(h('div', { class: 'screen aide' },
     h('header', { class: 'topbar' },
-      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
+      hubButton(ctx),
       h('h1', { class: 'screen-title', tabindex: '-1' }, 'Aide tools'),
       h('p', { class: 'day' }, '')),
     h('div', { class: 'card aide-card' },

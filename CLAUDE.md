@@ -151,6 +151,14 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   (migration 0010; admins edit them on the Studio's `#/ai` page; anyone reads); the FIXED rules
   and the defaults are in `curate/prompt.ts`. `ai_prompt.mjs` tests the page (restore
   `updated_by` afterwards, see its header).
+- **Navigation (`nav.js`):** two hubs, My Day (`#/`, title "My Day") and Engage further (`#/explore`).
+  Each sets `hr.hub` when shown; every other screen's top-left is `hubButton(ctx)`: "My Day" or
+  "Back to engage". Worship (`#/worship`) = Sing a Hymn / Pray; the two lists don't link to each other.
+  One prayer (`#/prayers/<id>`) is a plain page (no runner) with Read aloud + More prayers.
+- **Read aloud everywhere:** `ui.js readAloudButton(speaker, lines, {items})` on My Day's verse,
+  prayers, trivia verses and passages; in studies the bar's Again button says "Read aloud"
+  while automatic read-aloud is off (one tap reads once).
+- **YouVersion rate limits:** heavy test runs get 503s ("busy"). Don't loop the suites.
 - **Badge:** `ui.js aiMark(source)`: filled = Gloo AI chose it, crossed out = skipped.
 - **Tests pick "Sample — 12 Days"** by name: real plans are being published and may sort first. Pure logic + tests: `curate/lib.ts`,
   `node supabase/functions/curate/test.ts`. Rate limit reuses `youversion_rate_hit` ("curate:" keys).

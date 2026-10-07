@@ -10,7 +10,7 @@
 import { refLabel } from '../js/books.js';
 import { aiMark, h } from '../js/ui.js';
 import {
-  blankOut, checkQuestions, gameFrame, gameModule, loadPassage, passageWords, seeded, shuffled, verseCard,
+  blankOut, checkQuestions, gameFrame, gameModule, loadPassage, passageWords, seeded, shuffled, passageBlock, verseCard,
 } from './game-common.js';
 
 /** Fill-in-the-blank questions from the passage (no AI): one per verse, up to 3. */
@@ -106,7 +106,7 @@ export default gameModule('trivia', 'Bible Trivia', '?',
           const verse = verses.find((v) => v.num === q.verse);
           reveal.replaceChildren(
             h('p', {}, `The answer is: ${q.answer}`),
-            verse ? verseCard(`${reference.replace(/:.*$/, '')}:${verse.num}`, verse)
+            verse ? verseCard(`${reference.replace(/:.*$/, '')}:${verse.num}`, verse, kit.speaker)
               : q.line && h('blockquote', { class: 'verse-card' }, h('p', { class: 'read-line' }, q.line)));
           next.hidden = false;
         },
@@ -132,11 +132,10 @@ export default gameModule('trivia', 'Bible Trivia', '?',
         attribution,
         body: h('div', { class: 'quiz' },
           h('p', { class: 'big-text' }, 'That’s all the questions. Thank you for playing!'),
-          verses.length > 0 && h('div', { class: 'ws-passage' },
-            verses.map((v) => h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(v.num)), ' ', v.text))),
+          verses.length > 0 && passageBlock(verses, kit.speaker),
           h('button', { class: 'pill', type: 'button', onclick: () => { n = 0; show(); } }, 'Play again')),
       });
     }
     show();
-    return { againLabel: 'Start again', again: () => { n = 0; show(); }, stop() {} };
+    return { againLabel: 'Start again', again: () => { n = 0; show(); }, stop: () => kit.speaker.stop() };
   });

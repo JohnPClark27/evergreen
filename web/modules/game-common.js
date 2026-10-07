@@ -7,6 +7,7 @@
 import { refLabel } from '../js/books.js';
 import scripture from './scripture.js';
 import { field, h, select } from './kit.js';
+import { readAloudButton } from '../js/ui.js';
 
 export const DIFFICULTY = [{ value: 'easy', label: 'Easy' }, { value: 'normal', label: 'Normal' }];
 
@@ -129,9 +130,19 @@ export function checkQuestions(questions, verses) {
   return out;
 }
 
-/** The verse a game step refers to, as a quiet card under the question or puzzle. */
-export function verseCard(reference, verse) {
+/** The verse a game step refers to, as a quiet card under the question or puzzle, with
+ * "Read aloud" (every passage on screen can be read aloud). */
+export function verseCard(reference, verse, speaker) {
+  const line = h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(verse.num)), ' ', verse.text);
   return h('blockquote', { class: 'verse-card' },
-    h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(verse.num)), ' ', verse.text),
-    h('p', { class: 'muted small' }, reference));
+    line,
+    h('div', { class: 'verse-card-foot' }, h('p', { class: 'muted small' }, reference),
+      speaker && readAloudButton(speaker, () => [verse], { items: [line] })));
+}
+
+/** A whole passage in large print with "Read aloud" (word search and trivia endings). */
+export function passageBlock(verses, speaker, { hidden = false } = {}) {
+  const items = verses.map((v) => h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(v.num)), ' ', v.text));
+  return h('div', { class: 'ws-passage', hidden },
+    readAloudButton(speaker, () => verses, { items }), items);
 }

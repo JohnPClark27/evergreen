@@ -1,4 +1,4 @@
-// curation.mjs - AI curation + games at iPad size: Welcome -> feeling -> Chosen for you ->
+// curation.mjs - AI curation + games at iPad size: Welcome -> feeling -> My Day ->
 // Engage further -> each tile, thumbs feed the next curate call, slide -> game -> back, AI down (500) -> silent fallback, trivia
 // validator drops a fabricated answer, and axe on every new screen.
 // Usage: node curation.mjs [baseUrl]
@@ -44,7 +44,7 @@ async function audit(page, name) {
   await page.getByRole('heading', { name: 'Engage further' }).waitFor();
   ok((await page.locator('.tile').count()) === 4, 'engage further: 4 tiles');
   await audit(page, 'engage further');
-  for (const [tile, heading] of [['Read Scripture', null], ['Worship', 'Sing a Hymn'], ['Games', 'Games'], ['Start a Bible Study', 'Choose a Study Plan']]) {
+  for (const [tile, heading] of [['Read Scripture', null], ['Worship', 'Worship'], ['Games', 'Games'], ['Start a Bible Study', 'Choose a Study Plan']]) {
     await page.goto(BASE + '#/explore'); await page.getByRole('heading', { name: 'Engage further' }).waitFor();
     await page.getByRole('button', { name: new RegExp(`^${tile}`) }).click();
     if (heading) await page.getByRole('heading', { name: heading, exact: true }).waitFor({ timeout: 20000 });
@@ -53,9 +53,37 @@ async function audit(page, name) {
   }
   await page.getByRole('button', { name: 'Back to engage' }).click();
   await page.getByRole('heading', { name: 'Engage further' }).waitFor();
-  await page.getByRole('button', { name: 'Home' }).click();
+  await page.getByRole('button', { name: 'My Day' }).click();
   await page.locator('.pick-tile').first().waitFor({ timeout: 20000 });
-  ok(true, 'Home returns to Chosen for you during the visit');
+  ok((await page.locator('h1').innerText()) === 'My Day', '"My Day" returns to My Day during the visit');
+  await context.close();
+}
+
+// ---------- 1b. Navigation: every screen goes back to the hub it was opened from ----------
+{
+  const { context, page } = await fresh();
+  const label = async () => (await page.locator('.topbar .pill').first().innerText()).trim();
+  // From My Day: a prayer pick -> a plain prayer page -> "My Day"
+  await page.goto(BASE + '#/today?mood=2'); await page.locator('.pick-tile').first().waitFor({ timeout: 20000 });
+  await page.goto(BASE + '#/prayers'); await page.locator('.study-tile').first().click();
+  await page.locator('.prayer-screen .read-line').first().waitFor({ timeout: 20000 });
+  ok(!(await page.locator('.side-arrow').count()) && (await page.locator('.prayer-screen .attribution').innerText()).length > 0, 'one prayer: a plain page with its source (no Back/Next)');
+  ok(await label() === 'My Day', 'prayer opened from My Day: top-left says "My Day"');
+  await audit(page, 'one prayer');
+  await page.getByRole('button', { name: 'More prayers' }).click();
+  await page.getByRole('heading', { name: 'Prayers' }).waitFor();
+  ok(await label() === 'My Day' && !(await page.getByRole('button', { name: /Hymns/ }).count()), 'prayer list: "My Day", no link to the hymn list');
+  await page.goto(BASE + '#/sing'); await page.locator('.hymn-tile').first().waitFor({ timeout: 20000 });
+  ok(await label() === 'My Day' && !(await page.getByRole('button', { name: /Prayers/ }).count()), 'hymn list: "My Day", no link to the prayer list');
+  // From Engage further: Worship -> Pray -> "Back to engage"
+  await page.goto(BASE + '#/explore'); await page.getByRole('button', { name: /^Worship/ }).click();
+  await page.getByRole('heading', { name: 'Worship' }).waitFor();
+  await audit(page, 'worship');
+  await page.getByRole('button', { name: /^Pray/ }).click(); await page.locator('.study-tile').first().waitFor({ timeout: 20000 });
+  ok(await label() === 'Back to engage', 'opened from Engage further: top-left says "Back to engage"');
+  await page.getByRole('button', { name: 'Back to engage' }).click();
+  await page.getByRole('heading', { name: 'Engage further' }).waitFor();
+  ok(true, '"Back to engage" returns to Engage further');
   await context.close();
 }
 

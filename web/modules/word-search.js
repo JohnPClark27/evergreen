@@ -7,7 +7,7 @@
 // same passage always gives the same grid.
 import { refLabel } from '../js/books.js';
 import { h } from './kit.js';
-import { gameFrame, gameModule, loadPassage, passageWords, seeded, shuffled } from './game-common.js';
+import { gameFrame, gameModule, loadPassage, passageBlock, passageWords, seeded, shuffled } from './game-common.js';
 
 const LEVELS = {
   easy: { size: 6, words: 5, dirs: [[0, 1], [1, 0]] },
@@ -62,8 +62,7 @@ export default gameModule('word-search', 'Word Search', '▦',
     const status = h('p', { class: 'game-status', 'aria-live': 'polite' });
     const gridEl = h('div', { class: 'ws-grid', role: 'group', 'aria-label': 'Letter grid' });
     const bank = h('ul', { class: 'ws-bank', 'aria-label': 'Words to find' });
-    const passageEl = h('div', { class: 'ws-passage', hidden: true },
-      passage.verses.map((v) => h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(v.num)), ' ', v.text)));
+    const passageEl = passageBlock(passage.verses, kit.speaker, { hidden: true });
     const helpBtn = h('button', { class: 'pill', type: 'button' }, 'Show me a word');
     const passageBtn = h('button', { class: 'pill', type: 'button', 'aria-expanded': 'false' }, 'Show the passage');
 
@@ -142,5 +141,5 @@ export default gameModule('word-search', 'Word Search', '▦',
         passageEl),
     });
     draw();
-    return { againLabel: 'Start again', again: draw, stop() {} };
+    return { againLabel: 'Start again', again: draw, stop: () => kit.speaker.stop() };
   });

@@ -50,6 +50,7 @@ export const ICON = {
   game: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4v3a2 2 0 1 0 4 0V3h3v18h-6v-3a2 2 0 1 0-4 0v3H3V10h3a2 2 0 1 0 0-4H3V3z"/></svg>',
   sparkle: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.2 6.3L21 10l-6.8 1.7L12 18l-2.2-6.3L3 10l6.8-1.7z"/></svg>',
   book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5C5.8 4.3 8.8 4.4 11 6v14c-2.2-1.5-5.2-1.6-8-.5zM21 5.5C18.2 4.3 15.2 4.4 13 6v14c2.2-1.5 5.2-1.6 8-.5z"/></svg>',
+  speaker: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>',
 };
 
@@ -104,6 +105,43 @@ export function aiMark(source) {
     ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8z"/></svg>'
     : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8z"/><path d="M4 20 20 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
   return el;
+}
+
+/**
+ * "Read aloud" for any passage or prayer on screen: the device voice reads it when tapped
+ * (even if automatic read-aloud in studies is off: tapping is asking), and tapping again stops.
+ * lines: () => [string] (prayer lines) or [{num, text}] (verses). items: optional elements to
+ * highlight, one per line, while each is read.
+ */
+export function readAloudButton(speaker, lines, { items = [], label = 'Read aloud' } = {}) {
+  const btn = h('button', { class: 'pill read-btn', type: 'button', 'aria-pressed': 'false' }, icon('speaker'), h('span', { class: 'label' }, label));
+  let reading = false;
+  const done = () => {
+    reading = false;
+    btn.querySelector('.label').textContent = label;
+    btn.setAttribute('aria-pressed', 'false');
+    items.forEach((el) => el.classList.remove('reading'));
+    speaker.removeEventListener('segment', onSegment);
+  };
+  const onSegment = (e) => {
+    items.forEach((el, i) => el.classList.toggle('reading', i === e.detail.index));
+    bringIntoView(items[e.detail.index]);
+  };
+  btn.addEventListener('click', () => {
+    if (reading) { speaker.stop(); done(); return; }
+    const list = lines();
+    if (!list.length) return;
+    reading = true;
+    btn.querySelector('.label').textContent = 'Stop reading';
+    btn.setAttribute('aria-pressed', 'true');
+    speaker.addEventListener('segment', onSegment);
+    const was = speaker.enabled;
+    speaker.enabled = true; // checked only when speech starts (speech.js)
+    const run = typeof list[0] === 'string' ? speaker.speakText(list.join('\n')) : speaker.speakVerses(list);
+    speaker.enabled = was;
+    run.catch(() => {}).finally(done);
+  });
+  return btn;
 }
 
 /** A full-screen calm spinner with a few words (the spinner stops with Reduce Motion). */

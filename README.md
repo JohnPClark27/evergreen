@@ -120,7 +120,8 @@ math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
   server and the tablet, and every AI step has a fallback that works without it. See
   *AI curation* below. Music is rendered from public-domain notation. **Read-aloud is off by
   default**, because the built-in voices still sound robotic. When an aide turns it on (in Aide
-  tools, or the *Read aloud* button in any study), it uses only the device's own voice.
+  tools, or the *Read aloud* button in any study), it uses only the device's own voice. Every
+  passage and prayer on screen also has its own **Read aloud** button, which reads it once on request.
 - **Public domain only.** The 40 published hymns pass a strict rule: the ABC file says *public
   domain*, and the claim doesn't rest on a modern hymnal transcription or a "never renewed"
   argument (`supabase/seed/publish_pd_hymns.py`). The Studio applies the same rule, reading the

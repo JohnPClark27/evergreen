@@ -24,6 +24,7 @@ import * as read from './screens/read.js';
 import * as games from './screens/games.js';
 import * as game from './screens/game.js';
 import * as prayers from './screens/prayers.js';
+import * as worship from './screens/worship.js';
 
 const settings = store.settings();
 const audio = new AudioPlayer({ volume: settings.volume });
@@ -73,7 +74,8 @@ const ROUTES = [
   [/^\/games$/, games, false],
   [/^\/game\/(word-search|crossword|trivia)$/, game, false],
   [/^\/prayers$/, prayers, false],
-  [/^\/prayers\/(\d+)$/, prayers, true],
+  [/^\/prayers\/(\d+)$/, prayers, false], // Read aloud unlocks sound in its own tap
+  [/^\/worship$/, worship, false],
 ];
 
 const root = document.getElementById('app');
@@ -122,7 +124,7 @@ async function route() {
     root.replaceChildren(h('div', { class: 'screen message' },
       h('h1', { class: 'big-text', tabindex: '-1' }, 'Something went wrong loading this page.'),
       h('p', { class: 'muted' }, err.message),
-      h('button', { class: 'pill primary', onclick: () => ctx.go('#/') }, 'Go Home')));
+      h('button', { class: 'pill primary', onclick: () => ctx.go('#/') }, 'Go to My Day')));
   }
   root.querySelector('h1')?.focus({ preventScroll: true });
 }

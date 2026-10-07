@@ -16,6 +16,7 @@ await page.goto(BASE);
 await page.getByRole('heading', { name: /^Good (morning|afternoon|evening)\.$/ }).waitFor(); await page.waitForTimeout(800);
 ok((await page.locator('.mood-tile').count()) === 5, 'welcome: 5 feelings');
 await page.getByRole('button', { name: 'Skip and see everything' }).click(); // Welcome → Engage further → Start a Bible Study
+await page.getByRole('heading', { name: 'Engage further' }).waitFor();
 ok((await page.locator('.tile').count()) === 4, 'engage further: 4 tiles');
 await page.getByRole('button', { name: /Start a Bible Study/ }).click();
 await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
@@ -58,6 +59,7 @@ ok((await page.locator('.study-tile').first().innerText()).includes('Enjoyed bef
 await page.getByRole('button', { name: 'Back to engage' }).click();
 await page.getByRole('heading', { name: 'Engage further' }).waitFor();
 await page.getByRole('button', { name: /Worship/ }).click();
+await page.getByRole('button', { name: /Sing a Hymn/ }).click();
 await page.locator('.hymn-tile').first().waitFor();
 ok((await page.locator('.hymn-tile').count()) === 9, 'sing: 3x3 grid');
 await page.locator('.hymn-tile').nth(1).click();

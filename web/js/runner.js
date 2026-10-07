@@ -14,7 +14,7 @@ import * as api from './api.js';
 import { moduleFor } from '../modules/index.js';
 import { GAME_TYPES } from './curate.js';
 import { engagement } from './engagement.js';
-import { h, icon, roundControl } from './ui.js';
+import { h, icon, roundControl, setControl } from './ui.js';
 
 /**
  * plan: { id, title, subtitle?, items: [{ module_type, config }] }  (one study: its modules in order)
@@ -56,8 +56,12 @@ export async function runStudy(root, plan, ctx, opts = {}) {
     voiceBtn.setAttribute('aria-pressed', String(readAloud));
     voiceBtn.classList.toggle('on', readAloud);
   };
+  // With read-aloud off, a reading part's "Read again" becomes "Read aloud": one tap reads it
+  // once (every passage and prayer on screen can be read aloud on request).
+  const askToRead = () => Boolean(controller?.needsSpeech && !readAloud);
   const refreshAgain = () => {
-    againBtn.disabled = !controller?.again || (controller.needsSpeech && !readAloud);
+    againBtn.disabled = !controller?.again;
+    setControl(againBtn, askToRead() ? 'speaker' : 'again', askToRead() ? 'Read aloud' : (controller?.againLabel ?? 'Again'));
   };
 
   root.append(h('div', { class: 'screen session' },
@@ -114,7 +118,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       audio.stop(0.6);
     }
 
-    againBtn.querySelector('.label').textContent = 'Again';
+    setControl(againBtn, 'again', 'Again');
     let c;
     try {
       c = await mod.play(stage, item.config ?? {}, kit);
@@ -149,7 +153,16 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       controller?.resume?.();
     }
   });
-  againBtn.addEventListener('click', () => { setPaused(false); controller?.again?.(); });
+  againBtn.addEventListener('click', () => {
+    setPaused(false);
+    if (askToRead()) {
+      speaker.enabled = true;  // just this once: speech checks it only when it starts
+      controller.speakNow?.();
+      speaker.enabled = readAloud;
+      return;
+    }
+    controller?.again?.();
+  });
   voiceBtn.addEventListener('click', () => {
     readAloud = !readAloud;
     speaker.enabled = readAloud;
