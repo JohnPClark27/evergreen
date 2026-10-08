@@ -4,7 +4,7 @@
 //   #/game/<type>?book=PSA&chapter=23&start=1&end=4&difficulty=easy&from=<where to go back>
 //   #/game/trivia?hymn=<id>&from=…    (a hymn with no Scripture reference: finish-the-line questions)
 import * as api from './api.js';
-import { curate, GAME_TYPES } from './curate.js';
+import { curate, GAME_TYPES, WIP_GAMES } from './curate.js';
 
 const REF_TYPES = new Set(['scripture', ...GAME_TYPES]);
 
@@ -61,7 +61,8 @@ export async function openGameFor(ctx, item, items, from, button = null) {
       return;
     }
     const { game, source } = await curate('slide_game', { current: { ref: target.ref, hymn_id: target.hymn_id } });
-    const type = GAME_TYPES.includes(game?.type) ? game.type : 'trivia';
+    // Only finished games are suggested: word search and crossword are still in progress.
+    const type = GAME_TYPES.includes(game?.type) && !WIP_GAMES.includes(game.type) ? game.type : 'trivia';
     ctx.go(gameHash(type, { ref: target.ref, difficulty: game?.difficulty ?? 'easy', why: game?.reason, src: source }, from));
   } finally {
     if (button?.isConnected) { button.disabled = false; if (label) label.textContent = before; }

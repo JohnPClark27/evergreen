@@ -12,7 +12,7 @@
 import * as api from '../api.js';
 import { setHub } from '../nav.js';
 import { refLabel } from '../books.js';
-import { GAME_TYPES } from '../curate.js';
+import { GAME_TYPES, WIP_GAMES } from '../curate.js';
 import { engagement, parseRefKey, refKey } from '../engagement.js';
 import { gameHash } from '../game-link.js';
 import { moduleFor } from '../../modules/index.js';
@@ -59,7 +59,7 @@ export async function render(root, params, ctx) {
   const verseEls = (passage?.verses ?? []).map((v) => h('p', { class: 'read-line' }, h('sup', { class: 'vnum' }, String(v.num)), ' ', v.text));
 
   // Each button leads with ONE big word (Hymn, Game, Prayer, Read); the detail is smaller.
-  const picks = choice.picks.map((p) => button(p, catalog, ref, here)).filter(Boolean);
+  const picks = withQuiz(choice.picks, catalog, ref).map((p) => button(p, catalog, ref, here)).filter(Boolean);
   const open = (p) => async () => {
     engagement.record(p.type, p.config, 'opened');
     await ctx.unlock();
@@ -135,6 +135,37 @@ function fallbackChoice(level, catalog) {
       { module_type: 'read', id_or_ref: refKey(verse) },
     ].filter(Boolean),
   };
+}
+
+/**
+ * My Day always includes a Bible Trivia quiz on the verse of the day (it's the most finished
+ * game), and never a game still in progress (word search, crossword). Slots freed up go to
+ * reading the chapter, then a prayer or hymn not already shown. Always 4 picks.
+ */
+function withQuiz(picks, catalog, verse) {
+  const vkey = refKey(verse);
+  // The quiz uses the verse with up to two verses either side: a single verse is too short for
+  // the fill-in-the-blank questions used when the AI is unavailable. (YouVersion returns only
+  // the verses that exist, so this is safe at the start or end of a chapter.)
+  const quizRef = verse.end - verse.start >= 2 ? verse
+    : { ...verse, start: Math.max(1, verse.start - 2), end: verse.end + 2 };
+  const out = picks.filter((p) => !WIP_GAMES.includes(p.module_type))
+    .map((p) => (p.module_type === 'trivia' && p.id_or_ref === vkey ? { ...p, id_or_ref: refKey(quizRef) } : p));
+  if (!out.some((p) => p.module_type === 'trivia')) {
+    const quiz = { module_type: 'trivia', id_or_ref: refKey(quizRef), reason: 'A gentle quiz on today’s verse' };
+    // Put it where the AI put a game, else third; drop the last pick if there are already 4.
+    const at = Math.min(picks.findIndex((p) => GAME_TYPES.includes(p.module_type)) >= 0
+      ? picks.findIndex((p) => GAME_TYPES.includes(p.module_type)) : 2, out.length);
+    out.splice(at, 0, quiz);
+  }
+  const has = (type, id) => out.some((p) => p.module_type === type && String(p.id_or_ref) === String(id));
+  const extras = [
+    { module_type: 'read', id_or_ref: vkey },
+    ...catalog.prayers.map((x) => ({ module_type: 'prayer', id_or_ref: String(x.id) })),
+    ...catalog.hymns.map((x) => ({ module_type: 'hymn', id_or_ref: String(x.id) })),
+  ];
+  for (const e of extras) { if (out.length >= 4) break; if (!has(e.module_type, e.id_or_ref)) out.push(e); }
+  return out.slice(0, 4);
 }
 
 /** One pick -> a big button's word, icon, detail and destination (null if it can't be shown). */
