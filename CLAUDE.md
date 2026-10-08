@@ -238,7 +238,7 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 | Supabase project | ref `trdmlfbbmxogrxihcklw`, URL `https://trdmlfbbmxogrxihcklw.supabase.co` (Free tier) |
 | Publishable key | in `web/config.js` (`window.HYMNAL_CONFIG.supabaseUrl / supabaseAnonKey`) |
 | GitHub | `JohnPClark27/evergreen`, branch `dev` |
-| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.evergreen-ai.pages.dev/` (production `evergreen-ai.pages.dev`). `/` is the real app (Phase 7). Phase 6 test page: `/dev/core-test`. Pages serves clean URLs: `x.html` 308-redirects to `x`. |
+| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.evergreen-ai.pages.dev/` (production `evergreen-ai.pages.dev`). `/` is the real app (Phase 7). Pages serves clean URLs: `x.html` 308-redirects to `x`. |
 | DB content | 301 hymns: **40 `published`** (well-known, fully public domain per a strict ABC-file rule: `supabase/seed/publish_pd_hymns.py`), the rest `approved`. 50 `is_familiar` (the original 46 plus #67, #83, #169, #170, set in the DB; `familiar.txt` only seeds first imports). 1313 scripture refs, 158 topics, 15 prayers (`published`). Plans: **"Sample — 12 Days" (`published`**, 12 published studies) and "Memory Care — 30 Days" (`draft`; 4 of its studies are shared with the sample plan and are published). |
 | Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 107 MB total. Audio only for the 50 familiar hymns, so every published hymn has audio. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
@@ -423,7 +423,7 @@ then the modules.
 - `web/js/lyrics.js`, `web/js/sheet.js`: port v1's karaoke and abcjs cursor (pinned abcjs from a CDN).
 - **Done when:** a test page **on the Pages preview URL** plays a hymn with highlighted words,
   then speaks Psalm 23:1-3 with ducking.
-  - **Verified headless on `https://dev.evergreen-ai.pages.dev/dev/core-test`:** words
+  - **Verified headless on the Phase 6 test page (`/dev/core-test`, since removed):** words
     highlight in time, the sheet cursor follows, and the music ducks 100% → 25% → 100% while the
     Psalm is "read". Each MP3 downloads once per session. No errors.
   - **Still pending:** hearing the voice on a real device (iPad Safari or desktop Chrome). Headless

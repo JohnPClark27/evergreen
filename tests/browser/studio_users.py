@@ -4,7 +4,7 @@ studio_users.py - throwaway Studio users for tests/browser/studio.mjs.
   python tests/browser/studio_users.py make  > tests/browser/.out/users.json
   python tests/browser/studio_users.py clean tests/browser/.out/users.json
 
-`make` creates an author and an admin (service key from admin/.env; test only: real people
+`make` creates an author and an admin (service key from .env; test only: real people
 sign in by magic link), signs both in, and prints their sessions as JSON. `clean` deletes the
 users, their plans, and the audit rows written since `make`.
 """

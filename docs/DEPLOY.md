@@ -194,7 +194,6 @@ GET /functions/v1/youversion?book=PSA&chapter=23[&start=1&end=3]
   match the pipeline's version so the sheet-music cursor lines up.
 - **Stored on the tablet:** only `localStorage` (`hr.studyStep`, `hr.studyNotes`, `hr.hymnNotes`,
   `hr.settings`, `hr.lastStudy`). No accounts, no names, no analytics.
-- **Developer test page:** `/dev/core-test` (Phase 6).
 
 ---
 
