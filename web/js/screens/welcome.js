@@ -1,7 +1,7 @@
 // Welcome (#/): a greeting for the time of day and "How are you feeling today?" with five
 // big faces. One tap opens "For you" (#/today?mood=N). Aide tools stay in the corner.
 import { faceSvg, greeting, MOODS, saveMood, savedMood } from '../mood.js';
-import { h } from '../ui.js';
+import { brandLogo, h } from '../ui.js';
 
 export async function render(root, params, ctx) {
   // Already answered this visit: Home goes back to what was chosen ("Start over" asks again).
@@ -10,6 +10,7 @@ export async function render(root, params, ctx) {
   const face = (m) => { const s = h('span', { class: 'mood-face' }); s.innerHTML = faceSvg(m); return s; };
   root.append(h('div', { class: 'screen home welcome-screen' },
     h('a', { class: 'aide-link corner', href: '#/aide' }, 'Aide tools'),
+    brandLogo(),
     h('h1', { class: 'welcome', tabindex: '-1' }, `${greeting()}.`),
     h('p', { class: 'mood-question', id: 'mood-q' }, 'How are you feeling today?'),
     h('div', { class: 'mood-row', role: 'group', 'aria-labelledby': 'mood-q' },

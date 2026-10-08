@@ -1,6 +1,6 @@
 # Deploy
 
-Hymnal Reader runs entirely on **hosted** services: a Supabase **Free** project (Postgres, Storage,
+Evergreen runs entirely on **hosted** services: a Supabase **Free** project (Postgres, Storage,
 one Edge Function) and **Cloudflare Pages** (the static public app). It runs at **$0**. We never
 run the local Supabase stack: no `supabase start`, no Docker. The Supabase CLI is always
 `npx supabase …`.

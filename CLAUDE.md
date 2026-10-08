@@ -174,6 +174,16 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 - **Tests:** `tests/browser/curation.mjs` (welcome → today → explore, thumbs → history, slide
   game, AI-down 500 fallback, trivia drops a fabricated answer, axe on new screens).
 
+## 0e. Evergreen branding (2026-10-08)
+
+- Outward name is **Evergreen** (tab titles, Studio, README, DESIGN.md). Internal names stay
+  (`hr.*` storage keys, `hymnal-reader-v2` URLs/repo until the user renames them).
+- Logos: originals in `logos/`; trimmed copies in `web/img/` (`evergreen-wordmark-color.png`,
+  `-white.png`, icons 64/180). Welcome (`#/`) and Engage further (`#/explore`) show the color
+  wordmark (`ui.js brandLogo()`); every other screen has the forest `.brandbar` with the white
+  wordmark (`index.html`; `app.js` sets `body[data-brand]`). The Studio nav shows the white one.
+- Softer yellow: `--yellow: #FFF0B0` (was #FFE57A).
+
 ## 1. Coordination rules (avoid clashing)
 
 1. **Before you start:** `git fetch && git status && git log --oneline -5` on `dev`. If `dev`

@@ -1,4 +1,8 @@
-# Hymnal Reader
+# Evergreen
+
+![Evergreen](web/img/evergreen-wordmark-color.png)
+
+*Evergreen (formerly Hymnal Reader): hymns, Scripture and prayer for older adults, on a large-print tablet.*
 
 **A daily hymn, a short Scripture passage, and a prayer, made simple enough to share with a
 resident in memory care.** It runs on an iPad, is used together with an aide, and needs no
@@ -20,7 +24,7 @@ for that moment:
 
 The **aide** who would sit with them has a few spare minutes, not time to prepare a devotion.
 
-Hymnal Reader gives the aide **one big button**: *Choose a Study Plan*. A pastor publishes a
+Evergreen gives the aide **one big button**: *Choose a Study Plan*. A pastor publishes a
 **study plan** (for example, "Comfort in the evening", or a 12-week series) that holds one or more
 **studies**. On the tablet you pick a plan, then walk through its studies in any order. The plan
 page shows a big **Continue: Study 3** button and a ✓ next to each study already done. That

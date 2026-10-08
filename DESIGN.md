@@ -1,6 +1,6 @@
 ---
 version: alpha
-name: Hymnal Reader
+name: Evergreen
 description: >-
   Calm, high-contrast, large-type design for a hymn, Scripture and prayer app that an aide
   shares with an older adult in memory care, on an iPad. Cream and forest green, with soft
@@ -11,7 +11,7 @@ colors:
   background: "#FFF9ED"   # cream: the page
   surface: "#FFF9ED"      # cream: cards, buttons, inputs
   on-surface: "#1B3A2A"
-  accent: "#FFE57A"       # soft yellow: current word/verse, selected, needs attention
+  accent: "#FFF0B0"       # soft yellow: current word/verse, selected, needs attention
   on-accent: "#1B3A2A"
   secondary: "#4F9B60"    # green: control outlines, progress, sung words (text 24px+ only)
   tertiary: "#B9C8A2"     # sage: card edges, dividers, tags, progress track
@@ -195,11 +195,11 @@ components:
     rounded: "{rounded.sm}"
 ---
 
-# Hymnal Reader design system
+# Evergreen design system
 
 ## Overview
 
-Hymnal Reader is used by an **aide sitting beside an older adult**, often someone living with
+Evergreen is used by an **aide sitting beside an older adult**, often someone living with
 memory loss, on an iPad held at arm's length. The design has one job: make the hymn, the
 passage and the prayer easy to see and the next step obvious. The mood is **calm, warm and
 plain**. It should feel like a large-print hymnal, not like an app.
@@ -237,7 +237,7 @@ Five colours, no others. Measured WCAG contrast decides what each one may do:
 |---|---|---|---|
 | Forest green | `#1B3A2A` | **All text.** Primary buttons, the focus ring, "done" ticks | `--ink`, `--primary`, `--focus` |
 | Cream | `#FFF9ED` | The page, cards and buttons. Text and icons on forest green | `--bg`, `--surface`, `--on-primary` |
-| Soft yellow | `#FFE57A` | **Accent:** the current word or verse, a selected choice, "look here" | `--highlight` |
+| Soft yellow | `#FFF0B0` (softened from `#FFE57A`, 2026-10-08) | **Accent:** the current word or verse, a selected choice, "look here" | `--highlight` |
 | Green | `#4F9B60` | Outlines of buttons, tiles and inputs; progress; sung lyric words | `--control-border`, `--ink-soft` |
 | Sage | `#B9C8A2` | Card edges, dividers, tags, the empty part of a progress bar | `--line`, `--tag` |
 

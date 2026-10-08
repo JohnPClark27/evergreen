@@ -22,7 +22,8 @@ a { color: var(--ink); }
   background: var(--primary); color: var(--on-primary);
 }
 .topnav :focus-visible { outline-color: var(--highlight); }
-.brand { font-weight: 700; font-size: 20px; color: var(--on-primary); margin-right: 18px; text-decoration: none; }
+.brand { font-weight: 700; font-size: 20px; color: var(--on-primary); margin-right: 18px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.brand img { height: 24px; width: auto; display: block; }
 .topnav a.nav { padding: 6px 12px; border-radius: 8px; color: var(--on-primary); text-decoration: none; font-weight: 700; }
 .topnav a.nav:hover { text-decoration: underline; }
 .topnav a.nav[aria-current="page"] { background: var(--highlight); color: var(--ink); }

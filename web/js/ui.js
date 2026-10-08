@@ -144,6 +144,9 @@ export function readAloudButton(speaker, lines, { items = [], label = 'Read alou
   return btn;
 }
 
+/** The Evergreen wordmark in color, top center (Welcome and Engage further). */
+export const brandLogo = () => h('img', { class: 'brand-logo', src: 'img/evergreen-wordmark-color.png', alt: 'Evergreen', width: '1154', height: '224' });
+
 /** A full-screen calm spinner with a few words (the spinner stops with Reduce Motion). */
 export function loading(text) {
   return h('div', { class: 'screen message' },

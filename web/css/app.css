@@ -503,3 +503,17 @@ button { cursor: pointer; }
 /* Prayers: 3 x 2 tiles that fill the screen (like the hymn grid's 3 x 3). */
 .prayer-grid { grid-template-rows: repeat(2, 1fr); }
 @media (orientation: portrait), (max-width: 900px) { .prayer-grid { grid-template-rows: none; } }
+
+/* ---------- Evergreen branding ---------- */
+/* The page is a column: the brand bar (on most screens), then the current screen. */
+body { display: flex; flex-direction: column; height: 100dvh; }
+#app { flex: 1; min-height: 0; height: auto; display: flex; flex-direction: column; }
+#app .screen { flex: 1; min-height: 0; height: auto; }
+/* A thin forest-green bar with the white wordmark in the middle. */
+.brandbar { flex: none; display: flex; justify-content: center; align-items: center; height: 44px; background: var(--primary); }
+.brandbar img { height: 26px; width: auto; display: block; }
+body[data-brand="page"] .brandbar { display: none; }
+/* The color wordmark at the top center of Welcome and Engage further. */
+.brand-logo { height: 64px; width: auto; display: block; }
+.home .brand-logo { margin: 0 auto -12px; }
+@media (orientation: portrait), (max-width: 900px) { .brand-logo { height: 52px; } }

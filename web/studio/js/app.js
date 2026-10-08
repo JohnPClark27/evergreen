@@ -1,4 +1,4 @@
-// app.js - Hymnal Reader Studio: sign in, build study plans, (admins) review and manage.
+// app.js - Evergreen Studio: sign in, build study plans, (admins) review and manage.
 //
 //   #/plans          My study plans            #/review       Admin: plans waiting for review
 //   #/plan/new       New plan                  #/hymns        Admin: hymn library (publish / familiar)
@@ -86,7 +86,7 @@ function signInScreen(message = null) {
     sendBtn.disabled = false;
   });
   root.replaceChildren(h('main', { class: 'signin' },
-    h('h1', {}, 'Hymnal Reader Studio'),
+    h('h1', {}, 'Evergreen Studio'),
     h('p', {}, 'Build study plans for residents: hymns, Scripture, prayers, notes, gentle quizzes and games. ',
       'An admin reviews each plan before it appears on the tablets.'),
     form,
@@ -104,7 +104,8 @@ function shell(active) {
   const main = h('main', { class: 'page', id: 'main' });
   root.replaceChildren(h('div', { class: 'shell' },
     h('nav', { class: 'topnav', 'aria-label': 'Studio' },
-      h('a', { class: 'brand', href: '#/plans' }, 'Hymnal Reader Studio'),
+      h('a', { class: 'brand', href: '#/plans' },
+        h('img', { src: '../img/evergreen-wordmark-white.png', alt: 'Evergreen', width: '1154', height: '224' }), h('span', {}, 'Studio')),
       link('#/plans', 'My plans', 'plans'),
       admin && link('#/review', 'Review', 'review'),
       admin && link('#/hymns', 'Hymns', 'hymns'),

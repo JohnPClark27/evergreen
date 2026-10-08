@@ -92,6 +92,9 @@ async function route() {
     if (match) { screen = mod; needsSound = sound; break; }
   }
   params.arg = match?.[1];
+  // Welcome and Engage further show the color wordmark in the page; every other screen has
+  // the green brand bar with the white wordmark (index.html).
+  document.body.dataset.brand = screen === welcome || screen === home ? 'page' : 'bar';
   params.arg2 = match?.[2];
 
   // Leave the previous screen cleanly (stop speech, fade music, stop animations).
@@ -102,7 +105,7 @@ async function route() {
   // Opened directly (bookmark, reload): one tap is needed before sound can start.
   if (needsSound && !unlocked) {
     root.replaceChildren(h('div', { class: 'screen tap-to-start' },
-      h('h1', { class: 'sr-only', tabindex: '-1' }, 'Hymnal Reader'),
+      h('h1', { class: 'sr-only', tabindex: '-1' }, 'Evergreen'),
       h('button', {
         class: 'tile primary', type: 'button',
         onclick: async () => { await ctx.unlock(); if (id === renderId) route(); },
