@@ -8,7 +8,7 @@
 resident in memory care.** It runs on an iPad, is used together with an aide, and needs no
 accounts.
 
-Live: **https://hymnal-reader-v2.pages.dev/** · Gloo AI Hackathon, Track 2: *Scripture Beyond the App*
+Live: **https://evergreen-ai.pages.dev/** · Gloo AI Hackathon, Track 2: *Scripture Beyond the App*
 
 ---
 
@@ -200,7 +200,7 @@ from any study part (*Play a game about this*).
 ## Status and testing
 
 - Production (`main`) runs the day-based version. The **`studio` branch** adds the Studio and
-  modular study plans. Its preview is at `https://studio.hymnal-reader-v2.pages.dev/`.
+  modular study plans. Its preview is at `https://studio.evergreen-ai.pages.dev/`.
 - **Automated checks on `studio`:**
   - Studio security as real users: 32/32
   - Studio end to end (author builds, previews, submits; admin approves; tablet lists it): 27/27

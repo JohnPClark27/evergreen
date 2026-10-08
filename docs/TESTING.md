@@ -5,8 +5,8 @@ Two parts:
 2. **The manual checklist** for real devices. Speech, iPad audio rules and VoiceOver can't be
    checked headless: the headless browser has no voices and isn't Safari.
 
-Test on the **Pages preview** (`https://dev.hymnal-reader-v2.pages.dev/`) before merging, and on
-**production** (`https://hymnal-reader-v2.pages.dev/`) after.
+Test on the **Pages preview** (`https://dev.evergreen-ai.pages.dev/`) before merging, and on
+**production** (`https://evergreen-ai.pages.dev/`) after.
 
 ---
 
@@ -58,8 +58,8 @@ inputs use `--control-border`, so their edges are visible to low-vision users.
 See `tests/browser/README.md`:
 ```sh
 cd tests/browser && npm install && ./setup-libs.sh
-node e2e.mjs  https://dev.hymnal-reader-v2.pages.dev/ reduce
-node a11y.mjs https://dev.hymnal-reader-v2.pages.dev/
+node e2e.mjs  https://dev.evergreen-ai.pages.dev/ reduce
+node a11y.mjs https://dev.evergreen-ai.pages.dev/
 ```
 
 ---
@@ -142,6 +142,6 @@ the device, iOS version, and what happened.
 - [ ] Hymns: publishing a hymn that isn't fully public domain per its file is refused, with the reason.
 
 ### J. Production smoke test (after merging to `main`)
-- [ ] `https://hymnal-reader-v2.pages.dev/` shows **Welcome.** (not "coming soon").
+- [ ] `https://evergreen-ai.pages.dev/` shows **Welcome.** (not "coming soon").
 - [ ] Day 1 runs end to end, Scripture loads (the Edge Function accepts the production origin),
       and a hymn plays in Sing a Hymn.

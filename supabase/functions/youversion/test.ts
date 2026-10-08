@@ -28,13 +28,13 @@ check("parseVerses", () => {
   ]);
 });
 
-const hosts = ["hymnal-reader-v2.pages.dev"];
-check("CORS: production", () => assert.ok(allowedOrigin("https://hymnal-reader-v2.pages.dev", hosts)));
-check("CORS: dev preview", () => assert.ok(allowedOrigin("https://dev.hymnal-reader-v2.pages.dev", hosts)));
+const hosts = ["evergreen-ai.pages.dev"];
+check("CORS: production", () => assert.ok(allowedOrigin("https://evergreen-ai.pages.dev", hosts)));
+check("CORS: dev preview", () => assert.ok(allowedOrigin("https://dev.evergreen-ai.pages.dev", hosts)));
 check("CORS: localhost any port", () => assert.ok(allowedOrigin("http://localhost:8080", hosts)));
 check("CORS: other site", () => assert.ok(!allowedOrigin("https://evil.example", hosts)));
-check("CORS: lookalike host", () => assert.ok(!allowedOrigin("https://hymnal-reader-v2.pages.dev.evil.example", hosts)));
-check("CORS: http pages", () => assert.ok(!allowedOrigin("http://hymnal-reader-v2.pages.dev", hosts)));
+check("CORS: lookalike host", () => assert.ok(!allowedOrigin("https://evergreen-ai.pages.dev.evil.example", hosts)));
+check("CORS: http pages", () => assert.ok(!allowedOrigin("http://evergreen-ai.pages.dev", hosts)));
 
 // limitKey is async, so compute the keys first, then check them.
 const k1 = await limitKey("secret", "1.2.3.4");

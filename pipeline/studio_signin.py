@@ -6,7 +6,7 @@ the first admin. Uses the service key from .env, so only someone with that key c
 
   python pipeline/studio_signin.py you@example.com                 # link + code, Studio on production
   python pipeline/studio_signin.py you@example.com --admin         # …and make them an admin
-  python pipeline/studio_signin.py you@example.com --url https://studio.hymnal-reader-v2.pages.dev/studio/
+  python pipeline/studio_signin.py you@example.com --url https://studio.evergreen-ai.pages.dev/studio/
 
 Prints a sign-in link (open it in any browser) and a one-time code (Studio → "I have a sign-in
 code"). Both work once, for one hour. Treat them like a password: they sign in as that person.
@@ -16,7 +16,7 @@ import sys
 
 import supa
 
-DEFAULT_URL = "https://hymnal-reader-v2.pages.dev/studio/"
+DEFAULT_URL = "https://evergreen-ai.pages.dev/studio/"
 
 
 def main():

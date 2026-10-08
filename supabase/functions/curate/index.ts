@@ -37,7 +37,7 @@ import {
 } from "./lib.ts";
 
 const env = (k: string, d = "") => Deno.env.get(k) ?? d;
-const PAGES_HOSTS = env("ALLOWED_PAGES_HOSTS", "hymnal-reader-v2.pages.dev").split(",").map((s) => s.trim()).filter(Boolean);
+const PAGES_HOSTS = env("ALLOWED_PAGES_HOSTS", "evergreen-ai.pages.dev,hymnal-reader-v2.pages.dev").split(",").map((s) => s.trim()).filter(Boolean);
 const SUPABASE_URL = env("SUPABASE_URL");
 const ANON_KEY = env("SUPABASE_ANON_KEY");
 const PER_IP = Number(env("CURATE_RATE_PER_IP", "30"));

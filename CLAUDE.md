@@ -6,7 +6,7 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
 `docs/DEPLOY.md`.
 
 **Status (2026-10-02): all phases (0–9) are done.**
-- Production is live at `https://hymnal-reader-v2.pages.dev/`: PR #1 merged `dev` → `main`, and the
+- Production is live at `https://evergreen-ai.pages.dev/`: PR #1 merged `dev` → `main`, and the
   production smoke test gave e2e 12/12 and axe 0 issues.
 - The Phase 9 docs (README for judges, `docs/VALIDATION.md` template, known gaps) are on `dev` and
   reach `main` when the user merges.
@@ -66,8 +66,8 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   - Pipeline scripts read `.env` in the repo root, falling back to `admin/.env`.
   - `publish_pd_hymns.py` uses `pipeline/supa.py`.
 - **Auth config (set via the Management API):**
-  - site URL `https://hymnal-reader-v2.pages.dev/studio/`
-  - redirect allow-list: Pages production, `*.hymnal-reader-v2.pages.dev`, localhost:8080
+  - site URL `https://evergreen-ai.pages.dev/studio/`
+  - redirect allow-list: Pages production, `*.evergreen-ai.pages.dev`, localhost:8080
   - The built-in email sender is limited to **2/hour**; custom SMTP is recommended
     (`docs/DEPLOY.md` A6b).
   - Email templates are **locked on the Free tier** without custom SMTP, so emails contain a
@@ -177,7 +177,9 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 ## 0e. Evergreen branding (2026-10-08)
 
 - Outward name is **Evergreen** (tab titles, Studio, README, DESIGN.md). Internal names stay
-  (`hr.*` storage keys, `hymnal-reader-v2` URLs/repo until the user renames them).
+  (`hr.*` storage keys). Repo renamed to `JohnPClark27/evergreen` (2026-10-08); the site moves to
+  `https://evergreen-ai.pages.dev/` (new Cloudflare Pages project). The functions and Supabase auth
+  also allow the old `hymnal-reader-v2.pages.dev` until it is retired.
 - Logos: originals in `logos/`; trimmed copies in `web/img/` (`evergreen-wordmark-color.png`,
   `-white.png`, icons 64/180). Welcome (`#/`) and Engage further (`#/explore`) show the color
   wordmark (`ui.js brandLogo()`); every other screen has the forest `.brandbar` with the white
@@ -235,8 +237,8 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 |---|---|
 | Supabase project | ref `trdmlfbbmxogrxihcklw`, URL `https://trdmlfbbmxogrxihcklw.supabase.co` (Free tier) |
 | Publishable key | in `web/config.js` (`window.HYMNAL_CONFIG.supabaseUrl / supabaseAnonKey`) |
-| GitHub | `JohnPClark27/hymnal-reader-v2`, branch `dev` |
-| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.hymnal-reader-v2.pages.dev/` (production `hymnal-reader-v2.pages.dev`). `/` is the real app (Phase 7). Phase 6 test page: `/dev/core-test`. Pages serves clean URLs: `x.html` 308-redirects to `x`. |
+| GitHub | `JohnPClark27/evergreen`, branch `dev` |
+| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.evergreen-ai.pages.dev/` (production `evergreen-ai.pages.dev`). `/` is the real app (Phase 7). Phase 6 test page: `/dev/core-test`. Pages serves clean URLs: `x.html` 308-redirects to `x`. |
 | DB content | 301 hymns: **40 `published`** (well-known, fully public domain per a strict ABC-file rule: `supabase/seed/publish_pd_hymns.py`), the rest `approved`. 50 `is_familiar` (the original 46 plus #67, #83, #169, #170, set in the DB; `familiar.txt` only seeds first imports). 1313 scripture refs, 158 topics, 15 prayers (`published`). Plans: **"Sample — 12 Days" (`published`**, 12 published studies) and "Memory Care — 30 Days" (`draft`; 4 of its studies are shared with the sample plan and are published). |
 | Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 107 MB total. Audio only for the 50 familiar hymns, so every published hymn has audio. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
@@ -315,7 +317,7 @@ GET {SUPABASE_URL}/functions/v1/youversion?book=PSA&chapter=23&start=1&end=3   (
 200 { reference, book, chapter, verses:[{num,text}], version:{id,abbreviation,title}, attribution, source:"YouVersion" }
 400 { error }  bad ref     429 { error } + Retry-After     502 { error: "...(YouVersion <status>)" }
 ```
-No auth header is needed. CORS allows `https://hymnal-reader-v2.pages.dev`, `https://*.hymnal-reader-v2.pages.dev`
+No auth header is needed. CORS allows `https://evergreen-ai.pages.dev`, `https://*.evergreen-ai.pages.dev`
 and `localhost`/`127.0.0.1` (any port); other browser origins get 403. Rate limit: 60/min per
 client, 600/min total (Postgres-backed). Attribution text for ASV: "American Standard Version
 (ASV) · Scripture provided by YouVersion." Show it under every passage.
@@ -421,7 +423,7 @@ then the modules.
 - `web/js/lyrics.js`, `web/js/sheet.js`: port v1's karaoke and abcjs cursor (pinned abcjs from a CDN).
 - **Done when:** a test page **on the Pages preview URL** plays a hymn with highlighted words,
   then speaks Psalm 23:1-3 with ducking.
-  - **Verified headless on `https://dev.hymnal-reader-v2.pages.dev/dev/core-test`:** words
+  - **Verified headless on `https://dev.evergreen-ai.pages.dev/dev/core-test`:** words
     highlight in time, the sheet cursor follows, and the music ducks 100% → 25% → 100% while the
     Psalm is "read". Each MP3 downloads once per session. No errors.
   - **Still pending:** hearing the voice on a real device (iPad Safari or desktop Chrome). Headless

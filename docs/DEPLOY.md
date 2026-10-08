@@ -7,7 +7,7 @@ run the local Supabase stack: no `supabase start`, no Docker. The Supabase CLI i
 
 | Piece | Where | Who uses which key |
 |---|---|---|
-| Public app (`web/`) | Cloudflare Pages: production `hymnal-reader-v2.pages.dev` (branch `main`), preview `dev.hymnal-reader-v2.pages.dev` (branch `dev`) | publishable/anon key in `web/config.js` (safe to publish) |
+| Public app (`web/`) | Cloudflare Pages: production `evergreen-ai.pages.dev` (branch `main`), preview `dev.evergreen-ai.pages.dev` (branch `dev`) | publishable/anon key in `web/config.js` (safe to publish) |
 | Database + RLS | Supabase Postgres (`supabase/migrations/`) | the anon key reads **published** rows only |
 | Hymn files | Supabase Storage, public buckets `hymn-abc`, `hymn-audio`, `hymn-timings` | anyone reads; only the service role writes |
 | Scripture | Edge Function `youversion` (YouVersion key in Supabase secrets) | no key needed by callers; CORS + rate limit |
@@ -30,7 +30,7 @@ Use this to rebuild everything, e.g. on a new Supabase project. The current proj
 
 ### A2. This machine (Ubuntu / WSL)
 ```sh
-git clone https://github.com/JohnPClark27/hymnal-reader-v2 && cd hymnal-reader-v2 && git checkout dev
+git clone https://github.com/JohnPClark27/evergreen && cd evergreen && git checkout dev
 ./setup.sh          # apt tools (the only sudo step), Open Hymnal clone, .venv, timing-builder deps
 cp .env.example .env              # fill in SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY; never commit it
 source .venv/bin/activate
@@ -77,8 +77,8 @@ The link uses Supabase's *implicit* flow: the session travels in the link itself
 **any** browser that opens it (a phone's mail app, another browser). The earlier PKCE links only
 worked in the browser that asked for them, which broke sign-in.
 1. Supabase dashboard → Authentication → URL Configuration:
-   - **Site URL** `https://hymnal-reader-v2.pages.dev/studio/`
-   - **Redirect URLs** `https://hymnal-reader-v2.pages.dev/**`, `https://*.hymnal-reader-v2.pages.dev/**`,
+   - **Site URL** `https://evergreen-ai.pages.dev/studio/`
+   - **Redirect URLs** `https://evergreen-ai.pages.dev/**`, `https://*.evergreen-ai.pages.dev/**`,
      `http://localhost:8080/**`
 
    This is set for the current project already, through the Management API.
@@ -92,14 +92,14 @@ worked in the browser that asked for them, which broke sign-in.
    (never rate-limited):
    ```sh
    python pipeline/studio_signin.py you@example.com --admin            # Studio on production
-   python pipeline/studio_signin.py you@example.com --admin --url https://studio.hymnal-reader-v2.pages.dev/studio/
+   python pipeline/studio_signin.py you@example.com --admin --url https://studio.evergreen-ai.pages.dev/studio/
    ```
    - It prints a link (open it in any browser) and a code (Studio → "I have a sign-in code").
      Both work once, for an hour. Treat them like a password.
    - After that, admins promote others in Studio → **People**.
 
 ### A7. Cloudflare Pages
-1. Workers & Pages → Create → Pages → Connect to Git → `hymnal-reader-v2`.
+1. Workers & Pages → Create → Pages → Connect to Git → `evergreen` (project name `evergreen-ai`).
 2. Settings: framework preset **None**, build command **empty**, build output directory **`web`**.
 3. Production branch **`main`**, with preview deployments on (`dev` → `dev.<project>.pages.dev`).
 4. If the Pages project name changes, set the function secret `ALLOWED_PAGES_HOSTS=<name>.pages.dev`
@@ -156,7 +156,7 @@ GET /functions/v1/youversion?book=PSA&chapter=23[&start=1&end=3]
 ```
 - **No JWT** (`--no-verify-jwt`, also in `config.toml`): the publishable key isn't a JWT. It's
   protected in two ways:
-  - **CORS:** only `ALLOWED_PAGES_HOSTS` (default `hymnal-reader-v2.pages.dev`, plus its preview
+  - **CORS:** only `ALLOWED_PAGES_HOSTS` (default `evergreen-ai.pages.dev`, plus its preview
     subdomains) and localhost. Any other browser origin gets a 403.
   - **Rate limit:** 60 per minute per client, 600 per minute in total. It's counted in Postgres
     (`public.youversion_rate_hit`) with salted hashes, so no IP addresses are stored.
