@@ -13,7 +13,7 @@ export async function render(root, params, ctx) {
   const mod = moduleFor(params.arg);
   const from = safeFrom(params.from);
   // Back to where the game was opened: a study part, My Day, or the Games list.
-  const fromStudy = from && /^#\/(study|myday|preview)/.test(from);
+  const fromStudy = from && /^#\/(study|preview)/.test(from);
   const fromMyDay = from && /^#\/(today|\?|$)/.test(from);
   const back = () => ctx.go(from ?? '#/games');
   const backLabel = fromStudy ? 'Back to study' : fromMyDay ? 'My Day' : 'Games';

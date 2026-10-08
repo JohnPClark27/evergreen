@@ -3,7 +3,7 @@ studio_rls_test.py - prove the Studio's security rules over the real API, as rea
 
 Creates throwaway users (author A, author B, an admin), signs each in with a password (test
 only: the Studio itself uses magic links), runs the checks, then deletes everything it made
-(users, plans, audit rows). Uses the service role key from admin/.env ONLY to create and
+(users, plans, audit rows). Uses the service role key from .env ONLY to create and
 clean up the test users.
 
 Usage (repo root, venv active):  python supabase/tests/studio_rls_test.py
