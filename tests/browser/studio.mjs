@@ -154,7 +154,7 @@ await ad.getByText('Nothing blocks publishing.').waitFor({ timeout: 30000 });
 if (shots) await ad.screenshot({ path: `${shots}/studio-review.png`, fullPage: true });
 await audit(ad, 'studio: admin review panel');
 await ad.getByRole('button', { name: 'Approve and publish' }).click();
-await ad.getByText('Approved: it’s live on the tablets.').waitFor();
+await ad.getByText('Approved: it’s live in Evergreen.').waitFor();
 ok(true, 'admin approved it');
 
 // tablet sees it

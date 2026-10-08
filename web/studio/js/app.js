@@ -87,8 +87,8 @@ function signInScreen(message = null) {
   });
   root.replaceChildren(h('main', { class: 'signin' },
     h('h1', {}, 'Evergreen Studio'),
-    h('p', {}, 'Build study plans for residents: hymns, Scripture, prayers, notes, gentle quizzes and games. ',
-      'An admin reviews each plan before it appears on the tablets.'),
+    h('p', {}, 'Build study plans for older adults: hymns, Scripture, prayers, notes, gentle quizzes and games. ',
+      'An admin reviews each plan before anyone sees it in Evergreen.'),
     form,
     h('p', { class: 'muted small' }, 'No password needed. We only use your email to sign you in and to show admins who wrote a plan.')));
   email.focus();

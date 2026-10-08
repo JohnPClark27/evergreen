@@ -57,7 +57,7 @@ export async function render(main) {
   only.addEventListener('change', draw);
   main.append(
     h('div', { class: 'toolbar' }, h('h1', {}, 'Hymns')),
-    h('p', { class: 'muted' }, 'Only published hymns can be used in study plans and appear on tablets. Publishing checks that the hymn is ',
+    h('p', { class: 'muted' }, 'Only published hymns can be used in study plans and appear in Evergreen. Publishing checks that the hymn is ',
       'fully public domain per its Open Hymnal file and has audio. Familiar hymns get audio when the importer runs.'),
     status,
     h('div', { class: 'field-row' }, h('div', { class: 'field' }, search), h('div', { class: 'field' }, only)),

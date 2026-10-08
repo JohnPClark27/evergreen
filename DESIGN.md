@@ -2,9 +2,9 @@
 version: alpha
 name: Evergreen
 description: >-
-  Calm, high-contrast, large-type design for a hymn, Scripture and prayer app that an aide
-  shares with an older adult in memory care, on an iPad. Cream and forest green, with soft
-  yellow as the only accent. Sans-serif type, extra line spacing, nothing small, no italics.
+  Calm, high-contrast, large-type design for Evergreen: Scripture, hymns, prayer and gentle
+  Bible games for older adults, on a laptop or a tablet, alone or with a helper beside them.
+  Cream and forest green, with soft yellow as the only accent. Sans-serif type, extra line spacing, nothing small, no italics.
 colors:
   primary: "#1B3A2A"      # forest green: all text, primary buttons, focus ring
   on-primary: "#FFF9ED"   # cream text and icons on forest green
@@ -199,9 +199,10 @@ components:
 
 ## Overview
 
-Evergreen is used by an **aide sitting beside an older adult**, often someone living with
-memory loss, on an iPad held at arm's length. The design has one job: make the hymn, the
-passage and the prayer easy to see and the next step obvious. The mood is **calm, warm and
+Evergreen is used by **older adults** whose eyesight, hands or memory make ordinary apps hard,
+on their own or with a family member, aide or chaplain beside them, on a laptop or a tablet
+held at arm's length. The design has one job: make the verse, the hymn and the prayer easy to
+see and the next step obvious. The mood is **calm, warm and
 plain**. It should feel like a large-print hymnal, not like an app.
 
 The rules come from the team's style guide (`style_guide_draft.md`, 2026-10-06):
@@ -214,10 +215,11 @@ The rules come from the team's style guide (`style_guide_draft.md`, 2026-10-06):
 - **Never:** serif or script fonts, condensed or thin weights, italics, or any other colour.
 
 These rules beat older design notes: `docs/PLAN_PROMPT.md` §4 (sepia, burgundy, Literata) is
-superseded. The logo system isn't applied yet; it comes in a later iteration.
+superseded. The Evergreen logos (`logos/`, `web/img/`) are applied: the color wordmark on the
+welcome and More screens, a forest brand bar with the white wordmark everywhere else.
 
 **Two surfaces, one system:**
-- the **tablet app** (`web/`): large, sparse, touch-first, iPad landscape first
+- the **app** (`web/`): large, sparse, touch- and mouse-friendly, for a laptop or a tablet
 - the **Studio** (`web/studio/`): the authoring tool on a laptop. Same palette and font, at
   desktop sizes that still respect the 12 pt floor.
 
@@ -298,8 +300,8 @@ downloaded**. Helvetica and Calibri are the fallbacks the style guide names.
 
 ## Layout
 
-- **iPad landscape (1180×820) first**, portrait (820×1180) second, phones (from 390 px) must
-  still work, with no sideways scrolling.
+- **Landscape first** (a laptop window or a tablet at 1180×820), portrait (820×1180) second;
+  phones (from 390 px) must still work, with no sideways scrolling.
 - **Spacing scale:** 4, 8, 16, 24, 36 px. Screens use 16–24 px padding and 14–24 px gaps.
 - **Touch targets: at least 64 px** (`--touch`). The main controls are bigger: side arrows are
   112 px wide and as tall as the card, Pause is 104 px, and Home tiles are 260 px tall.

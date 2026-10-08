@@ -60,7 +60,7 @@ export async function render(main, params, app) {
   const title = h('input', { class: 'input', id: 'plan-title', maxlength: '120', value: plan.title, disabled: !editable,
     placeholder: 'e.g. “Comfort in the evening”', oninput: (e) => { plan.title = e.target.value; refreshActions(); } });
   const desc = h('textarea', { class: 'input', id: 'plan-desc', maxlength: '500', rows: '2', disabled: !editable,
-    placeholder: 'One line for the tablet’s list (optional)', oninput: (e) => { plan.description = e.target.value; refreshActions(); } });
+    placeholder: 'One line for the plan list (optional)', oninput: (e) => { plan.description = e.target.value; refreshActions(); } });
   desc.value = plan.description ?? '';
   const actions = h('div', { class: 'btn-row' });
   const reviewBox = h('div');
@@ -87,7 +87,7 @@ export async function render(main, params, app) {
           h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'plan-desc' }, 'Description'), desc)),
         h('section', { class: 'panel', 'aria-label': 'Studies' },
           h('h2', {}, 'Studies'),
-          h('p', { class: 'muted small' }, 'A plan holds one or more studies. On the tablet, people pick the plan, then walk through its studies (their progress is kept on the tablet).'),
+          h('p', { class: 'muted small' }, 'A plan holds one or more studies. In Evergreen, people pick the plan, then walk through its studies (their progress is kept on their own device).'),
           studyList, studyAdd),
         h('section', { class: 'panel study-panel', 'aria-label': 'Selected study' },
           h('div', { class: 'field' }, h('label', { class: 'field-label', for: 'study-title' }, 'Study title'), studyTitle),
@@ -298,12 +298,12 @@ export async function render(main, params, app) {
       }),
       plan.id && plan.status === 'pending' && b('Withdraw (edit again)', () => setStatus('draft', 'Withdrawn: you can edit it again.')),
       plan.id && plan.status === 'published' && b('Take back to edit', async () => {
-        if (await ask('Take this plan back to draft? It leaves the tablets until an admin approves it again.', { ok: 'Take back' })) {
-          setStatus('draft', 'It’s a draft again (not on the tablets).');
+        if (await ask('Take this plan back to draft? It leaves Evergreen until an admin approves it again.', { ok: 'Take back' })) {
+          setStatus('draft', 'It’s a draft again (not in Evergreen).');
         }
       }),
       plan.id && b('Duplicate', duplicate),
-      plan.id && plan.status === 'published' && b('Archive', () => setStatus('archived', 'Archived: removed from the tablets.')),
+      plan.id && plan.status === 'published' && b('Archive', () => setStatus('archived', 'Archived: removed from Evergreen.')),
       plan.id && plan.status === 'archived' && b('Restore as draft', () => setStatus('draft', 'Restored as a draft.')),
       plan.id && ['draft', 'archived'].includes(plan.status) && b('Delete', remove, { danger: true }),
       errs.length > 0 && editable && h('details', { class: 'small' },
@@ -373,12 +373,12 @@ export async function render(main, params, app) {
       id: plan.id ?? 0, title: st.title || 'Preview', subtitle: `Study ${current + 1} of ${studies.length}`,
       items: st.items.map((x) => ({ module_type: x.module_type, config: x.config })),
     }));
-    const frame = h('iframe', { class: 'preview-frame', src: '../#/preview', title: 'Tablet preview', allow: 'autoplay' });
+    const frame = h('iframe', { class: 'preview-frame', src: '../#/preview', title: 'Evergreen preview', allow: 'autoplay' });
     const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = (e) => { if (e.key === 'Escape') close(); };
-    const overlay = h('div', { class: 'preview', role: 'dialog', 'aria-label': 'Tablet preview' },
+    const overlay = h('div', { class: 'preview', role: 'dialog', 'aria-label': 'Evergreen preview' },
       h('div', {},
-        h('div', { class: 'preview-bar' }, h('strong', {}, 'Preview: what the tablet shows'), h('button', { class: 'btn', type: 'button', onclick: close }, 'Close preview')),
+        h('div', { class: 'preview-bar' }, h('strong', {}, 'Preview: what Evergreen shows'), h('button', { class: 'btn', type: 'button', onclick: close }, 'Close preview')),
         frame));
     document.body.append(overlay);
     document.addEventListener('keydown', onKey);
@@ -399,7 +399,7 @@ export async function render(main, params, app) {
         : h('p', { class: 'banner ok small' }, 'Nothing blocks publishing.'),
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn primary', type: 'button', disabled: all.length > 0, onclick: async () => {
-          try { await db.reviewPlan(plan.id, true); sessionStorage.setItem('hr.studio.flash', 'Approved: it’s live on the tablets.'); app.go('#/review'); } catch (e) { flash(status, e.message, 'error'); }
+          try { await db.reviewPlan(plan.id, true); sessionStorage.setItem('hr.studio.flash', 'Approved: it’s live in Evergreen.'); app.go('#/review'); } catch (e) { flash(status, e.message, 'error'); }
         } }, 'Approve and publish'),
         h('button', { class: 'btn', type: 'button', onclick: async () => {
           const note = await ask('Send it back to the author. What should they change?', { ok: 'Send back', input: true, placeholder: 'A short, kind note' });
@@ -426,8 +426,8 @@ function statusBanner(plan, isAdmin) {
       : 'Waiting for review. Withdraw it if you want to make changes.');
   }
   if (plan.status === 'published') {
-    return h('p', { class: 'banner ok' }, 'Live on the tablets.', isAdmin ? '' : ' To change it, take it back to draft (it leaves the tablets until approved again).');
+    return h('p', { class: 'banner ok' }, 'Live in Evergreen.', isAdmin ? '' : ' To change it, take it back to draft (it leaves Evergreen until approved again).');
   }
-  if (plan.status === 'archived') return h('p', { class: 'banner' }, 'Archived: not on the tablets.');
+  if (plan.status === 'archived') return h('p', { class: 'banner' }, 'Archived: not in Evergreen.');
   return null;
 }

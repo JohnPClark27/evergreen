@@ -23,7 +23,7 @@ export async function render(root, _params, ctx) {
         stop?.();
         root.replaceChildren(h('div', { class: 'screen message' },
           h('h1', { class: 'big-text', tabindex: '-1' }, 'End of the preview.'),
-          h('p', { class: 'muted' }, 'On a tablet, the “finished” screen comes next.'),
+          h('p', { class: 'muted' }, 'In Evergreen, the “finished” screen comes next.'),
           h('div', { class: 'row' },
             h('button', { class: 'pill', type: 'button', onclick: start }, 'Start again'),
             h('button', { class: 'pill primary', type: 'button', onclick: close }, 'Close preview'))));

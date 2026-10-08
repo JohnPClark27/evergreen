@@ -67,7 +67,7 @@ export async function render(root, _params, ctx) {
   const resetBtn = h('button', {
     class: 'pill', type: 'button',
     onclick: async () => {
-      if (await confirmDialog('Reset all notes on this tablet? “Enjoyed” and “Skip” marks on hymns, studies, suggestions and games will be cleared, with what My Day has learned.', { yes: 'Reset notes' })) {
+      if (await confirmDialog('Reset all notes on this device? “Enjoyed” and “Skip” marks on hymns, studies, suggestions and games will be cleared, with what My Day has learned.', { yes: 'Reset notes' })) {
         store.resetNotes();
         notesStatus.textContent = 'Notes were reset.';
       }
@@ -83,7 +83,7 @@ export async function render(root, _params, ctx) {
       h('section', {},
         h('h2', {}, 'Read aloud in studies'), aloud,
         h('p', { class: 'muted' }, 'Off by default: the text is shown large, and the aide reads it or everyone reads along. '
-          + 'Turn it on to have this tablet read Scripture, prayers and notes with its built-in voice. '
+          + 'Turn it on to have this device read Scripture, prayers and notes with its built-in voice. '
           + 'You can also switch it in any study, at the top of the screen.')),
       h('section', {},
         h('h2', {}, 'Reading speed'), speed),
@@ -99,7 +99,7 @@ export async function render(root, _params, ctx) {
           + 'The AI only picks from published hymns, prayers and Bible passages; it never writes them.')),
       h('section', {},
         h('h2', {}, 'Notes'), resetBtn, notesStatus,
-        h('p', { class: 'muted' }, 'Notes stay on this tablet. No names are saved.')))));
+        h('p', { class: 'muted' }, 'Notes stay on this device. No names are saved.')))));
   drawAloud();
   drawReasons();
   drawSpeed();

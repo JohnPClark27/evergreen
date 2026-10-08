@@ -106,7 +106,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
 
     if (!item) { stage.replaceChildren(h('p', { class: 'big-text muted' }, 'This study is empty.')); return; }
     if (!mod) {
-      stage.replaceChildren(h('p', { class: 'big-text muted' }, 'This part can’t be shown on this tablet yet. Tap Next to continue.'));
+      stage.replaceChildren(h('p', { class: 'big-text muted' }, 'This part can’t be shown here yet. Tap Next to continue.'));
       return;
     }
 

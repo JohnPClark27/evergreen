@@ -23,7 +23,7 @@ export async function render(main, _params, app) {
   }
   main.append(
     h('div', { class: 'toolbar' }, h('h1', {}, 'People')),
-    h('p', { class: 'muted' }, 'Anyone can sign in and build plans; only admins publish. Authors’ plans reach tablets only after review.'),
+    h('p', { class: 'muted' }, 'Anyone can sign in and build plans; only admins publish. Authors’ plans reach Evergreen only after review.'),
     status,
     h('table', { class: 'table' },
       h('thead', {}, h('tr', {}, ['Name', 'Email', 'Role', 'Joined', 'Action'].map((t) => h('th', { scope: 'col' }, t)))),

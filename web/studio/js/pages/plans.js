@@ -17,7 +17,7 @@ export async function render(main) {
       h('h1', {}, 'My study plans'),
       h('a', { class: 'btn primary', href: '#/plan/new' }, '+ New study plan')),
     h('p', { class: 'muted' }, 'A study plan holds one or more studies (for example, one for each week). Build each study from any mix of modules: ',
-      'hymns, Scripture, prayers, your own notes, gentle quizzes and games. When it’s ready, submit it for review; an admin approves it and it appears on every tablet.'),
+      'hymns, Scripture, prayers, your own notes, gentle quizzes and games. When it’s ready, submit it for review; an admin approves it and it appears in Evergreen.'),
     plans.length
       ? h('div', { class: 'plan-list' }, plans.map((p) => h('a', { class: 'panel plan-card', href: `#/plan/${p.id}` },
         h('div', { class: 'btn-row' }, chip(p.status)),
