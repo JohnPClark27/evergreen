@@ -40,7 +40,7 @@ async function audit(page, name) {
   const words = await page.locator('.pick-word').allInnerTexts();
   ok(words.every((w) => ['Hymn', 'Prayer', 'Read', 'Game'].includes(w.trim())), `each pick leads with one word (${words.join(', ')})`);
   await audit(page, 'chosen for you');
-  await page.getByRole('button', { name: /Engage further/ }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('heading', { name: 'Engage further' }).waitFor();
   ok((await page.locator('.tile').count()) === 4, 'engage further: 4 tiles');
   await audit(page, 'engage further');

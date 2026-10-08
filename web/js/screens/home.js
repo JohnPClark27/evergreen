@@ -14,7 +14,8 @@ export async function render(root, _params, ctx) {
     h('button', { class: 'pill corner-left', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'My Day')),
     h('a', { class: 'aide-link corner', href: '#/aide' }, 'Aide tools'),
     brandLogo(),
-    h('h1', { class: 'welcome', tabindex: '-1' }, 'Engage further'),
+    // No visible heading: just the logo and the four buttons (the heading stays for screen readers).
+    h('h1', { class: 'sr-only', tabindex: '-1' }, 'Engage further'),
     // "Chosen for you" replaced My Day; a Bible study comes last (bottom right): it's the
     // longest activity, so it's offered after the quicker ones.
     h('div', { class: 'tiles four' },

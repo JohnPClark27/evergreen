@@ -517,3 +517,29 @@ body[data-brand="page"] .brandbar { display: none; }
 .brand-logo { height: 64px; width: auto; display: block; }
 .home .brand-logo { margin: 0 auto -12px; }
 @media (orientation: portrait), (max-width: 900px) { .brand-logo { height: 52px; } }
+
+/* ---------- Top bars: left | centre | right, with equal sides so the title is centred on
+   the screen whatever the buttons on either side are. (Was a flex row: the title drifted.) */
+.topbar {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center;
+  column-gap: 16px;
+}
+.topbar > :first-child { justify-self: start; }
+.topbar > :nth-child(2) { justify-self: center; text-align: center; }
+.topbar > :nth-child(3) { justify-self: end; text-align: right; }
+.topbar .day { margin-left: 0; }
+.topbar .screen-title { flex: none; max-width: 56vw; }
+.topbar-right { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.session .where-box { width: min(420px, 40vw); }
+@media (orientation: portrait), (max-width: 900px) {
+  .topbar .screen-title { max-width: 46vw; font-size: 26px; }
+}
+/* My Day under the brand bar: tighter spacing so a 2-3 verse passage still fits without
+   scrolling (text stays >= 28px). */
+.today { gap: 10px; padding-top: 8px; }
+.today .topbar { min-height: 64px; }
+.verse-day { padding: 14px 32px; }
+.pick-tile { min-height: 118px; padding: 12px 18px; }
+.today .engage { min-height: 68px; }
+.verse-day .read-line { line-height: 1.5; margin: 0 0 4px; }
+.verse-day .attribution { margin-top: 8px; }

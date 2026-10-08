@@ -91,7 +91,7 @@ export async function render(root, params, ctx) {
         h('span', { class: 'pick-detail' }, p.detail),
         showReasons && p.reason && h('span', { class: 'reason' }, `Why: ${p.reason}`)))),
     h('button', { class: 'pill primary big engage', type: 'button', onclick: () => ctx.go('#/explore') },
-      h('span', { class: 'label' }, 'Engage further'), icon('next'))));
+      h('span', { class: 'label' }, 'More'), icon('next'))));
   fitVerse(root.querySelector('.verse-day'));
   return () => ctx.speaker.stop();
 }

@@ -70,8 +70,8 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       h('button', { class: 'pill', type: 'button', onclick: () => opts.onExit?.() },
         icon(opts.exitLabel ? 'back' : 'home'), h('span', { class: 'label' }, opts.exitLabel ?? 'Home')),
       h('div', { class: 'where-box' }, where, bar),
-      voiceBtn,
-      h('p', { class: 'day plan-name' }, plan.subtitle ?? plan.title)),
+      // right side grouped, so the top bar is left | centre | right (centre truly centred)
+      h('div', { class: 'topbar-right' }, voiceBtn, h('p', { class: 'day plan-name' }, plan.subtitle ?? plan.title))),
     h('div', { class: 'stage-row' },
       backBtn,
       h('div', { class: 'module-panel' }, stage, h('div', { class: 'panel-bar' }, againBtn, pauseBtn, tools)),
