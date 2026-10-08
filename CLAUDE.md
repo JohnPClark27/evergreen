@@ -6,7 +6,7 @@ what's live, the rules, and how to avoid stepping on each other. The full spec i
 `docs/DEPLOY.md`.
 
 **Status (2026-10-02): all phases (0–9) are done.**
-- Production is live at `https://hymnal-reader-v2.pages.dev/`: PR #1 merged `dev` → `main`, and the
+- Production is live at `https://evergreen-ai.pages.dev/`: PR #1 merged `dev` → `main`, and the
   production smoke test gave e2e 12/12 and axe 0 issues.
 - The Phase 9 docs (README for judges, `docs/VALIDATION.md` template, known gaps) are on `dev` and
   reach `main` when the user merges.
@@ -66,8 +66,8 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   - Pipeline scripts read `.env` in the repo root, falling back to `admin/.env`.
   - `publish_pd_hymns.py` uses `pipeline/supa.py`.
 - **Auth config (set via the Management API):**
-  - site URL `https://hymnal-reader-v2.pages.dev/studio/`
-  - redirect allow-list: Pages production, `*.hymnal-reader-v2.pages.dev`, localhost:8080
+  - site URL `https://evergreen-ai.pages.dev/studio/`
+  - redirect allow-list: Pages production, `*.evergreen-ai.pages.dev`, localhost:8080
   - The built-in email sender is limited to **2/hour**; custom SMTP is recommended
     (`docs/DEPLOY.md` A6b).
   - Email templates are **locked on the Free tier** without custom SMTP, so emails contain a
@@ -139,6 +139,53 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 - The `mobile-layout` branch hides `.bottombar` pill labels on phones and hasn't seen this
   change yet: expect overlap in `web/css/app.css` when it merges.
 
+## 0d. AI curation + mood check-in (2026-10-07, branch `ai-curation`, hackathon)
+
+- **Flow:** `#/` greeting + "How are you feeling today?" (5 faces, `mood.js`) → `#/today?mood=N`
+  "Chosen for you" (verse of the day on top, 4 one-word buttons, Engage further) →
+  `#/explore` (Read Scripture, Worship, Games, Start a Bible Study). Home returns to `#/today`
+  while a mood is set this visit (`sessionStorage` `hr.mood`); "Start over" is `#/?ask=1`.
+  My Day was archived (`archive/myday.js`).
+- **Edge Function `curate`** (`--no-verify-jwt`, secret `GLOO_AI_API_KEY`): actions `today`,
+  `curate` (games hub / slide game), `trivia`. Guidance + example verses: table `ai_prompts`
+  (migration 0010; admins edit them on the Studio's `#/ai` page; anyone reads); the FIXED rules
+  and the defaults are in `curate/prompt.ts`. `ai_prompt.mjs` tests the page (restore
+  `updated_by` afterwards, see its header).
+- **Navigation (`nav.js`):** two hubs, My Day (`#/`, title "My Day") and Engage further (`#/explore`).
+  Each sets `hr.hub` when shown; every other screen's top-left is `hubButton(ctx)`: "My Day" or
+  "Back to engage". Worship (`#/worship`) = Sing a Hymn / Pray; the two lists don't link to each other.
+  One prayer (`#/prayers/<id>`) is a plain page (no runner) with Read aloud + More prayers.
+- **Read aloud everywhere:** `ui.js readAloudButton(speaker, lines, {items})` on My Day's verse,
+  prayers, trivia verses and passages; in studies the bar's Again button says "Read aloud"
+  while automatic read-aloud is off (one tap reads once).
+- **YouVersion rate limits:** heavy test runs used up the key's quota (503 "busy") on 2026-10-07.
+  Don't loop the browser suites. Optional secret `YOUVERSION_API_KEY_BACKUP` is tried when
+  YouVersion refuses the main key (401/403/429). The curate function skips the YouVersion
+  existence check for verses that are in the vetted examples.
+- **Badge:** `ui.js aiMark(source)`: filled = Gloo AI chose it, crossed out = skipped.
+- **Tests pick "Sample — 12 Days"** by name: real plans are being published and may sort first. Pure logic + tests: `curate/lib.ts`,
+  `node supabase/functions/curate/test.ts`. Rate limit reuses `youversion_rate_hit` ("curate:" keys).
+- **Rules:** the AI returns ids and references only; the server validates against the live
+  published catalog and YouVersion; trivia answers must be word for word in the verse (checked
+  on server AND tablet). Every call has a random fallback (client timeouts: 10 s today, 5 s
+  otherwise). Only the mood number, ids, refs and 👍/👎 counts are sent.
+- **Games** are modules (`word-search`, `crossword`, `trivia`, shared `game-common.js`);
+  migration 0009 limits their config to a reference + difficulty.
+- **Tests:** `tests/browser/curation.mjs` (welcome → today → explore, thumbs → history, slide
+  game, AI-down 500 fallback, trivia drops a fabricated answer, axe on new screens).
+
+## 0e. Evergreen branding (2026-10-08)
+
+- Outward name is **Evergreen** (tab titles, Studio, README, DESIGN.md). Internal names stay
+  (`hr.*` storage keys). Repo renamed to `JohnPClark27/evergreen` (2026-10-08); the site moves to
+  `https://evergreen-ai.pages.dev/` (new Cloudflare Pages project). The functions and Supabase auth
+  also allow the old `hymnal-reader-v2.pages.dev` until it is retired.
+- Logos: originals in `logos/`; trimmed copies in `web/img/` (`evergreen-wordmark-color.png`,
+  `-white.png`, icons 64/180). Welcome (`#/`) and Engage further (`#/explore`) show the color
+  wordmark (`ui.js brandLogo()`); every other screen has the forest `.brandbar` with the white
+  wordmark (`index.html`; `app.js` sets `body[data-brand]`). The Studio nav shows the white one.
+- Softer yellow: `--yellow: #FFF0B0` (was #FFE57A).
+
 ## 1. Coordination rules (avoid clashing)
 
 1. **Before you start:** `git fetch && git status && git log --oneline -5` on `dev`. If `dev`
@@ -190,8 +237,8 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
 |---|---|
 | Supabase project | ref `trdmlfbbmxogrxihcklw`, URL `https://trdmlfbbmxogrxihcklw.supabase.co` (Free tier) |
 | Publishable key | in `web/config.js` (`window.HYMNAL_CONFIG.supabaseUrl / supabaseAnonKey`) |
-| GitHub | `JohnPClark27/hymnal-reader-v2`, branch `dev` |
-| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.hymnal-reader-v2.pages.dev/` (production `hymnal-reader-v2.pages.dev`). `/` is the real app (Phase 7). Phase 6 test page: `/dev/core-test`. Pages serves clean URLs: `x.html` 308-redirects to `x`. |
+| GitHub | `JohnPClark27/evergreen`, branch `dev` |
+| Cloudflare Pages | output `web/`, no build. Preview: `https://dev.evergreen-ai.pages.dev/` (production `evergreen-ai.pages.dev`). `/` is the real app (Phase 7). Phase 6 test page: `/dev/core-test`. Pages serves clean URLs: `x.html` 308-redirects to `x`. |
 | DB content | 301 hymns: **40 `published`** (well-known, fully public domain per a strict ABC-file rule: `supabase/seed/publish_pd_hymns.py`), the rest `approved`. 50 `is_familiar` (the original 46 plus #67, #83, #169, #170, set in the DB; `familiar.txt` only seeds first imports). 1313 scripture refs, 158 topics, 15 prayers (`published`). Plans: **"Sample — 12 Days" (`published`**, 12 published studies) and "Memory Care — 30 Days" (`draft`; 4 of its studies are shared with the sample plan and are published). |
 | Storage | public buckets `hymn-abc`, `hymn-audio`, `hymn-timings`, about 107 MB total. Audio only for the 50 familiar hymns, so every published hymn has audio. |
 | Edge Function | `youversion` deployed (`--no-verify-jwt`). Secret `YOUVERSION_API_KEY` is set (by the user). |
@@ -270,7 +317,7 @@ GET {SUPABASE_URL}/functions/v1/youversion?book=PSA&chapter=23&start=1&end=3   (
 200 { reference, book, chapter, verses:[{num,text}], version:{id,abbreviation,title}, attribution, source:"YouVersion" }
 400 { error }  bad ref     429 { error } + Retry-After     502 { error: "...(YouVersion <status>)" }
 ```
-No auth header is needed. CORS allows `https://hymnal-reader-v2.pages.dev`, `https://*.hymnal-reader-v2.pages.dev`
+No auth header is needed. CORS allows `https://evergreen-ai.pages.dev`, `https://*.evergreen-ai.pages.dev`
 and `localhost`/`127.0.0.1` (any port); other browser origins get 403. Rate limit: 60/min per
 client, 600/min total (Postgres-backed). Attribution text for ASV: "American Standard Version
 (ASV) · Scripture provided by YouVersion." Show it under every passage.
@@ -376,7 +423,7 @@ then the modules.
 - `web/js/lyrics.js`, `web/js/sheet.js`: port v1's karaoke and abcjs cursor (pinned abcjs from a CDN).
 - **Done when:** a test page **on the Pages preview URL** plays a hymn with highlighted words,
   then speaks Psalm 23:1-3 with ducking.
-  - **Verified headless on `https://dev.hymnal-reader-v2.pages.dev/dev/core-test`:** words
+  - **Verified headless on `https://dev.evergreen-ai.pages.dev/dev/core-test`:** words
     highlight in time, the sheet cursor follows, and the music ducks 100% → 25% → 100% while the
     Psalm is "read". Each MP3 downloads once per session. No errors.
   - **Still pending:** hearing the voice on a real device (iPad Safari or desktop Chrome). Headless

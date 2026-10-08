@@ -47,6 +47,10 @@ export const ICON = {
   music: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.2 19 4v11.5a2.5 2.5 0 1 1-2-2.45V7.5l-6 1.3v8.7A2.5 2.5 0 1 1 9 15.05z"/></svg>',
   thumbsUp: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 10h4v11H2zM8 21h9.2a2 2 0 0 0 1.96-1.6l1.4-7A2 2 0 0 0 18.6 10H14l.9-4.3A1.6 1.6 0 0 0 13.3 3.8L8 10z"/></svg>',
   thumbsDown: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 14h-4V3h4zM16 3H6.8a2 2 0 0 0-1.96 1.6l-1.4 7A2 2 0 0 0 5.4 14H10l-.9 4.3a1.6 1.6 0 0 0 1.6 1.9L16 14z"/></svg>',
+  game: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4v3a2 2 0 1 0 4 0V3h3v18h-6v-3a2 2 0 1 0-4 0v3H3V10h3a2 2 0 1 0 0-4H3V3z"/></svg>',
+  sparkle: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.2 6.3L21 10l-6.8 1.7L12 18l-2.2-6.3L3 10l6.8-1.7z"/></svg>',
+  book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5C5.8 4.3 8.8 4.4 11 6v14c-2.2-1.5-5.2-1.6-8-.5zM21 5.5C18.2 4.3 15.2 4.4 13 6v14c2.2-1.5 5.2-1.6 8-.5z"/></svg>',
+  speaker: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>',
 };
 
@@ -86,6 +90,68 @@ export function thumbButtons(current, onPick, groupLabel) {
   const group = h('div', { class: 'thumbs', role: 'group', 'aria-label': groupLabel });
   group.append(make('enjoyed', 'thumbsUp', 'Enjoyed it'), make('skip', 'thumbsDown', 'Skip next time'));
   return group;
+}
+
+/**
+ * A small, quiet badge: was Gloo AI used for this choice, or skipped (a random pick)?
+ * source: 'ai' -> filled forest circle with a sparkle; anything else -> outlined, crossed out.
+ * The words are its accessible name and hover tip.
+ */
+export function aiMark(source) {
+  const used = source === 'ai';
+  const label = used ? 'Chosen with Gloo AI' : 'Gloo AI skipped: a random pick';
+  const el = h('span', { class: `ai-mark${used ? ' used' : ''}`, role: 'img', 'aria-label': label, title: label });
+  el.innerHTML = used
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8z"/><path d="M4 20 20 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  return el;
+}
+
+/**
+ * "Read aloud" for any passage or prayer on screen: the device voice reads it when tapped
+ * (even if automatic read-aloud in studies is off: tapping is asking), and tapping again stops.
+ * lines: () => [string] (prayer lines) or [{num, text}] (verses). items: optional elements to
+ * highlight, one per line, while each is read.
+ */
+export function readAloudButton(speaker, lines, { items = [], label = 'Read aloud' } = {}) {
+  const btn = h('button', { class: 'pill read-btn', type: 'button', 'aria-pressed': 'false' }, icon('speaker'), h('span', { class: 'label' }, label));
+  let reading = false;
+  const done = () => {
+    reading = false;
+    btn.querySelector('.label').textContent = label;
+    btn.setAttribute('aria-pressed', 'false');
+    items.forEach((el) => el.classList.remove('reading'));
+    speaker.removeEventListener('segment', onSegment);
+  };
+  const onSegment = (e) => {
+    items.forEach((el, i) => el.classList.toggle('reading', i === e.detail.index));
+    bringIntoView(items[e.detail.index]);
+  };
+  btn.addEventListener('click', () => {
+    if (reading) { speaker.stop(); done(); return; }
+    const list = lines();
+    if (!list.length) return;
+    reading = true;
+    btn.querySelector('.label').textContent = 'Stop reading';
+    btn.setAttribute('aria-pressed', 'true');
+    speaker.addEventListener('segment', onSegment);
+    const was = speaker.enabled;
+    speaker.enabled = true; // checked only when speech starts (speech.js)
+    const run = typeof list[0] === 'string' ? speaker.speakText(list.join('\n')) : speaker.speakVerses(list);
+    speaker.enabled = was;
+    run.catch(() => {}).finally(done);
+  });
+  return btn;
+}
+
+/** The Evergreen wordmark in color, top center (Welcome and Engage further). */
+export const brandLogo = () => h('img', { class: 'brand-logo', src: 'img/evergreen-wordmark-color.png', alt: 'Evergreen', width: '1154', height: '224' });
+
+/** A full-screen calm spinner with a few words (the spinner stops with Reduce Motion). */
+export function loading(text) {
+  return h('div', { class: 'screen message' },
+    h('h1', { class: 'sr-only', tabindex: '-1' }, text),
+    h('div', { class: 'calm-loading', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), text));
 }
 
 /** <span> with an icon from ICON (SVG markup is a fixed constant, not user data). */

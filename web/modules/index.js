@@ -9,8 +9,11 @@ import prayer from './prayer.js';
 import note from './note.js';
 import quiz from './quiz.js';
 import finishLine from './finish-line.js';
+import wordSearch from './word-search.js';
+import crossword from './crossword.js';
+import trivia from './trivia.js';
 
-export const MODULES = [hymn, scripture, prayer, note, quiz, finishLine];
+export const MODULES = [hymn, scripture, prayer, note, quiz, finishLine, wordSearch, crossword, trivia];
 
 /** The module for a saved item's type, or undefined (e.g. a module removed from the app). */
 export const moduleFor = (type) => MODULES.find((m) => m.type === type);

@@ -160,6 +160,26 @@ export const savePrayer = (id, values) => (id
   ? q(sb.from('prayers').update(values).eq('id', id).select('*'))
   : q(sb.from('prayers').insert(values).select('*')));
 
+// ---------- AI prompt ("Chosen for you"; admins) ----------
+
+/** The editable prompt: { id, guidance, examples: [{level, themes, refs}], updated_at, updated_by }. */
+export async function getAiPrompt(id = 'today') {
+  return (await q(sb.from('ai_prompts').select('*').eq('id', id)))[0] ?? null;
+}
+/** Save guidance + examples. The database checks the examples (5 feelings, 1-8 refs of 1-3 verses). */
+export const saveAiPrompt = (id, guidance, examples) =>
+  q(sb.from('ai_prompts').update({ guidance, examples }).eq('id', id).select('*'));
+
+/** Ask the curate function for a "Chosen for you" result, exactly as a tablet would. */
+export async function tryToday(mood) {
+  const res = await fetch(`${supabaseUrl}/functions/v1/curate`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'today', mood, history: [] }),
+  });
+  if (!res.ok) throw new Error(`The AI service answered ${res.status}.`);
+  return res.json();
+}
+
 export const listPeople = () => q(sb.rpc('admin_list_users'));
 export const setRole = (userId, role) => q(sb.rpc('set_user_role', { p_user: userId, p_role: role }));
 

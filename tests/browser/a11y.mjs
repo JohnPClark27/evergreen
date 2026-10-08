@@ -13,7 +13,7 @@ async function audit(name) {
   console.log(`\n[${name}] ${v.length ? v.length + ' issue type(s)' : 'clean'}`);
   for (const x of v) { console.log(`  ${x.impact} ${x.id} (${x.n}): ${x.help}\n     e.g. ${x.eg.slice(0, 220)}`); all.set(x.id, (all.get(x.id) ?? 0) + x.n); }
 }
-await page.goto(BASE); await page.getByRole('heading', { name: 'Welcome.' }).waitFor(); await page.waitForTimeout(600); 
+await page.goto(BASE); await page.getByRole('heading', { name: /^Good (morning|afternoon|evening)\.$/ }).waitFor(); await page.waitForTimeout(600); 
 await audit('home');
 // keyboard: tab through home; every stop must show a visible focus outline
 const stops = [];
@@ -23,12 +23,13 @@ for (let i = 0; i < 6; i++) {
 }
 console.log('\nkeyboard tab order (home):\n  ' + stops.join('\n  '));
 console.log('Enter on:', await page.evaluate(() => document.activeElement.textContent.trim().slice(0, 25)));
-await page.keyboard.press('Enter'); // activates "Choose a Study Plan" by keyboard
+await page.keyboard.press('Enter'); // activates the first stop by keyboard
+await page.goto(BASE + '#/studies');
 await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
 await audit('choose a study plan');
 // The test plan (fixture_all_modules.py) has every module type; else the first plan.
 const planTile = (await page.getByRole('button', { name: /ZZ All modules/ }).count())
-  ? page.getByRole('button', { name: /ZZ All modules/ }) : page.locator('.study-tile').first();
+  ? page.getByRole('button', { name: /ZZ All modules/ }) : page.getByRole('button', { name: /Sample — 12 Days/ }); // stable sample plan (new real plans may sort first)
 await planTile.focus(); await page.keyboard.press('Enter'); // a plan, by keyboard
 await page.locator('.continue').waitFor();
 await audit('plan page');
@@ -62,7 +63,7 @@ await page.goto(BASE + '#/read'); await page.waitForTimeout(400);
 if (await page.getByRole('button', { name: 'Tap to continue' }).count()) await page.getByRole('button', { name: 'Tap to continue' }).click();
 await page.locator('.bible .read-line').first().waitFor({ timeout: 30000 });
 await audit('read the bible');
-await page.goto(BASE + '#/studies'); await page.locator('.study-tile').first().click(); await page.locator('.continue').waitFor();
+await page.goto(BASE + '#/studies'); await page.getByRole('button', { name: /Sample — 12 Days/ }).click(); await page.locator('.continue').waitFor();
 await page.goto(page.url().replace('#/plan/', '#/study/') + '/1'); await page.reload(); await page.getByRole('button', { name: 'Tap to continue' }).waitFor();
 await audit('tap to continue');
 console.log('\nTOTAL by rule:', JSON.stringify(Object.fromEntries(all)));

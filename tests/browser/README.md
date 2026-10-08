@@ -10,8 +10,8 @@ npm install                 # once
 npx playwright-core install chromium-headless-shell   # only if no headless shell is cached yet
 
 # against the preview (or production)
-node e2e.mjs  https://dev.hymnal-reader-v2.pages.dev/          # add "reduce" for reduced motion
-node a11y.mjs https://dev.hymnal-reader-v2.pages.dev/
+node e2e.mjs  https://dev.evergreen-ai.pages.dev/          # add "reduce" for reduced motion
+node a11y.mjs https://dev.evergreen-ai.pages.dev/
 
 # against a local copy: (cd ../../web && python3 -m http.server 8080 --bind 127.0.0.1)
 node e2e.mjs

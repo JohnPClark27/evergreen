@@ -2,6 +2,7 @@
 // Optional: a hymn that cites the chapter plays quietly underneath (OFF by default), and
 // "change hymn as I scroll" (also OFF by default) crossfades to the hymn for the verse in view.
 import * as api from '../api.js';
+import { hubButton } from '../nav.js';
 import { BOOKS, refLabel } from '../books.js';
 import { bringIntoView, h, icon } from '../ui.js';
 
@@ -124,7 +125,7 @@ export async function render(root, params, ctx) {
   root.append(h('div', { class: 'screen session read' },
     h('h1', { class: 'sr-only', tabindex: '-1' }, 'Read the Bible'),
     h('header', { class: 'topbar' },
-      h('button', { class: 'pill', type: 'button', onclick: () => ctx.go('#/') }, icon('home'), h('span', { class: 'label' }, 'Home')),
+      hubButton(ctx),
       h('div', { class: 'picker' }, bookSelect, chapterSelect),
       h('p', { class: 'day' }, '')),
     card,

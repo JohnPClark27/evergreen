@@ -1,4 +1,5 @@
-// e2e.mjs - first-time user at iPad size (1180×820), big buttons only: Choose a Study Plan, run
+// e2e.mjs - first-time user at iPad size (1180×820), big buttons only: Welcome → Engage further →
+// Start a Bible Study, run
 // one end to end, Finish, notes, Sing a Hymn, reload-resume, portrait. Usage: node e2e.mjs [baseUrl] [reduce]
 import { BASE, launch } from './launch.mjs';
 const browser = await launch();
@@ -12,14 +13,17 @@ const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') 
 const text = (sel) => page.locator(sel).first().innerText().catch(() => '');
 
 await page.goto(BASE);
-await page.getByRole('heading', { name: 'Welcome.' }).waitFor(); await page.waitForTimeout(800);
-ok((await page.locator('.tile').count()) === 3, 'home: 3 tiles');
-await page.getByRole('button', { name: /Choose a Study Plan/ }).click();
+await page.getByRole('heading', { name: /^Good (morning|afternoon|evening)\.$/ }).waitFor(); await page.waitForTimeout(800);
+ok((await page.locator('.mood-tile').count()) === 5, 'welcome: 5 feelings');
+await page.getByRole('button', { name: 'Skip and see everything' }).click(); // Welcome → Engage further → Start a Bible Study
+await page.getByRole('heading', { name: 'Engage further' }).waitFor();
+ok((await page.locator('.tile').count()) === 4, 'engage further: 4 tiles');
+await page.getByRole('button', { name: /Start a Bible Study/ }).click();
 await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
 ok((await page.locator('.study-tile').count()) >= 1, 'plan list: ' + await page.locator('.study-tile').count() + ' cards');
 // Prefer the test plan from fixture_all_modules.py when it's there; else the first plan.
 const planBtn = (await page.getByRole('button', { name: /ZZ All modules/ }).count())
-  ? page.getByRole('button', { name: /ZZ All modules/ }) : page.locator('.study-tile').first();
+  ? page.getByRole('button', { name: /ZZ All modules/ }) : page.getByRole('button', { name: /Sample — 12 Days/ }); // stable sample plan (new real plans may sort first)
 const first = (await planBtn.locator('.study-tile-title').innerText());
 await planBtn.click();
 await page.locator('.continue').waitFor();
@@ -52,15 +56,16 @@ ok(/^1 of \d+ done$/.test(await text('.topbar .day')), 'progress saved on the ta
 await page.getByRole('button', { name: 'All plans' }).click();
 await page.locator('.study-tile').first().waitFor();
 ok((await page.locator('.study-tile').first().innerText()).includes('Enjoyed before'), `enjoyed plan listed first (${first})`);
-await page.getByRole('button', { name: 'Home' }).click();
-await page.getByRole('heading', { name: 'Welcome.' }).waitFor();
+await page.getByRole('button', { name: 'Back to engage' }).click();
+await page.getByRole('heading', { name: 'Engage further' }).waitFor();
+await page.getByRole('button', { name: /Worship/ }).click();
 await page.getByRole('button', { name: /Sing a Hymn/ }).click();
 await page.locator('.hymn-tile').first().waitFor();
 ok((await page.locator('.hymn-tile').count()) === 9, 'sing: 3x3 grid');
 await page.locator('.hymn-tile').nth(1).click();
 await page.locator('.lyric-word').first().waitFor({ timeout: 30000 }); await page.waitForTimeout(9000);
 ok((await text('.lyric-word.now')).length > 0, 'singing: ' + await text('.hymn-panel .title'));
-await page.goto(BASE + '#/studies'); await page.locator('.study-tile').first().click();
+await page.goto(BASE + '#/studies'); await page.getByRole('button', { name: /Sample — 12 Days/ }).click();
 await page.locator('.continue').click();
 await page.locator('.where').waitFor({ timeout: 30000 });
 await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.waitForTimeout(800);
@@ -69,7 +74,7 @@ await page.getByRole('button', { name: 'Tap to continue' }).click();
 await page.locator('.where').waitFor();
 ok((await text('.where')).startsWith('Part 2 of'), 'reload resumes: ' + await text('.where'));
 await page.setViewportSize({ width: 820, height: 1180 });
-await page.goto(BASE + '#/'); await page.getByRole('heading', { name: 'Welcome.' }).waitFor();
+await page.goto(BASE + '#/'); await page.getByRole('heading', { name: /^Good (morning|afternoon|evening)\.$/ }).waitFor();
 ok(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)), 'portrait: no sideways scroll');
 if (process.argv[3] === 'reduce') {
   const tr = await page.evaluate(() => { const d = document.createElement('span'); d.className = 'lyric-word'; document.body.append(d); return getComputedStyle(d).transitionDuration; });

@@ -419,3 +419,6 @@ enabled = true
 # serves public Scripture, restricts browser origins (CORS), and rate-limits.
 [functions.youversion]
 verify_jwt = false
+
+[functions.curate]
+verify_jwt = false

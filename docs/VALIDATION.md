@@ -5,7 +5,7 @@
 
 **Date(s):**
 **Setting:** (e.g. memory-care unit of an assisted-living community, activity room)
-**Version tested:** (commit or date of `https://hymnal-reader-v2.pages.dev/`)
+**Version tested:** (commit or date of `https://evergreen-ai.pages.dev/`)
 **Device(s):** (e.g. iPad 10th gen, iPadOS __, Safari)
 
 ---

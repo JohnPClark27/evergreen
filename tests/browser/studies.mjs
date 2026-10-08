@@ -16,7 +16,7 @@ const shot = (name) => (process.env.SHOTS ? page.screenshot({ path: `${process.e
 const next = () => page.getByRole('button', { name: /^(Next|Finish)$/ }).click();
 
 await page.goto(BASE);
-await page.getByRole('button', { name: /Choose a Study Plan/ }).click();
+await page.goto(BASE + '#/explore'); await page.getByRole('button', { name: /Start a Bible Study/ }).click();
 await page.locator('.study-tile').first().waitFor({ timeout: 30000 });
 await page.getByRole('heading', { name: 'Choose a Study Plan' }).waitFor();
 // every plan is in one scrolling grid (no pages)
@@ -46,13 +46,14 @@ ok((await text('.attribution')).includes('YouVersion'), 'scripture module: ' + a
 // Read-aloud is OFF by default (built-in voices sound robotic); the aide can switch it on.
 const voice = page.locator('.voice-toggle');
 const badgeShown = async () => page.locator('.reading-panel .badge').isVisible().catch(() => false);
-const againOff = async () => page.getByRole('button', { name: 'Read again' }).isDisabled();
-ok((await voice.innerText()) === 'Read aloud: Off' && !(await badgeShown()) && (await againOff()),
-  'read-aloud is off by default (no "Reading aloud" badge, Read again disabled)');
+// Off: the bar's button offers "Read aloud" (one tap reads this part once); on: "Read again".
+const readOnce = async () => (await page.locator('.panel-bar .ctl').first().innerText()).trim();
+ok((await voice.innerText()) === 'Read aloud: Off' && !(await badgeShown()) && (await readOnce()) === 'Read aloud',
+  'read-aloud is off by default (no "Reading aloud" badge; the bar offers "Read aloud")');
 await voice.click();
-ok((await voice.innerText()) === 'Read aloud: On' && (await badgeShown()) && !(await againOff())
+ok((await voice.innerText()) === 'Read aloud: On' && (await badgeShown()) && (await readOnce()) === 'Read again'
   && (await page.evaluate(() => JSON.parse(localStorage.getItem('hr.settings')).readAloud)) === true,
-  'switching it on shows the badge, enables Read again, and is saved on the tablet');
+  'switching it on shows the badge, the bar says "Read again", and it is saved on the tablet');
 await voice.click();
 ok((await voice.innerText()) === 'Read aloud: Off' && (await page.evaluate(() => JSON.parse(localStorage.getItem('hr.settings')).readAloud)) === false,
   'switching it off again is saved too');

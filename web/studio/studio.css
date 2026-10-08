@@ -22,7 +22,8 @@ a { color: var(--ink); }
   background: var(--primary); color: var(--on-primary);
 }
 .topnav :focus-visible { outline-color: var(--highlight); }
-.brand { font-weight: 700; font-size: 20px; color: var(--on-primary); margin-right: 18px; text-decoration: none; }
+.brand { font-weight: 700; font-size: 20px; color: var(--on-primary); margin-right: 18px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.brand img { height: 24px; width: auto; display: block; }
 .topnav a.nav { padding: 6px 12px; border-radius: 8px; color: var(--on-primary); text-decoration: none; font-weight: 700; }
 .topnav a.nav:hover { text-decoration: underline; }
 .topnav a.nav[aria-current="page"] { background: var(--highlight); color: var(--ink); }
@@ -150,3 +151,13 @@ select.input[size] { min-height: 0; }
 .study-panel { margin-top: 16px; }
 .studio-dialog h2 { margin-top: 0; }
 .studio-dialog select { width: 100%; }
+
+/* ---------- AI prompt page ---------- */
+.ai-moods { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; }
+.ai-mood legend { font-weight: 700; font-size: 1.1em; padding: 0 6px; }
+.ai-ref { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; }
+.ai-ref select.input { width: auto; min-width: 10em; }
+.ai-ref .input.narrow { width: 5em; }
+.ai-ref-label { margin-left: 6px; }
+.ai-ref .item-errors { flex-basis: 100%; margin: 0; }
+.ai-try-out ol { margin: 8px 0 0; }

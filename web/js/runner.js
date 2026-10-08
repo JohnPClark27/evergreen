@@ -12,12 +12,16 @@
 // Used by the tablet (#/study/<id>) and the Studio's preview, so authors see the real thing.
 import * as api from './api.js';
 import { moduleFor } from '../modules/index.js';
-import { h, icon, roundControl } from './ui.js';
+import { GAME_TYPES } from './curate.js';
+import { engagement } from './engagement.js';
+import { h, icon, roundControl, setControl } from './ui.js';
 
 /**
  * plan: { id, title, subtitle?, items: [{ module_type, config }] }  (one study: its modules in order)
  * ctx:  { audio, speaker } (+ store, for resuming)
- * opts: { onExit(), onFinish(), exitLabel, startAt, onStep(index) }
+ * opts: { onExit(), onFinish(), exitLabel, startAt, onStep(index), onGame(item, items, button) }
+ *   onGame: if given, every non-game part gets a "Play a game about this" button.
+ *   Items may carry { suggested: true, reason } (My Day's "Added for you" parts).
  * Returns a cleanup function.
  */
 export async function runStudy(root, plan, ctx, opts = {}) {
@@ -52,8 +56,12 @@ export async function runStudy(root, plan, ctx, opts = {}) {
     voiceBtn.setAttribute('aria-pressed', String(readAloud));
     voiceBtn.classList.toggle('on', readAloud);
   };
+  // With read-aloud off, a reading part's "Read again" becomes "Read aloud": one tap reads it
+  // once (every passage and prayer on screen can be read aloud on request).
+  const askToRead = () => Boolean(controller?.needsSpeech && !readAloud);
   const refreshAgain = () => {
-    againBtn.disabled = !controller?.again || (controller.needsSpeech && !readAloud);
+    againBtn.disabled = !controller?.again;
+    setControl(againBtn, askToRead() ? 'speaker' : 'again', askToRead() ? 'Read aloud' : (controller?.againLabel ?? 'Again'));
   };
 
   root.append(h('div', { class: 'screen session' },
@@ -62,8 +70,8 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       h('button', { class: 'pill', type: 'button', onclick: () => opts.onExit?.() },
         icon(opts.exitLabel ? 'back' : 'home'), h('span', { class: 'label' }, opts.exitLabel ?? 'Home')),
       h('div', { class: 'where-box' }, where, bar),
-      voiceBtn,
-      h('p', { class: 'day plan-name' }, plan.subtitle ?? plan.title)),
+      // right side grouped, so the top bar is left | centre | right (centre truly centred)
+      h('div', { class: 'topbar-right' }, voiceBtn, h('p', { class: 'day plan-name' }, plan.subtitle ?? plan.title))),
     h('div', { class: 'stage-row' },
       backBtn,
       h('div', { class: 'module-panel' }, stage, h('div', { class: 'panel-bar' }, againBtn, pauseBtn, tools)),
@@ -89,7 +97,8 @@ export async function runStudy(root, plan, ctx, opts = {}) {
 
     const item = items[index];
     const mod = item && moduleFor(item.module_type);
-    where.textContent = items.length ? `Part ${index + 1} of ${items.length} · ${mod?.name ?? 'Part'}` : '';
+    where.textContent = items.length
+      ? `Part ${index + 1} of ${items.length} · ${mod?.name ?? 'Part'}${item?.suggested ? ' · Added for you' : ''}` : '';
     bar.replaceChildren(...items.map((_, k) => h('span', { class: k < index ? 'done' : k === index ? 'now' : '' })));
     backBtn.disabled = index === 0;
     nextBtn.querySelector('.label').textContent = index >= items.length - 1 ? 'Finish' : 'Next';
@@ -109,7 +118,7 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       audio.stop(0.6);
     }
 
-    againBtn.querySelector('.label').textContent = 'Again';
+    setControl(againBtn, 'again', 'Again');
     let c;
     try {
       c = await mod.play(stage, item.config ?? {}, kit);
@@ -122,7 +131,12 @@ export async function runStudy(root, plan, ctx, opts = {}) {
     controller = c ?? null;
     if (controller?.musicUrl) musicUrl = controller.musicUrl;
     againBtn.querySelector('.label').textContent = controller?.againLabel ?? 'Again';
-    tools.replaceChildren(...(controller?.tools ?? []));
+    engagement.record(item.module_type, item.config, GAME_TYPES.includes(item.module_type) ? 'played' : 'opened');
+    // A quiet extra: a game about this part (not on a part that is already a game).
+    const gameBtn = opts.onGame && !GAME_TYPES.includes(item.module_type) && roundControl('game', 'Play a game about this');
+    gameBtn?.classList.add('game-ctl');
+    gameBtn?.addEventListener('click', () => opts.onGame(item, items, gameBtn));
+    tools.replaceChildren(...(controller?.tools ?? []), ...(gameBtn ? [gameBtn] : []));
     refreshAgain();
     stage.focus({ preventScroll: true });
   }
@@ -139,7 +153,16 @@ export async function runStudy(root, plan, ctx, opts = {}) {
       controller?.resume?.();
     }
   });
-  againBtn.addEventListener('click', () => { setPaused(false); controller?.again?.(); });
+  againBtn.addEventListener('click', () => {
+    setPaused(false);
+    if (askToRead()) {
+      speaker.enabled = true;  // just this once: speech checks it only when it starts
+      controller.speakNow?.();
+      speaker.enabled = readAloud;
+      return;
+    }
+    controller?.again?.();
+  });
   voiceBtn.addEventListener('click', () => {
     readAloud = !readAloud;
     speaker.enabled = readAloud;
@@ -173,6 +196,6 @@ export async function runStudy(root, plan, ctx, opts = {}) {
 
 /** Rough minutes for a plan (shown on the tablet's study cards). */
 export function estimateMinutes(types) {
-  const per = { hymn: 3, scripture: 1.5, prayer: 1, note: 1, quiz: 2, 'finish-line': 3 };
+  const per = { hymn: 3, scripture: 1.5, prayer: 1, note: 1, quiz: 2, 'finish-line': 3, 'word-search': 4, crossword: 4, trivia: 3 };
   return Math.max(1, Math.round(types.reduce((sum, t) => sum + (per[t] ?? 1.5), 0)));
 }

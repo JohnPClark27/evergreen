@@ -1,10 +1,14 @@
-# Hymnal Reader
+# Evergreen
+
+![Evergreen](web/img/evergreen-wordmark-color.png)
+
+*Evergreen (formerly Hymnal Reader): hymns, Scripture and prayer for older adults, on a large-print tablet.*
 
 **A daily hymn, a short Scripture passage, and a prayer, made simple enough to share with a
 resident in memory care.** It runs on an iPad, is used together with an aide, and needs no
 accounts.
 
-Live: **https://hymnal-reader-v2.pages.dev/** · Gloo AI Hackathon, Track 2: *Scripture Beyond the App*
+Live: **https://evergreen-ai.pages.dev/** · Gloo AI Hackathon, Track 2: *Scripture Beyond the App*
 
 ---
 
@@ -20,7 +24,7 @@ for that moment:
 
 The **aide** who would sit with them has a few spare minutes, not time to prepare a devotion.
 
-Hymnal Reader gives the aide **one big button**: *Choose a Study Plan*. A pastor publishes a
+Evergreen gives the aide **one big button**: *Choose a Study Plan*. A pastor publishes a
 **study plan** (for example, "Comfort in the evening", or a 12-week series) that holds one or more
 **studies**. On the tablet you pick a plan, then walk through its studies in any order. The plan
 page shows a big **Continue: Study 3** button and a ✓ next to each study already done. That
@@ -114,10 +118,14 @@ math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
     guess, and any prayer added later requires a **source**.
   - **Scripture** is fetched **live from YouVersion** with its attribution. Verse text is never
     stored in the database or the repo.
-- **No AI in the resident's experience.** No chatbot, no generated audio, music or images. Music
-  is rendered from public-domain notation. **Read-aloud is off by default**, because the built-in
-  voices still sound robotic. When an aide turns it on (in Aide tools, or the *Read aloud* button in
-  any study), it uses only the device's own voice.
+- **AI selects, it never writes.** There's no chatbot and no generated audio, music or images.
+  AI (Gloo AI) only **chooses and arranges** vetted content: published hymns and prayers, and
+  Scripture **references** whose text comes live from YouVersion. Every choice is checked on the
+  server and the tablet, and every AI step has a fallback that works without it. See
+  *AI curation* below. Music is rendered from public-domain notation. **Read-aloud is off by
+  default**, because the built-in voices still sound robotic. When an aide turns it on (in Aide
+  tools, or the *Read aloud* button in any study), it uses only the device's own voice. Every
+  passage and prayer on screen also has its own **Read aloud** button, which reads it once on request.
 - **Public domain only.** The 40 published hymns pass a strict rule: the ABC file says *public
   domain*, and the claim doesn't rest on a modern hymnal transcription or a "never renewed"
   argument (`supabase/seed/publish_pd_hymns.py`). The Studio applies the same rule, reading the
@@ -130,6 +138,40 @@ math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
   it**. The database enforces this (RLS plus a status trigger: authors can't publish). Approval is
   refused while a plan uses unpublished hymns or prayers, and every change is audit-logged with
   the signer's email.
+
+## AI curation
+
+The resident starts with **"How are you feeling today?"** (five faces, from *Wonderful* to *Having
+a hard day*). One tap opens **Chosen for you**: a verse of the day in large print and four big
+buttons (any mix of hymns, prayers, reading and games around it), then **Engage further** for
+everything else (Read Scripture, Worship, Games, Start a Bible Study). Games can also be opened
+from any study part (*Play a game about this*).
+
+| | What the AI does | What it never does |
+|---|---|---|
+| **Verse of the day** | Thinks step by step (a chain-of-thought prompt with example passages per feeling, edited by admins in the Studio's **AI prompt** page) and returns a **reference** of 1–3 verses | Write or paraphrase Scripture. The reference is checked (real book and chapter, 1–3 verses, found on YouVersion), else an example passage is used |
+| **Four picks** | Chooses published hymns and prayers by id, and games or reading about the verse; a kind may repeat if the items differ | Choose anything unpublished, unknown or marked 👎 (dropped by the server); missing picks are filled at random |
+| **Games** | Picks the game and difficulty; for trivia, writes "what does the passage say" questions **from the verse text sent with the request** | Put an answer in a question that isn't word for word in its verse: the server and the tablet both drop it; fewer than 2 left → fill-in-the-blank built on the tablet. Word search and crossword are built on the tablet with no AI at all |
+
+- **Data sent:** the feeling (a number 1–5), hymn and prayer ids, Scripture references, module
+  types and 👍/👎 / open counts from this tablet. **No names or personal data.** The feeling is
+  kept for this visit only (`sessionStorage`). History stays in the tablet's `localStorage`.
+  Verse text goes to the AI only for trivia, for that one request, and is never stored.
+- **Fallback:** if the AI is down, slow (10 s for the verse, 5 s otherwise) or returns nothing
+  valid, the tablet quietly uses a random pick from published content. Nothing breaks or hangs.
+- **No scores:** answers are revealed gently with the verse; no streaks, timers or "wrong".
+- **Provider:** Gloo AI Studio (Completions V2, `auto_routing`), behind one adapter function in
+  `supabase/functions/curate/index.ts`. Any OpenAI-compatible API can be swapped in with
+  `LLM_API_URL` / `LLM_API_KEY` / `LLM_MODEL`. The key is a Supabase secret, never in the browser.
+- **Studio "AI prompt" page (admins):** edit the guidance (tone, what to prefer or avoid) and, per
+  feeling, the themes and example passages; "Try it" asks the AI as a tablet would. The safety
+  rules stay fixed in the function and are shown read-only. The database checks every save
+  (5 feelings, 1–8 references of 1–3 verses, no text) and the audit log records who changed it
+  (table `ai_prompts`, migration 0010).
+- **A small badge** on each AI-chosen thing (verse of the day, "Picked for you", a game, trivia
+  questions): filled ✦ = chosen with Gloo AI; crossed-out ✦ = Gloo AI was skipped (random pick or
+  questions built on the tablet). Its name says which, for screen readers too.
+- **Show AI reasoning** (Aide tools) shows a one-line "why" for each choice, for aides and judges.
 
 ## Sources and licenses
 
@@ -158,7 +200,7 @@ math. An average hymn is about 2 MB, so 5 GB/month ≈ 2,400 plays.
 ## Status and testing
 
 - Production (`main`) runs the day-based version. The **`studio` branch** adds the Studio and
-  modular study plans. Its preview is at `https://studio.hymnal-reader-v2.pages.dev/`.
+  modular study plans. Its preview is at `https://studio.evergreen-ai.pages.dev/`.
 - **Automated checks on `studio`:**
   - Studio security as real users: 32/32
   - Studio end to end (author builds, previews, submits; admin approves; tablet lists it): 27/27
@@ -184,6 +226,12 @@ Things that are unfinished or limited, listed plainly:
     in the Studio)
   - **public-domain human audio Bibles** matched to the translation on screen
   - making it easier to pick a device's best installed voice
+
+**Future work: AI curation**
+- **Theme-based verse lists from YouVersion:** ask the YouVersion API for passages on a theme
+  (comfort, joy, rest…) instead of relying on our own example list.
+- **Pastoral review of the example passages** per feeling (a draft today).
+- Thumbs up / down on the four "Chosen for you" picks (today they're on hymns and plans).
 
 **Not yet verified on real devices**
 - Hearing the read-aloud voice on an **iPad** (Safari). All automated tests run headless, which has

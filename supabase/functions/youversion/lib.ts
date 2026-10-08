@@ -94,7 +94,7 @@ export function allowedOrigin(origin: string | null, pagesHosts: string[]): bool
   try { url = new URL(origin); } catch { return false; }
   if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return true;
   if (url.protocol !== "https:") return false;
-  // e.g. hymnal-reader-v2.pages.dev and <branch-or-hash>.hymnal-reader-v2.pages.dev
+  // e.g. evergreen-ai.pages.dev and <branch-or-hash>.evergreen-ai.pages.dev
   return pagesHosts.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`));
 }
 
