@@ -186,6 +186,15 @@ sign-in, tablets list **all approved plans**, quizzes are **gentle, with no scor
   wordmark (`index.html`; `app.js` sets `body[data-brand]`). The Studio nav shows the white one.
 - Softer yellow: `--yellow: #FFF0B0` (was #FFE57A).
 
+## 0f. Positioning (2026-10-08, user's decision)
+
+- **Evergreen: Biblical connection for seniors.** For older Christians for whom reading, moving
+  or remembering is getting hard; used on their own or with a helper.
+- Runs in the browser on a **laptop or a tablet**: don't describe it as iPad-only or "the tablet"
+  in user-facing text (say "this device", "Evergreen"). Don't lead with Alzheimer's / memory care.
+- The project description (title, stats, the retired-pastor story) is in README "Why"; keep
+  README, DESIGN.md and the page's meta description consistent with it.
+
 ## 1. Coordination rules (avoid clashing)
 
 1. **Before you start:** `git fetch && git status && git log --oneline -5` on `dev`. If `dev`

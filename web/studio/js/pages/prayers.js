@@ -33,8 +33,8 @@ export async function render(main, _params, app) {
     };
     const [titleField] = input('title', 'Title', { required: true });
     const [slugField, slug] = input('slug', 'Short name (slug)', { required: true, hint: 'Lowercase words with dashes, e.g. evening-collect.' });
-    const [sourceField] = input('source', 'Source (required)', { required: true, max: '300', placeholder: 'e.g. The Book of Common Prayer (1979), p. 832', hint: 'Where this exact text comes from. Shown on the tablet with the prayer.' });
-    const [attrField] = input('attribution', 'Attribution line on the tablet', { placeholder: 'e.g. The Book of Common Prayer (1979)' });
+    const [sourceField] = input('source', 'Source (required)', { required: true, max: '300', placeholder: 'e.g. The Book of Common Prayer (1979), p. 832', hint: 'Where this exact text comes from. Shown with the prayer in Evergreen.' });
+    const [attrField] = input('attribution', 'Attribution line shown with the prayer', { placeholder: 'e.g. The Book of Common Prayer (1979)' });
     const [sectionField] = input('section', 'Section (optional)');
     const [textField] = input('text', 'Prayer text (pasted from the source)', { area: true, max: '4000', required: true });
     const statusSel = h('select', { class: 'input', id: 'p-status', onchange: (e) => { v.status = e.target.value; app.dirty = () => true; } },

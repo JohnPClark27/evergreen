@@ -105,7 +105,7 @@ export async function render(main, _params, app) {
         v.examples.map((e) => ({ level: e.level, themes: e.themes, refs: e.refs.map(refKey) })));
       app.dirty = null;
       drawSaved(r);
-      flash(status, 'Saved. Tablets use it from their next “Chosen for you”.');
+      flash(status, 'Saved. Evergreen uses it from the next My Day.');
     } catch (err) { flash(status, err.message, 'error'); }
   }
 

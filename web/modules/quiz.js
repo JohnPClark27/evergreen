@@ -61,7 +61,7 @@ export default {
       (c.questions ?? []).length < MAX_QUESTIONS && h('button', { class: 'btn', type: 'button',
         onclick: () => set({ questions: [...qs(), { q: '', choices: ['', '', '', ''], answer: 0 }] }, { redraw: true }) },
       '+ Add a question'),
-      h('label', { class: 'check' }, aloud, ' Read each question aloud (when the tablet’s read-aloud is on; it’s off by default)'));
+      h('label', { class: 'check' }, aloud, ' Read each question aloud (when automatic read-aloud is on in Evergreen; it’s off by default)'));
   },
 
   play(stage, c, kit) {
