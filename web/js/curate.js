@@ -12,6 +12,8 @@ import { engagement, idOrRef, parseRefKey, refKey } from './engagement.js';
 
 export const GAME_TYPES = ['word-search', 'crossword', 'trivia'];
 export const NEW_REASON = 'Trying something new';
+/** Games still being finished: labelled "Work in progress", and kept out of My Day. */
+export const WIP_GAMES = ['word-search', 'crossword'];
 
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const shuffle = (list) => list.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);

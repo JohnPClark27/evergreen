@@ -3,11 +3,11 @@
 // Opened from a study part, "Back to study" returns to that part.
 import * as api from '../api.js';
 import { refLabel } from '../books.js';
-import { fallback } from '../curate.js';
+import { fallback, WIP_GAMES } from '../curate.js';
 import { engagement } from '../engagement.js';
 import { safeFrom } from '../game-link.js';
 import { moduleFor } from '../../modules/index.js';
-import { aiMark, h, icon } from '../ui.js';
+import { aiMark, h, icon, wipTag } from '../ui.js';
 
 export async function render(root, params, ctx) {
   const mod = moduleFor(params.arg);
@@ -37,7 +37,7 @@ export async function render(root, params, ctx) {
   root.append(h('div', { class: 'screen session game-screen' },
     h('header', { class: 'topbar' },
       h('button', { class: 'pill', type: 'button', onclick: back }, icon('back'), h('span', { class: 'label' }, backLabel)),
-      h('h1', { class: 'screen-title', tabindex: '-1' }, mod?.name ?? 'Game'),
+      h('h1', { class: 'screen-title', tabindex: '-1' }, mod?.name ?? 'Game', WIP_GAMES.includes(mod?.type) && wipTag()),
       h('p', { class: 'day game-day' }, label, params.src && aiMark(params.src))),
     params.why && ctx.store.settings().showReasons === true && h('p', { class: 'reason' }, `Why this game: ${params.why}`),
     stage,

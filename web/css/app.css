@@ -543,3 +543,6 @@ body[data-brand="page"] .brandbar { display: none; }
 .today .engage { min-height: 68px; }
 .verse-day .read-line { line-height: 1.5; margin: 0 0 4px; }
 .verse-day .attribution { margin-top: 8px; }
+/* "Work in progress" (games still being finished): quiet, readable, not alarming. */
+.tag.wip { display: inline-block; vertical-align: middle; margin: 0 0 0 10px; font-size: 19px; font-weight: 700;
+  background: var(--surface); color: var(--ink); border: 2px dashed var(--ink); padding: 0 10px; }
