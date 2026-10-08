@@ -175,6 +175,8 @@ from any study part (*Play a game about this*).
 
 ## Sources and licenses
 
+**Our code is MIT-licensed** (`LICENSE`). Third-party content keeps its own license:
+
 | What | Source | License |
 |---|---|---|
 | Hymn words and music (ABC) | [Open Hymnal Project](http://openhymnal.org/) ([mirror](https://github.com/mzealey/openhymnal)) | Public domain, per each file's `copyright: public domain` line |
@@ -183,7 +185,8 @@ from any study part (*Play a game about this*).
 | Hymn audio | Rendered by us with the FluidR3_GM SoundFont (Frank Wen) | MIT (`docs/licenses/FluidR3_GM-MIT.txt`) |
 | Sheet music + timing alignment | [abcjs](https://www.abcjs.net/) 6.7.1, [@tonejs/midi](https://github.com/Tonejs/Midi) | MIT |
 | Data access | [supabase-js](https://github.com/supabase/supabase-js) 2.117.2, supabase-py | MIT |
-| Fonts | Literata, Atkinson Hyperlegible (Google Fonts) | SIL Open Font License |
+| AI curation | Gloo AI Studio API | Gloo's terms of service |
+| Fonts | The device's own sans-serif fonts (Verdana, Helvetica, Calibri); none are bundled | n/a |
 
 ## Repository map
 
@@ -284,5 +287,6 @@ Things that are unfinished or limited, listed plainly:
   pauses after 7 idle days (`docs/DEPLOY.md` Part D explains restoring it).
 
 **Validation**
-- `docs/VALIDATION.md` is a **template**: field conversations with residents, aides and chaplains
-  are still to be recorded there.
+- `docs/VALIDATION.md` records two on-site conversations (Oct 3, 2026) with a senior living
+  community's director and a retired pastor who lives there: our assumptions, what was wrong, and
+  what we changed.
