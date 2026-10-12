@@ -300,3 +300,17 @@ Things that are unfinished or limited, listed plainly:
 - `docs/VALIDATION.md` records two on-site conversations (Oct 3, 2026) with a senior living
   community's director and a retired pastor who lives there: our assumptions, what was wrong, and
   what we changed.
+
+  ## Team
+
+Built at the Gloo AI Hackathon 2026, where it placed Top 10.
+
+| Name | Role |
+|---|---|
+| **JP Clark** ([@JohnPClark27](https://github.com/JohnPClark27)) | Coding Lead · Development · Ideation |
+| **Josh Yin** ([@JoshuaCYin](https://github.com/JoshuaCYin)) | Development Lead · Coding · Quality Assurance |
+| **Trey Poore** ([@treypoore](https://github.com/treypoore)) | Proposal Lead · Market Research Lead · Ideation |
+| **Collin Kreitzer** | Market Research · Coding · Development |
+| **Jonathon Czado** | Development · Market Research · Presentation |
+| **Alfred Burgess** | Presentation · Market Research |
+| **Maddie Seitz** | Presentation Lead · Proposal |
